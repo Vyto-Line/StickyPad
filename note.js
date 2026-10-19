@@ -518,6 +518,16 @@ $('#remAt').addEventListener('change', () => { const t = REM.fromLocalInput($('#
 $('#remClear').onclick = () => remindSet(0);
 document.querySelectorAll('.rq').forEach(b => { b.onclick = () => remindSet(REM.quick(b.dataset.q, Date.now())); });
 
+// An answer from the AI chat was put into this note: show it and keep Ctrl+Z working (the text from before is one step back)
+async function appliedFromChat() {
+  commitNow();                                   // anything typed a moment ago becomes its own undo step
+  const before = cur; clearTimeout(timer); timer = null;   // the app already holds the new text: a late save of the old text must not overwrite it
+  note = await api.get(); if (note && note.keys) KEYMAP = note.keys;
+  render(note.blocks && note.blocks.length ? note.blocks : (note.text && !note.locked ? [{ t: 'text', v: note.text }] : []));
+  apply(); remindPaint();
+  const s = snap(); if (s !== before) { pushUndo(before); redoS.length = 0; cur = s; }
+}
+api.onApplied(() => { appliedFromChat().catch(() => {}); });
 api.onReload(() => { if (!timer && !edit && document.activeElement !== $('#topic')) reload(); });   // a note changed on another PC
 (async () => {
   await reload();

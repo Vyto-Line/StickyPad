@@ -1051,7 +1051,7 @@ ipcMain.handle('chat:applyToNote', (e, p) => {
   if (!next.length) return { ok: false, error: 'There is nothing to apply.' };
   try { if (!n.lock && history.add(dataDir(), n.id, { title: n.title, blocks: prev }, Date.now())) histT.set(n.id, Date.now()); } catch {}
   n.blocks = next; n.text = textOf(next); n.updated = Date.now(); save();
-  const w = wins.get(n.id); if (w && !w.isDestroyed()) w.webContents.send('note:reload');
+  const w = wins.get(n.id); if (w && !w.isDestroyed()) w.webContents.send('note:applied');   // like a reload, but the note keeps its undo history
   return { ok: true, mode };
 });
 ipcMain.handle('chat:stop', (e, id) => { const a = chatJobs.get(id); if (a) a.abort(); });

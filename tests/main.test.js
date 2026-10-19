@@ -120,7 +120,7 @@ const H = require('./fake-electron');
   assert.strictEqual(an.title, 'Trip', 'a title the note already has is kept'); assert.ok(an.blocks.some(b => b.t === 'check' && b.v === 'Hat' && !b.done) && an.blocks.some(b => b.t === 'check' && b.v === 'Water' && b.done), 'checklist items become checklist items');
   assert.ok(an.blocks[0].v.startsWith('Crete trip'), 'the heading stays in the text'); assert.ok(!JSON.stringify(an.blocks).includes('Book ferry. Take'), 'old text replaced');
   assert.ok((await h['hist:list'](ae)).items.some(i => /Book ferry\. Take hat/.test(i.preview || '')) || (await h['hist:list'](ae)).items.length >= 1, 'the old text is kept in Earlier versions');
-  assert.ok(aw.webContents.sent.some(m => m[0] === 'note:reload'), 'the note window reloads');
+  assert.ok(aw.webContents.sent.some(m => m[0] === 'note:applied'), 'the note window is told (it shows the text and keeps its undo history)');
   ar = await h['chat:applyToNote']({}, { noteId: aid, text: '```\nExtra line\n```', mode: 'append' }); assert.ok(ar.ok); an = await h['note:get'](ae);
   assert.ok(JSON.stringify(an.blocks).includes('Extra line') && !JSON.stringify(an.blocks).includes('```') && JSON.stringify(an.blocks).includes('Water'), 'append keeps the old content and removes a code fence');
   assert.deepStrictEqual((await h['chat:applyToNote']({}, { noteId: 'nope', text: 'x' })).ok, false, 'unknown note');

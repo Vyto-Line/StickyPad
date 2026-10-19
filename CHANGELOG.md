@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.14.20
+- **Ctrl+Z now undoes "Apply to note".** After you put an AI answer into a note (*Replace the note* or *Add at the end*), Ctrl+Z brings back the text from before, and Ctrl+Y or Ctrl+Shift+Z applies it again. Before, applying an answer cleared the note's undo history, so Ctrl+Z did nothing.
+- Not tried on a real Windows PC yet.
+
 ## 1.14.19
 - **A Home button in every note.** A house icon, first in the title bar, opens the Home window (all notes, trash, the AI chat and settings), the same as Ctrl+Alt+A or the tray icon.
 - **The AI chat can now change your note.** With a note attached (📎), every answer has an **Apply to note** button: **Replace the note** or **Add at the end**. Checklist lines (`- [ ] item`) become real checklist items, pictures in the note are kept, and the old text always stays in *Earlier versions*. When you ask the AI to rewrite, fix, shorten or translate the attached note, it now replies with just the new note text, ready to apply. Not available with *All my notes* or locked notes.
