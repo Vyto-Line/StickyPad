@@ -32,6 +32,17 @@ async function status(url, fetchImpl = fetch) {
   } catch { return { running: false, models: [] }; }
 }
 
+// Removes a downloaded model from the disk (/api/delete). Both "model" and "name" are sent: older Ollama versions only read "name".
+async function remove(url, name, fetchImpl = fetch) {
+  if (!validName(name)) throw new Error('That model name is not valid.');
+  let res;
+  try { res = await fetchImpl(baseOf(url) + '/api/delete', { method: 'DELETE', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ model: name, name }), signal: AbortSignal.timeout(30000) }); }
+  catch { throw new Error('Could not reach Ollama. Is it running?'); }
+  if (res.status === 404) throw new Error('That model is not installed (any more).');
+  if (!res.ok) { let d = null; try { d = await res.json(); } catch {} throw new Error((d && d.error) || `Ollama said HTTP ${res.status}`); }
+  return true;
+}
+
 // Streams /api/pull. onProgress({status, pct, done}) where pct is 0-100 or null.
 async function pull(url, name, onProgress, signal, fetchImpl = fetch) {
   if (!validName(name)) throw new Error('That model name is not valid.');
@@ -115,4 +126,4 @@ function runInstaller(file, spawnImpl = spawn) {
   });
 }
 
-module.exports = { RECOMMENDED, validName, status, pull, findOllama, startOllama, waitUntilRunning, downloadInstaller, runInstaller, INSTALLER_URL, DEFAULT_URL };
+module.exports = { RECOMMENDED, validName, status, pull, remove, findOllama, startOllama, waitUntilRunning, downloadInstaller, runInstaller, INSTALLER_URL, DEFAULT_URL };

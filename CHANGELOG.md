@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.14.8
+- **You can delete a downloaded AI model.** In the AI tab (and Settings > AI), pick an installed model and press **Delete model…**; it asks once more, then removes it from your PC and frees its disk space. Handy when a model answers badly or is too slow. If it was the model in use, none is selected afterwards, so choose another one.
+
 ## 1.14.7
 - **The settings panel is now a column on the right, beside your text, in every note.** A narrow note grows wider to the right while the panel is open (to the left if there is no room on that side of the screen) and goes back to its size when you close it. The saved size of the note never changes. The panel stays open while you click in the note, so you can select text and press *Translate* or *Edit live* straight away. If the screen is too small to fit it, the panel opens above the text instead.
 

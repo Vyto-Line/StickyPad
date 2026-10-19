@@ -822,6 +822,13 @@ ipcMain.handle('ollama:pull', async (e, name, url) => {
     olSend({ type: 'pull', name, state: 'error', error: msg }); return { ok: false, error: msg };
   } finally { olJobs.delete(key); }
 });
+ipcMain.handle('ollama:delete', async (e, name, url) => {
+  name = String(name || '');
+  if (!ollama.validName(name)) return { ok: false, error: 'That model name is not valid.' };
+  if (olJobs.has('pull:' + name)) return { ok: false, error: 'It is still downloading. Cancel the download first.' };
+  try { await ollama.remove(olUrl(url), name); return { ok: true }; }
+  catch (err) { return { ok: false, error: err && err.message ? err.message : 'Could not delete the model.' }; }
+});
 ipcMain.handle('ollama:cancel', (e, what) => { const a = olJobs.get(String(what)); if (a) a.abort(); });
 ipcMain.handle('ollama:install', async (e, url) => {
   if (process.platform !== 'win32') return { ok: false, error: 'Automatic install only works on Windows. Get Ollama from ollama.com.' };

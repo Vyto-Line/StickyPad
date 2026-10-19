@@ -21,7 +21,7 @@ contextBridge.exposeInMainWorld('api', {
   onChatEvent: cb => ipcRenderer.on('chat:event', (e, m) => cb(m)),
   onChatAttach: cb => ipcRenderer.on('chat:attach', (e, id) => cb(id)),
   aiEdit: call('ai:edit'), aiEditStop: call('ai:editStop'), onAiEvent: cb => ipcRenderer.on('ai:event', (e, m) => cb(m)),
-  ollamaStatus: call('ollama:status'), ollamaStart: call('ollama:start'), ollamaPull: call('ollama:pull'), ollamaCancel: call('ollama:cancel'), ollamaInstall: call('ollama:install'),
+  ollamaStatus: call('ollama:status'), ollamaStart: call('ollama:start'), ollamaPull: call('ollama:pull'), ollamaCancel: call('ollama:cancel'), ollamaDelete: call('ollama:delete'), ollamaInstall: call('ollama:install'),
   onOllamaEvent: cb => ipcRenderer.on('ollama:event', (e, m) => cb(m)),
   updateCheck: call('update:check'), updateState: call('update:state'), updateInstall: call('update:install'),
   onUpdateEvent: cb => ipcRenderer.on('update:event', (e, m) => cb(m)),

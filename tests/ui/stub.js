@@ -26,6 +26,7 @@
       if (S.pullFail) { emit('ollama', { type: 'pull', name, state: 'error', error: 'disk full' }); return { ok: false, error: 'disk full' }; }
       S.ol.models.push({ name, size: 1.3e9 }); emit('ollama', { type: 'pull', name, state: 'done' }); return { ok: true };
     },
+    ollamaDelete: async name => { S.calls.push(['delete', name]); if (S.delFail) return { ok: false, error: 'Ollama is busy' }; S.ol.models = S.ol.models.filter(m => m.name !== name); return { ok: true }; },
     ollamaInstall: async () => {
       S.calls.push(['install']);
       for (const [s, p] of [['Downloading Ollama…', 30], ['Downloading Ollama…', 90], ['Installing Ollama…', null], ['Starting Ollama…', null]]) { await new Promise(r => setTimeout(r, 60)); emit('ollama', { type: 'install', state: 'progress', status: s, pct: p }); }

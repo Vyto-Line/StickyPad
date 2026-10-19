@@ -10,6 +10,12 @@ const stream = chunks => ({ ok: true, status: 200, body: { getReader() { let i =
   await assert.rejects(O.pull('http://x', 'a', null, null, async () => stream(['{"error":"pull model manifest: file does not exist"}\n'])), /manifest/);
   await assert.rejects(O.pull('http://x', 'a', null, null, async () => stream(['{"status":"pulling"}\n'])), /before it finished/);
   await assert.rejects(O.pull('http://x', 'a', null, null, async () => { throw new Error('x'); }), /reach Ollama/);
+  let seen; assert.strictEqual(await O.remove('http://x/', 'llama3.2:3b', async (u, o) => { seen = [u, o.method, JSON.parse(o.body)]; return { ok: true, status: 200 }; }), true);
+  assert.deepStrictEqual(seen, ['http://x/api/delete', 'DELETE', { model: 'llama3.2:3b', name: 'llama3.2:3b' }]);
+  await assert.rejects(O.remove('http://x', 'bad name', async () => {}), /not valid/);
+  await assert.rejects(O.remove('http://x', 'a', async () => ({ ok: false, status: 404 })), /not installed/);
+  await assert.rejects(O.remove('http://x', 'a', async () => ({ ok: false, status: 500, json: async () => ({ error: 'boom' }) })), /boom/);
+  await assert.rejects(O.remove('http://x', 'a', async () => { throw new Error('x'); }), /reach Ollama/);
   const ac = new AbortController(); ac.abort(); await assert.rejects(O.pull('http://x', 'a', null, ac.signal, async () => { const e = new Error('ab'); e.name = 'AbortError'; throw e; }), /ab/);
   // installer
   const mk = (code, size, headers = {}) => (u, cb) => { const r = Readable.from([Buffer.alloc(size)]); r.statusCode = code; r.headers = { 'content-length': String(size), ...headers }; setImmediate(() => cb(r)); return new EventEmitter(); };

@@ -4,7 +4,7 @@
 (function () {
   const $ = s => document.querySelector(s);
   const gb = b => (b / 1e9 >= 0.1 ? (b / 1e9).toFixed(1) + ' GB' : Math.max(1, Math.round(b / 1e6)) + ' MB');
-  let st = null, busy = null, err = '', opts = {}, el = {};
+  let st = null, busy = null, err = '', confirmDel = '', opts = {}, el = {};
   const isOl = () => el.prov && el.prov.value === 'ollama';
   const isInstalled = n => st && st.models.some(m => m.name === n || m.name === n + ':latest');
   const realName = n => (st && st.models.find(m => m.name === n || m.name === n + ':latest') || {}).name || n;
@@ -63,10 +63,20 @@
       if (v && v !== '__other' && !isInstalled(v)) {
         const r = st.recommended.find(x => x.name === v);
         acts.appendChild(btn('Download ' + v + (r ? ' (' + r.size + ')' : ''), () => pull(v), true));
+      } else if (v && v !== '__other') {
+        // an installed model: it can be removed from the disk (e.g. when it answers badly or is too slow); two clicks, so it is never an accident
+        const rn = realName(v), size = (st.models.find(m => m.name === rn) || {}).size;
+        if (confirmDel === rn) {
+          const q = document.createElement('div'); q.className = 'ol-err'; q.textContent = 'Delete ' + rn + (size ? ' and free ' + gb(size) : '') + '? You can download it again later.'; box.appendChild(q);
+          const yes = btn('Yes, delete it', () => del(rn)); yes.classList.add('danger'); acts.appendChild(yes);
+          acts.appendChild(btn('Keep it', () => { confirmDel = ''; render(); }));
+        } else {
+          const d = btn('Delete model…', () => { confirmDel = rn; render(); }); d.classList.add('danger'); d.title = 'Remove ' + rn + ' from this PC'; acts.appendChild(d);
+        }
       }
     }
     if (err) { const e = document.createElement('div'); e.className = 'ol-err'; e.textContent = err; box.appendChild(e); }
-    if (!busy) acts.appendChild(btn('↻', refresh));
+    if (!busy && !confirmDel) acts.appendChild(btn('↻', refresh));
     acts.lastChild && (acts.lastChild.title = acts.lastChild.textContent === '↻' ? 'Check again' : '');
     box.appendChild(acts);
   }
@@ -88,10 +98,20 @@
     if (r.ok) { await refresh(); el.txt.value = name; fillSelect(); render(); await saveModel(name); }
     else { if (r.error) err = r.error; await refresh(); }
   }
+  async function del(name) {
+    err = ''; confirmDel = ''; busy = { kind: 'delete', name, status: 'Deleting ' + name + '…', pct: null }; render();
+    const r = await api.ollamaDelete(name, el.url.value);
+    busy = null;
+    if (!r.ok) err = r.error || 'Could not delete the model.';
+    else if (el.txt.value.trim() === name || el.txt.value.trim() + ':latest' === name) {   // it was the chosen one: nothing is chosen any more
+      el.txt.value = ''; await api.aiSet({ provider: 'ollama', model: '', url: el.url.value }); opts.onSaved && opts.onSaved('Deleted ' + name + ' ✓');
+    } else opts.onSaved && opts.onSaved('Deleted ' + name + ' ✓');
+    await refresh();
+  }
   async function install() { err = ''; busy = { kind: 'install', status: 'Starting…', pct: null }; render(); const r = await api.ollamaInstall(el.url.value); busy = null; if (!r.ok && r.error) err = r.error; await refresh(); }
   async function startOl() { err = ''; busy = { kind: 'install', status: 'Starting Ollama…', pct: null }; render(); const r = await api.ollamaStart(el.url.value); busy = null; if (!r.ok) err = r.error; await refresh(); }
   async function onSelect() {
-    const v = el.sel.value; err = '';
+    const v = el.sel.value; err = ''; confirmDel = '';
     if (v === '__other') { layout(); el.txt.focus(); render(); return; }
     layout();
     if (!v) { render(); return; }
