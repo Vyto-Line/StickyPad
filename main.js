@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, screen, globalShortcut, clipboard, safeStorage, shell, dialog, Notification } = require('electron');
+const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, screen, globalShortcut, clipboard, safeStorage, shell, dialog, Notification, net } = require('electron');
 const ai = require('./ai');
 const ollama = require('./ollama');
 const datadir = require('./datadir');
@@ -813,7 +813,8 @@ function initUpdater() {
   let au = null;
   if (app.isPackaged) { try { au = require('electron-updater').autoUpdater; } catch { /* module missing: updates stay off */ } }
   updater = updaterLib.createUpdater({
-    autoUpdater: au, supported: app.isPackaged,
+    autoUpdater: au, supported: app.isPackaged, repo: { owner: 'Vyto-Line', repo: 'StickyPad' },
+    fetchImpl: (u, o) => (net && net.fetch ? net.fetch(u, o) : fetch(u, o)),
     send: m => BrowserWindow.getAllWindows().forEach(w => { if (!w.isDestroyed()) w.webContents.send('update:event', m); }),
     onReady: version => {
       dialog.showMessageBox({ type: 'info', buttons: ['Restart now', 'Later'], defaultId: 0, cancelId: 1, title: 'StickyPad update',

@@ -5,12 +5,26 @@
 function friendly(err) {
   const m = String((err && err.message) || err || '');
   if (/ENOTFOUND|ECONNREFUSED|ECONNRESET|ETIMEDOUT|ERR_INTERNET|ERR_NETWORK|net::|getaddrinfo/i.test(m)) return 'Could not reach GitHub. Check your internet connection.';
-  if (/404|Cannot find latest|No published versions|latest\.yml/i.test(m)) return 'No downloadable update was found on GitHub yet.';
+  if (/NO_RELEASE_WITH_INSTALLER/.test(m)) return 'No release with an installer was found on GitHub yet. If you just published one, wait a few minutes for the files to finish uploading and try again.';
+  if (/404|Cannot find latest|No published versions|latest\.yml/i.test(m)) return 'No downloadable update was found on GitHub yet. If you just published a release, its files may still be uploading: try again in a few minutes. (' + m.split('\n')[0].replace(/\s+/g, ' ').slice(0, 140) + ')';
   if (/403|rate limit/i.test(m)) return 'GitHub is limiting requests right now. Try again later.';
   return 'The update check failed: ' + m.split('\n')[0].slice(0, 160);
 }
 
-function createUpdater({ autoUpdater, send = () => {}, onReady = () => {}, supported = true }) {
+// Asks GitHub which release to update from: the newest published one that really has its installer files (latest.yml) uploaded.
+// (Asking the releases feed directly could pick an empty release, e.g. one created with a different tag, and then find nothing to download.)
+async function findRelease({ owner, repo, fetchImpl, allowPrerelease = true }) {
+  const res = await fetchImpl(`https://api.github.com/repos/${owner}/${repo}/releases?per_page=20`, { headers: { accept: 'application/vnd.github+json', 'user-agent': 'StickyPad-updater' } });
+  if (!res.ok) throw new Error(res.status === 403 || res.status === 429 ? 'GitHub rate limit (HTTP ' + res.status + ')' : 'GitHub answered HTTP ' + res.status);
+  const list = await res.json();
+  const ok = (Array.isArray(list) ? list : []).filter(r => r && !r.draft && (allowPrerelease || !r.prerelease)
+    && (r.assets || []).some(a => a && a.name === 'latest.yml' && (!a.state || a.state === 'uploaded')));
+  ok.sort((a, b) => Date.parse(b.published_at || b.created_at || 0) - Date.parse(a.published_at || a.created_at || 0));
+  if (!ok.length) throw new Error('NO_RELEASE_WITH_INSTALLER');
+  return { tag: ok[0].tag_name, url: `https://github.com/${owner}/${repo}/releases/download/${encodeURIComponent(ok[0].tag_name)}` };
+}
+
+function createUpdater({ autoUpdater, send = () => {}, onReady = () => {}, supported = true, repo = null, fetchImpl = null }) {
   const state = { state: supported && autoUpdater ? 'idle' : 'unsupported', version: null, pct: null, error: '', checkedAt: 0 };
   const set = patch => { Object.assign(state, patch); try { send({ ...state }); } catch { /* window closed */ } };
   const get = () => ({ ...state });
@@ -35,7 +49,13 @@ function createUpdater({ autoUpdater, send = () => {}, onReady = () => {}, suppo
   async function check() {
     if (state.state === 'checking' || state.state === 'downloading' || state.state === 'ready') return get();
     set({ state: 'checking', error: '' });
-    try { await autoUpdater.checkForUpdates(); }
+    try {
+      if (repo && fetchImpl && typeof autoUpdater.setFeedURL === 'function') {
+        const rel = await findRelease({ owner: repo.owner, repo: repo.repo, fetchImpl });
+        autoUpdater.setFeedURL({ provider: 'generic', url: rel.url });
+      }
+      await autoUpdater.checkForUpdates();
+    }
     catch (e) { set({ state: 'error', error: friendly(e), checkedAt: Date.now() }); }
     return get();
   }
@@ -50,4 +70,4 @@ function createUpdater({ autoUpdater, send = () => {}, onReady = () => {}, suppo
   return { get, check, install, schedule };
 }
 
-module.exports = { createUpdater, friendly };
+module.exports = { createUpdater, friendly, findRelease };

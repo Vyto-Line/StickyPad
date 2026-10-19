@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.13.1
+- **Auto-update is more reliable**: StickyPad now asks GitHub directly for the newest release that really has its installer files (`latest.yml`) and updates from that one. Before, an empty release (for example one created with a tag without the `v`) or a stale releases feed could make it answer "No downloadable update was found" even though a newer version existed. The message now also says to wait a few minutes after publishing, and shows the technical detail.
+
 ## 1.13.0
 - **Find in a note (Ctrl+F)**: a search bar with every match highlighted, Enter / Shift+Enter (or F3) to jump between them, and a counter. Ignores capital letters and Greek accents, so `καλημερα` finds `Καλημέρα`. Works inside checklist items too and never changes your text.
 - **Reminders**: in the gear panel, tab *Note* > *Reminder*, pick a date and time (or press 10 min / 1 hour / 3 hours / Tomorrow 9:00) and Windows shows a notification that opens the note. A reminder that came due while StickyPad was closed fires when you start it. A small dot on the gear shows that a note has a reminder.
