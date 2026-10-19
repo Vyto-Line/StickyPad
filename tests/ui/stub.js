@@ -49,6 +49,7 @@
     aiRun: async () => ({ ok: true, text: 'ok' }),
     settingsGet: async () => { const base = { lowMemory: true, lowMemoryActive: true, aiKeep: '5m', version: '1.10.0', packaged: true, prefs: {}, theme: 'classic', trashCount: 0, backupCount: 0, dataPath: 'C:/x', snapDistance: 20, trashDays: 30, groups: [], shortcuts: true, defaultSize: 'm' }; const set = S.set || (S.set = { shortcuts: true, suggestDates: true, keysFailed: [], keysSaved: {} }); return { ...base, ...set, keys: window.StickyKeys ? window.StickyKeys.merge(set.keysSaved) : {} }; },
     settingsSet: async p => { S.calls.push(['settingsSet', JSON.parse(JSON.stringify(p))]); const set = S.set || (S.set = { shortcuts: true, suggestDates: true, keysFailed: [], keysSaved: {} }); if (p.keys) set.keysSaved = window.StickyKeys.merge(p.keys); Object.keys(p).forEach(k => { if (k !== 'keys') set[k] = p[k]; }); return over.settingsGet(); },
+    updateState: async () => S.updateNow || null,
     updateCheck: async () => { S.calls.push(['updateCheck']); return S.updateResult || { state: 'none', checkedAt: Date.now() }; }, updateInstall: async () => { S.calls.push(['updateInstall']); },
     onUpdateEvent: cb => L.update.push(cb),
     onOllamaEvent: cb => L.ollama.push(cb), onAiEvent: cb => L.ai.push(cb),

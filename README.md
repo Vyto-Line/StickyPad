@@ -98,7 +98,7 @@ StickyPad remembers which screen each note is on. Unplug a monitor and its notes
 <img src="docs/images/feature_settings_data.png" width="560" alt="Settings window, Data and backup page">
 
 ### Updates
-StickyPad checks this repository's Releases when it starts and every few hours. A newer version downloads in the background and asks whether to **restart now or later**; if you pick later it installs when you quit. *Settings > About* has a switch, a **Check now** button, and, if anything goes wrong, **Open update log** and **Releases page**.
+StickyPad checks this repository's Releases when it starts and every few hours. A newer version downloads in the background and a small bar at the bottom of your notes offers **Restart to update** (or ✕ for later); if you ignore it, it installs when you quit. *Settings > About* has a switch, a **Check now** button, and, if anything goes wrong, **Open update log** and **Releases page**.
 
 ### Themes and look
 <img src="docs/images/feature_style.png" width="300" alt="The Style tab with colours, font, size and themes">

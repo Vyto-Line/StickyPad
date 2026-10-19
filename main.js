@@ -941,12 +941,7 @@ function initUpdater() {
     autoUpdater: au, supported: app.isPackaged, repo: { owner: 'Vyto-Line', repo: 'StickyPad' },
     fetchImpl: (u, o) => (net && net.fetch ? net.fetch(u, o) : fetch(u, o)), log: updateLog,
     send: m => BrowserWindow.getAllWindows().forEach(w => { if (!w.isDestroyed()) w.webContents.send('update:event', m); }),
-    onReady: version => {   // no pop-up window: a quiet notification; the Restart button is in Settings > About, and it installs when you quit anyway
-      try {
-        const nt = new Notification({ title: 'StickyPad update ready', body: `StickyPad ${version || ''} installs when you close the app. Click here to restart now.`, silent: true });
-        nt.on('click', () => openSettings('about')); nt.show();
-      } catch {}
-    }
+    onReady: () => {}   // no Windows pop-up or notification: open notes show a small "Restart to update" message (updbar.js), and it installs when you quit anyway
   });
   updater.schedule({ enabled: () => settings.autoUpdate !== false });
 }
