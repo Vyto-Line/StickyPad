@@ -143,6 +143,7 @@ body.rolled #aibox{display:none}
 /* themes, AI button grid, checklist preview */
 .aibtns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .aibtns .btn{white-space:nowrap;padding:7px 6px}
+#aiChat{grid-column:1/-1}
 .themes{display:flex;gap:6px;overflow-x:auto;padding:1px 1px 6px}
 .themes::-webkit-scrollbar{height:6px}
 .theme{flex:none;width:84px;display:flex;flex-direction:column;align-items:flex-start;gap:5px;padding:6px 8px;border:1.5px solid var(--line);border-radius:10px;background:none;color:inherit;font:inherit;font-size:11.5px;font-weight:600;cursor:pointer;text-align:left}
@@ -211,3 +212,26 @@ svg.i{width:15px;height:15px}
 #editbar .grow{flex:1}
 #editbar:not(.run) .spin{display:none}
 body.rolled #editbar{display:none}
+
+/* version history */
+.hist{display:flex;flex-direction:column;gap:4px;max-height:150px;overflow:auto}
+.hrow{display:flex;align-items:center;gap:6px;padding:4px 6px;border-radius:8px;background:var(--tint)}
+.hrow .hm{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.25}
+.hrow .hm b{font-size:12px}
+.hrow .hm span{font-size:11px;opacity:.65;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hrow .btn{flex:none;padding:3px 8px;font-size:11.5px}
+
+/* reminder */
+.quick{flex-wrap:wrap}
+.quick .btn{flex:1 1 auto;padding:3px 6px;font-size:11.5px}
+body.hasRemind #cfg::after{content:"";position:absolute;width:6px;height:6px;margin:-9px 0 0 9px;border-radius:50%;background:var(--accent)}
+#cfg{position:relative}
+
+/* find in note */
+#findbar{flex:none;display:flex;align-items:center;gap:3px;padding:4px 6px;background:var(--tint);border-bottom:1px solid var(--line)}
+#findbar[hidden]{display:none}
+#findbar .field{flex:1;min-width:0;padding:3px 7px;font-size:12.5px}
+#findbar .cnt{flex:none;min-width:44px;text-align:center;font-size:11.5px;opacity:.7;font-variant-numeric:tabular-nums}
+body.rolled #findbar{display:none}
+::highlight(find){background:#ffe066;color:#1c1a12}
+::highlight(find-cur){background:#ff922b;color:#1c1a12}

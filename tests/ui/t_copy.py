@@ -11,7 +11,7 @@ with sync_playwright() as p:
     pg.fill('#topic','Shopping'); pg.locator('#ed').click(); pg.keyboard.type('hello')
     pg.click('#chk'); pg.keyboard.type('milk'); pg.keyboard.press('Enter'); pg.keyboard.type('eggs'); pg.wait_for_timeout(300)
     print('todos',pg.locator('.todo').count(), pg.inner_html('#ed')[:300]); pg.locator('.todo input').first.click()
-    pg.keyboard.press('Control+Alt+c'); pg.wait_for_timeout(300)
+    pg.keyboard.press('Control+Shift+t'); pg.wait_for_timeout(300)
     t=pg.evaluate('navigator.clipboard.readText()'); print(repr(t))
     ok(t.startswith('Shopping\n') and 'hello' in t,'topic and text copied')
     ok('[x] milk' in t and '[ ] eggs' in t,'checklist copied as [x]/[ ]')

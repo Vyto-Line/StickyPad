@@ -79,7 +79,7 @@ const fail = msg => { const e = new Error(msg); e.friendly = true; return e; };
 function httpMessage(provider, status, data, cfg) {
   if (provider === 'ollama') {
     const m = (data && data.error) || `HTTP ${status}`;
-    if (/not found/i.test(m)) return `Ollama does not have the model "${cfg.model}". Install it with:  ollama pull ${cfg.model}`;
+    if (/not found/i.test(m)) return `The model "${cfg.model}" is not installed on this PC yet. Open the AI tab (or Settings > AI), pick it in the list and press Download.`;
     return 'Ollama said: ' + m;
   }
   if (status === 401 || status === 403) return 'The API key was rejected. Check it in the AI tab.';
@@ -112,7 +112,7 @@ async function callModel(cfg, system, user, { json = false, predict = 0 } = {}, 
     catch (e) { if (e.message === '__unreachable__') throw fail(`Could not reach Ollama at ${base}. Is it running?`); throw e; }
     if (!r.res.ok) {
       const m = (r.data && r.data.error) || `HTTP ${r.res.status}`;
-      if (/not found/i.test(m)) throw fail(`Ollama does not have the model "${cfg.model}". Install it with:  ollama pull ${cfg.model}`);
+      if (/not found/i.test(m)) throw fail(httpMessage('ollama', r.res.status, r.data, cfg));
       throw fail('Ollama said: ' + m);
     }
     const out = r.data && r.data.message && r.data.message.content;
@@ -292,9 +292,17 @@ const EDIT_MODES = {
   polish: 'Improve clarity and flow while keeping the meaning, the tone and roughly the same length.',
   shorten: 'Make it shorter and tighter. Keep every key fact, name, number and date.',
   friendly: 'Rewrite it in a warmer, friendlier tone. Keep the meaning and the facts.',
+  translate: 'Translate the text.',   // (the real instruction depends on the language of the text: see editSystem)
   continue: 'Continue the text naturally with one or two more sentences. Output ONLY the new continuation, not the original text.'
 };
-const editSystem = (mode, text = '') => 'You edit text inside a sticky note. ' + (EDIT_MODES[mode] || EDIT_MODES.fix) + (isGreek(text) ? ' ' + GREEK_RULES : '') +
+const translateTarget = text => isGreek(text) ? 'English' : 'Greek';   // Greek text goes to English, anything else goes to Greek
+function translateSystem(text) {
+  const to = translateTarget(text);
+  return 'You translate text inside a sticky note into ' + to + '. Keep the meaning, the tone, names, numbers, dates, URLs and line breaks. ' +
+    (to === 'Greek' ? 'Write natural modern Greek in the monotonic system, with correct accents. ' + GREEK_RULES + ' ' : 'Write natural, plain English. ') +
+    'Output ONLY the translation: no quotes, no code fences, no introduction, no explanation, no notes.';
+}
+const editSystem = (mode, text = '') => mode === 'translate' ? translateSystem(text) : 'You edit text inside a sticky note. ' + (EDIT_MODES[mode] || EDIT_MODES.fix) + (isGreek(text) ? ' ' + GREEK_RULES : '') +
   ' Reply in the same language as the text (English or Greek; keep Greek accents). Keep line breaks. ' +
   'Output ONLY the resulting text: no quotes, no code fences, no introduction, no explanation.';
 function cleanEdit(t) {
@@ -306,7 +314,7 @@ async function editStream(cfg, mode, text, onChunk, signal, fetchImpl = fetch) {
   if (!text.trim() && mode !== 'continue') throw fail('There is no text to edit yet.');
   if (!EDIT_MODES[mode]) throw fail('Unknown edit.');
   if (text.length > MAX_CHARS) throw fail('That text is too long to edit in one go. Select a smaller part.');
-  const predict = Math.min(3000, Math.round(text.length / 2) + 200);
+  const predict = Math.min(3000, mode === 'translate' ? Math.round(text.length * 1.2) + 200 : Math.round(text.length / 2) + 200);   // Greek takes many more tokens per character
   const full = await chatStream(cfg, editSystem(mode, text), [{ role: 'user', content: text }], onChunk, signal, fetchImpl, { temperature: 0.2, predict });
   const out = cleanEdit(full);
   if (!out.trim()) throw fail('The AI returned nothing.');
@@ -327,4 +335,4 @@ async function ping(cfg, fetchImpl = fetch) {
   return r.trim().slice(0, 40);
 }
 
-module.exports = { splitPieces, isGreek, greekShare, ctxFor, GREEK_RULES, editStream, editSystem, EDIT_MODES, warmup, summarize, fixGrammar, toChecklist, parseChecklist, chatStream, SYS_CHAT, ping, parseItems, callModel, DEFAULT_CLAUDE_MODEL, DEFAULT_OLLAMA_URL };
+module.exports = { translateTarget, splitPieces, isGreek, greekShare, ctxFor, GREEK_RULES, editStream, editSystem, EDIT_MODES, warmup, summarize, fixGrammar, toChecklist, parseChecklist, chatStream, SYS_CHAT, ping, parseItems, callModel, DEFAULT_CLAUDE_MODEL, DEFAULT_OLLAMA_URL };

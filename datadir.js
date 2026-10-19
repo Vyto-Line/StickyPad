@@ -30,8 +30,10 @@ function setLocation(defaultDir, currentDir, newDir) {
   const has = fs.existsSync(path.join(newDir, 'notes.json'));
   if (!has) {
     for (const f of DATA_FILES) { const s = path.join(currentDir, f); if (fs.existsSync(s)) fs.copyFileSync(s, path.join(newDir, f)); }
-    const img = path.join(currentDir, 'images');
-    if (fs.existsSync(img)) fs.cpSync(img, path.join(newDir, 'images'), { recursive: true });
+    for (const sub of ['images', 'history']) {
+      const src = path.join(currentDir, sub);
+      if (fs.existsSync(src)) fs.cpSync(src, path.join(newDir, sub), { recursive: true });
+    }
   }
   if (path.resolve(newDir) === path.resolve(defaultDir)) { try { fs.unlinkSync(path.join(defaultDir, POINTER)); } catch {} }
   else writeAtomic(path.join(defaultDir, POINTER), JSON.stringify({ dir: newDir }));

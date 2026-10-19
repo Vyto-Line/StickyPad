@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.13.0
+- **Find in a note (Ctrl+F)**: a search bar with every match highlighted, Enter / Shift+Enter (or F3) to jump between them, and a counter. Ignores capital letters and Greek accents, so `καλημερα` finds `Καλημέρα`. Works inside checklist items too and never changes your text.
+- **Reminders**: in the gear panel, tab *Note* > *Reminder*, pick a date and time (or press 10 min / 1 hour / 3 hours / Tomorrow 9:00) and Windows shows a notification that opens the note. A reminder that came due while StickyPad was closed fires when you start it. A small dot on the gear shows that a note has a reminder.
+- **Version history**: StickyPad keeps up to 30 older copies of each note while you edit (one at least every 5 minutes, and always before a sudden big deletion). *Note* > *Version history…* lists them with time, word count and a preview; **Restore** brings one back and keeps today's version in the list too. Locked notes keep no copies.
+- **Export and import**: *Note* > *Export…* saves one note as a Markdown (.md) or text (.txt) file; Settings > Data & backup has **Export all notes** (one file per note, in folders like yours) and **Import notes** (`.md` / `.txt`; lines such as `- [ ] item` become checklist items).
+- **Translate Greek ⇄ English**: a new button in the AI tab, and an option in the *Edit live* list. Greek text becomes English, anything else becomes Greek; the translation streams into the note like the other live edits (select the part you want, or leave the cursor in a paragraph) and Undo brings the original back.
+- **Missing AI model is spotted early**: if the model you chose is not downloaded (or Ollama is not running), the AI tab says so straight away and tells you where to press Download, instead of failing on the first request.
+- **Fix**: "Copy note as text" now uses **Ctrl+Shift+T** (the 1.12.1 shortcut Ctrl+Alt+C was already taken by the global "open chat" shortcut).
+- Already there, no change needed: the global **Ctrl+Alt+N** (new note from anywhere in Windows; switch in Settings > Shortcuts).
+
 ## 1.12.1
 - **Copy note as text**: one click (Settings tab *Note* > "Copy note as text") or **Ctrl+Alt+C** copies the whole note to the clipboard as plain text: the topic first, checklist items as `[ ]` / `[x]`, pictures left out. Handy for pasting a list into an email or chat.
 

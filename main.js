@@ -1,9 +1,12 @@
-const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, screen, globalShortcut, clipboard, safeStorage, shell, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, screen, globalShortcut, clipboard, safeStorage, shell, dialog, Notification } = require('electron');
 const ai = require('./ai');
 const ollama = require('./ollama');
 const datadir = require('./datadir');
 const updaterLib = require('./updater');
 const backup = require('./backup');
+const reminders = require('./reminders');
+const history = require('./history');
+const convert = require('./convert');
 const THEMES = require('./themes');
 const path = require('path');
 const fs = require('fs');
@@ -93,6 +96,7 @@ const dropImages = n => imgIds(n).forEach(id => { if (IMG_ID.test(id)) try { fs.
 function sweepImages() {   // delete picture files no note or trash item uses any more
   const used = new Set();
   Object.values(notes).concat(trash).forEach(n => imgIds(n).forEach(i => used.add(i)));
+  try { history.pictureIds(dataDir()).forEach(i => used.add(i)); } catch {}   // older copies of a note may still show these pictures
   try { for (const f of fs.readdirSync(imgDir())) if (!used.has(f)) try { fs.unlinkSync(path.join(imgDir(), f)); } catch {} } catch {}
 }
 
@@ -363,9 +367,89 @@ ipcMain.handle('note:get', e => {
   return { ...rest, blocks: bs, locked: !!lock, unlocked: sessions.has(n.id) };
 });
 
+/* ---------- export and import (Markdown / plain text files) ---------- */
+const noteBlocks = n => blocksOf(n);
+const isOpen = n => !n.lock || sessions.has(n.id);
+ipcMain.handle('note:export', async e => {
+  const n = notes[idOf(e)]; if (!n) return { ok: false };
+  if (!isOpen(n)) return { ok: false, error: 'Unlock the note first.' };
+  const w = winOf(e);
+  const r = await dialog.showSaveDialog(w && !w.isDestroyed() ? w : undefined, {
+    title: 'Export this note', defaultPath: path.join(app.getPath('documents'), convert.slug(n.title) + '.md'),
+    filters: [{ name: 'Markdown', extensions: ['md'] }, { name: 'Plain text', extensions: ['txt'] }]
+  });
+  if (r.canceled || !r.filePath) return { ok: false, cancelled: true };
+  const txt = /\.txt$/i.test(r.filePath) ? convert.toText(n.title, noteBlocks(n)) : convert.toMarkdown(n.title, noteBlocks(n));
+  fs.writeFileSync(r.filePath, txt, 'utf8');
+  return { ok: true, file: r.filePath, pics: noteBlocks(n).filter(b => b.t === 'img').length };
+});
+function exportAll(parent) {
+  const r = dialog.showOpenDialogSync(parent || undefined, { title: 'Choose a folder for the exported notes', properties: ['openDirectory', 'createDirectory'], defaultPath: app.getPath('documents') });
+  if (!r || !r[0]) return { ok: false, cancelled: true };
+  const root = path.join(r[0], 'StickyPad notes ' + new Date().toISOString().slice(0, 10));
+  fs.mkdirSync(root, { recursive: true });
+  const gname = id => (groups.find(g => g.id === id) || {}).name || '';
+  const open = Object.values(notes).filter(isOpen), skipped = Object.keys(notes).length - open.length;
+  const byDir = new Map();
+  open.forEach(n => { const d = n.group && gname(n.group) ? convert.slug(gname(n.group), 'Folder') : ''; if (!byDir.has(d)) byDir.set(d, []); byDir.get(d).push(n); });
+  byDir.forEach((list, d) => {
+    const dir = path.join(root, d); fs.mkdirSync(dir, { recursive: true });
+    const names = convert.uniqueNames(list.map(n => n.title || textOf(noteBlocks(n)).split('\n').find(x => x.trim()) || ''), '.md');
+    list.forEach((n, i) => fs.writeFileSync(path.join(dir, names[i]), convert.toMarkdown(n.title, noteBlocks(n)), 'utf8'));
+  });
+  shell.openPath(root);
+  return { ok: true, count: open.length, skipped, dir: root };
+}
+function importNotes(parent) {
+  const r = dialog.showOpenDialogSync(parent || undefined, { title: 'Choose Markdown or text files to import', properties: ['openFile', 'multiSelections'],
+    filters: [{ name: 'Markdown and text', extensions: ['md', 'markdown', 'txt'] }], defaultPath: app.getPath('documents') });
+  if (!r || !r.length) return { ok: false, cancelled: true };
+  let count = 0, failed = 0;
+  r.forEach((f, i) => {
+    try {
+      if (fs.statSync(f).size > MAX_TEXT) { failed++; return; }
+      const c = convert.fromMarkdown(fs.readFileSync(f, 'utf8'), f);
+      const blocks = sanitizeBlocks(c.blocks);
+      const k = (Object.keys(notes).length + i) % 8;
+      const n = newNote({ title: c.title, blocks, text: textOf(blocks), bounds: { x: 80 + k * 28, y: 80 + k * 28, width: 300, height: 320 } });
+      notes[n.id] = n; count++;
+      if (count <= 5) openNote(n);   // a big import does not flood the screen: the rest are in All notes
+    } catch { failed++; }
+  });
+  save(); return { ok: count > 0, count, failed };
+}
+
+/* ---------- version history (older copies of a note) ---------- */
+const histT = new Map();   // noteId -> time of the newest kept copy
+function keepHistory(n, prev, next) {
+  if (n.lock) return;       // a locked note never leaves plain-text copies behind
+  try {
+    const now = Date.now();
+    if (!histT.has(n.id)) histT.set(n.id, history.lastTime(dataDir(), n.id));
+    if (history.shouldKeep(prev, next, histT.get(n.id), now) && history.add(dataDir(), n.id, { title: n.title, blocks: prev }, now)) histT.set(n.id, now);
+  } catch {}
+}
+function dropHistory(id) { histT.delete(id); try { history.remove(dataDir(), id); } catch {} }
+function sweepHistory() {
+  try { history.ids(dataDir()).forEach(id => { if (!notes[id] && !trash.some(t => t.id === id)) dropHistory(id); }); } catch {}
+}
+ipcMain.handle('hist:list', e => {
+  const n = notes[idOf(e)]; if (!n) return { locked: false, items: [] };
+  if (n.lock) return { locked: true, items: [] };
+  return { locked: false, items: history.list(dataDir(), n.id) };
+});
+ipcMain.handle('hist:restore', (e, t) => {
+  const n = notes[idOf(e)]; if (!n || n.lock || !canEditBody(n)) return false;
+  const v = history.get(dataDir(), n.id, t); if (!v) return false;
+  const now = Date.now();
+  try { if (history.add(dataDir(), n.id, { title: n.title, blocks: blocksOf(n) }, now)) histT.set(n.id, now); } catch {}   // today's version stays available too
+  n.blocks = sanitizeBlocks(v.blocks).filter(b => b.t !== 'img' || fs.existsSync(path.join(imgDir(), b.id)));
+  n.text = textOf(n.blocks); n.updated = now; save(); return true;
+});
+
 ipcMain.handle('note:update', (e, p) => {
   const n = notes[idOf(e)]; if (!n || !p) return;
-  if (Array.isArray(p.blocks) && canEditBody(n)) { n.blocks = sanitizeBlocks(p.blocks); n.text = textOf(n.blocks); }
+  if (Array.isArray(p.blocks) && canEditBody(n)) { const next = sanitizeBlocks(p.blocks); keepHistory(n, blocksOf(n), next); n.blocks = next; n.text = textOf(n.blocks); }
   if (typeof p.title === 'string') n.title = p.title.slice(0, 60);
   if (typeof p.color === 'string' && /^#[0-9a-f]{6}$/i.test(p.color)) n.color = p.color;
   if (typeof p.font === 'string') n.font = p.font.replace(/["'\\;{}]/g, '').slice(0, 60) || 'Segoe UI';
@@ -403,7 +487,7 @@ ipcMain.handle('note:lock', (e, pw) => {
   const n = notes[idOf(e)]; if (!n || n.lock || typeof pw !== 'string' || pw.length < 4) return false;
   const salt = crypto.randomBytes(16).toString('base64'), key = deriveKey(pw, salt), imgs = imgIds(n);
   n.lock = { ...encryptBlob({ blocks: blocksOf(n) }, key, salt), imgs };
-  n.blocks = []; n.text = ''; sessions.delete(n.id); save(); return true;
+  n.blocks = []; n.text = ''; sessions.delete(n.id); dropHistory(n.id); save(); return true;
 });
 ipcMain.handle('note:unlock', (e, pw) => {
   const n = notes[idOf(e)]; if (!n || !n.lock) return false;
@@ -506,8 +590,8 @@ ipcMain.handle('trash:restore', (e, id) => {
   if (!groups.some(g => g.id === t.group)) t.group = null;
   notes[t.id] = t; openNote(t); save(); pingTrash();
 });
-ipcMain.handle('trash:purge', (e, id) => { const t = trash.find(x => x.id === id); if (t) dropImages(t); trash = trash.filter(x => x.id !== id); save(); pingTrash(); });
-ipcMain.handle('trash:empty', () => { trash.forEach(dropImages); trash = []; save(); pingTrash(); });
+ipcMain.handle('trash:purge', (e, id) => { const t = trash.find(x => x.id === id); if (t) { dropImages(t); dropHistory(t.id); } trash = trash.filter(x => x.id !== id); save(); pingTrash(); });
+ipcMain.handle('trash:empty', () => { trash.forEach(dropImages); trash.forEach(t => dropHistory(t.id)); trash = []; save(); pingTrash(); });
 
 /* ---------- IPC: app settings ---------- */
 ipcMain.handle('app:info', () => ({
@@ -743,6 +827,40 @@ ipcMain.handle('update:check', () => updater ? updater.check() : null);
 ipcMain.handle('update:state', () => updater ? updater.get() : null);
 ipcMain.handle('update:install', () => { flush(); if (updater) updater.install(); });
 
+/* ---------- reminders ---------- */
+const shownNotes = new Set();   // keeps notification objects alive until they are clicked or closed
+function focusNote(id) {
+  const n = notes[id]; if (!n) return;
+  const w = openNote(n); if (!w || w.isDestroyed()) return;
+  if (w.isMinimized()) w.restore();
+  w.show(); w.focus();
+}
+function fireReminder(id) {
+  const n = notes[id]; if (!n) return;
+  n.remind = 0; save();
+  const w = wins.get(id); if (w && !w.isDestroyed()) { w.webContents.send('note:reload'); w.flashFrame(true); }
+  const title = String(n.title || '').trim() || 'StickyPad reminder';
+  const text = reminders.body(n.text, !!n.lock && !sessions.has(id));
+  try {
+    if (Notification.isSupported()) {
+      const nt = new Notification({ title, body: text, silent: false });
+      shownNotes.add(nt);
+      nt.on('click', () => { focusNote(id); shownNotes.delete(nt); });
+      nt.on('close', () => shownNotes.delete(nt));
+      nt.show();
+      return;
+    }
+  } catch {}
+  focusNote(id);   // no system notifications available: bring the note itself to the front
+}
+function checkReminders() { reminders.due(notes, Date.now()).forEach(fireReminder); }
+ipcMain.handle('note:remind', (e, ts) => {
+  const n = notes[idOf(e)]; if (!n) return 0;
+  const t = Math.round(Number(ts));
+  n.remind = Number.isFinite(t) && t > Date.now() - 864e5 * 365 ? Math.max(0, t) : 0;
+  save(); return n.remind;
+});
+
 /* ---------- global shortcuts ---------- */
 function unregisterShortcuts() { try { globalShortcut.unregisterAll(); } catch {} }
 function registerShortcuts() {
@@ -759,7 +877,7 @@ function doBackup() { flush(); const dir = backup.makeBackup(dataDir(), 7, new D
 function purgeTrash() {
   const keep = [], drop = [];
   trash.forEach(t => (Date.now() - t.deletedAt < settings.trashDays * DAY ? keep : drop).push(t));
-  drop.forEach(dropImages); trash = keep;
+  drop.forEach(dropImages); drop.forEach(t => dropHistory(t.id)); trash = keep;
 }
 
 /* ---------- the Settings window ---------- */
@@ -808,6 +926,8 @@ ipcMain.handle('settings:set', (e, p) => {
 ipcMain.handle('settings:action', (e, name) => {
   try {
     if (name === 'backupNow') { doBackup(); return { ok: true, info: allSettings() }; }
+    if (name === 'exportAll') return exportAll(settingsWin);
+    if (name === 'importNotes') return importNotes(settingsWin);
     if (name === 'openData') { shell.openPath(dataDir()); return { ok: true }; }
     if (name === 'chooseDataFolder' || name === 'resetDataFolder') {
       const def = app.getPath('userData'); let target = def;
@@ -828,7 +948,7 @@ ipcMain.handle('settings:action', (e, name) => {
     }
     if (name === 'openBackups') { const d = path.join(app.getPath('userData'), 'backups'); fs.mkdirSync(d, { recursive: true }); shell.openPath(d); return { ok: true }; }
     if (name === 'clearChat') { clearChat(); return { ok: true }; }
-    if (name === 'emptyTrash') { trash.forEach(dropImages); trash = []; save(); pingTrash(); return { ok: true, info: allSettings() }; }
+    if (name === 'emptyTrash') { trash.forEach(dropImages); trash.forEach(t => dropHistory(t.id)); trash = []; save(); pingTrash(); return { ok: true, info: allSettings() }; }
   } catch (err) { return { ok: false, error: String(err && err.message || err) }; }
   return { ok: false, error: 'Unknown action.' };
 });
@@ -838,7 +958,7 @@ app.on('second-instance', () => { if (settings.launch === 'all') openAll(); else
 app.whenReady().then(async () => {
   DATA = datadir.resolve(app.getPath('userData'));
   file = path.join(DATA, 'notes.json');
-  load(); sweepImages(); lastMtime = datadir.mtimeOf(file); watchData();
+  load(); sweepHistory(); sweepImages(); lastMtime = datadir.mtimeOf(file); watchData();
   if (settings.autoBackup && !firstRun && !backup.sameDay(settings.lastBackup)) { try { doBackup(); } catch {} }   // one safety copy a day
   createTray();
   // Only the very first launch (or a missing tray) creates a blank note; otherwise closed empty notes stay gone.
@@ -849,6 +969,7 @@ app.whenReady().then(async () => {
   save();
   ai.warmup(aiCfg());   // load the local model in the background so the first answer is quick
   initUpdater();
+  checkReminders(); setInterval(checkReminders, 15000);   // also fires reminders that came due while the app was closed
 });
 // With a tray icon the app keeps running when every note window is closed; reopen them from the tray.
 app.on('window-all-closed', () => { flush(); if (!tray) app.quit(); });

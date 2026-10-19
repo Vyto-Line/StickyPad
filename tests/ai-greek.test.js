@@ -39,3 +39,26 @@ function mock(handler){const reqs=[];const f=async(u,o)=>{const b=JSON.parse(o.b
  f=mock(b=>'• hi');assert.strictEqual(await A.summarize(cfg,'short note here',f),'• hi');assert.strictEqual(f.reqs.length,1);
  console.log('ai2 ok');
 })().catch(e=>{console.error(e);process.exit(1)});
+
+// ---- translate (Greek <-> English) ----
+(async () => {
+  const assert = require('assert'), A = require('../ai');
+  assert.strictEqual(A.translateTarget('Καλημέρα, τι κάνεις σήμερα;'), 'English');
+  assert.strictEqual(A.translateTarget('Good morning, how are you?'), 'Greek');
+  assert.strictEqual(A.translateTarget('Buy milk και ψωμί και αυγά σήμερα'), 'English', 'mostly Greek text goes to English');
+  const toEn = A.editSystem('translate', 'Καλημέρα κόσμε, πώς είσαι;'), toEl = A.editSystem('translate', 'Please send the report by Friday.');
+  assert.ok(/into English/.test(toEn) && !/monotonic/.test(toEn), 'Greek -> English prompt');
+  assert.ok(/into Greek/.test(toEl) && /monotonic/.test(toEl) && /accent/i.test(toEl), 'English -> Greek prompt carries the Greek rules');
+  assert.ok(/ONLY the translation/.test(toEl));
+  assert.ok(A.EDIT_MODES.translate, 'translate is a known edit mode');
+  let sent = null;
+  const fake = async (url, init) => { sent = JSON.parse(init.body); const enc = new TextEncoder(); return { ok: true, status: 200, body: new ReadableStream({ start(c) { c.enqueue(enc.encode(JSON.stringify({ message: { content: 'Καλημέρα' }, done: true }) + '\n')); c.close(); } }) }; };
+  const out = await A.editStream({ provider: 'ollama', model: 'm', url: 'http://localhost:11434' }, 'translate', 'Good morning', () => {}, undefined, fake);
+  assert.strictEqual(out, 'Καλημέρα');
+  assert.ok(/into Greek/.test(sent.messages[0].content), 'system prompt sent to the model');
+  assert.ok(sent.options.num_predict >= 200, 'room for Greek output');
+  // the not-installed message now tells people where to click
+  const missing = async () => ({ ok: false, status: 404, json: async () => ({ error: "model 'gemma3:4b' not found" }) });
+  await assert.rejects(() => A.callModel({ provider: 'ollama', model: 'gemma3:4b', url: 'http://localhost:11434' }, 's', 'u', {}, missing), e => e.friendly && /not installed/.test(e.message) && /gemma3:4b/.test(e.message) && /Download/.test(e.message));
+  console.log('translate ok');
+})().catch(e => { console.error(e); process.exit(1); });

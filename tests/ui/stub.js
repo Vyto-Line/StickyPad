@@ -9,6 +9,9 @@
   window.__emit = emit; window.__emitUpdate = m => L.update.forEach(f => f(m));
   const over = {
     get: async () => JSON.parse(JSON.stringify(S.note)),
+    histList: async () => ({ locked: false, items: S.hist || [{ t: Date.now() - 3600e3, words: 12, pics: 0, preview: 'old first line' }, { t: Date.now() - 86400e3, words: 3, pics: 1, preview: '' }] }),
+    histRestore: async t => { S.calls.push(['histRestore', t]); S.note.blocks = [{ t: 'text', v: 'RESTORED' }]; return true; },
+    remind: async ts => { S.calls.push(['remind', ts]); S.note.remind = ts; return ts; },
     aiGet: async () => ({ ...S.ai }),
     aiSet: async p => { S.calls.push(['aiSet', p]); Object.assign(S.ai, p.provider ? { provider: p.provider } : {}, p.model != null ? { model: p.model } : {}, p.url ? { url: p.url } : {}); return true; },
     ollamaStatus: async () => JSON.parse(JSON.stringify(S.ol)),

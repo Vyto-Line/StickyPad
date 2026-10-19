@@ -6,9 +6,10 @@ Each note is its own small window. Everything is stored on your PC; nothing is s
 
 ## Features
 - Notes: colours and 9 themes, any font and size, always-on-top pin, roll-up to just the title, pictures (paste or drop), checklists, folders, snap-to-edge/note, tidy-up, system tray, start with Windows
+- **Find in a note** (Ctrl+F) with highlighting, **reminders** with Windows notifications, **version history** (restore an older copy), Markdown/text **export and import**
 - **All notes** window with search, folders and a trash bin (restore for 30 days)
 - **Lock** a note with a password (AES-256-GCM)
-- **AI helper** (off by default): Summarize, Fix grammar, To checklist, a chat sidebar, and **live edit**, where the model rewrites your text in the note as it types (fix / polish / shorten / friendlier / continue)
+- **AI helper** (off by default): Summarize, Fix grammar, To checklist, **Translate Greek ⇄ English**, a chat sidebar, and **live edit**, where the model rewrites your text in the note as it types (fix / polish / shorten / friendlier / continue)
   - Works with [Ollama](https://ollama.com) on your PC (free) or the Claude API (online)
   - Pick a model from a list; recommended ones download with a progress bar. If Ollama is missing, one button downloads and installs it
   - Long notes are handled in chunks, Greek has dedicated rules (accents, spelling, no translation)
@@ -35,7 +36,7 @@ On Windows you can double-click `build.bat` or `start-dev.bat` instead. `build.b
 4. Select text (or put the cursor in a paragraph) and press **Edit live** (Ctrl+Shift+E)
 
 ## Shortcuts
-Ctrl+N new note, Ctrl+Shift+C checklist item, Ctrl+Shift+E live AI edit, Ctrl+, all settings; global: Ctrl+Alt+N new note, Ctrl+Alt+A all notes, Ctrl+Alt+C chat, Ctrl+Alt+S settings.
+Ctrl+N new note, Ctrl+F find, Ctrl+Shift+C checklist item, Ctrl+Shift+T copy note as text, Ctrl+Shift+E live AI edit, Ctrl+, all settings; global: Ctrl+Alt+N new note, Ctrl+Alt+A all notes, Ctrl+Alt+C chat, Ctrl+Alt+S settings.
 
 ## Your data
 Stored in `%APPDATA%\StickyPad` (`notes.json`, `images/`, `chat.json`). Move it with *Settings > Data & backup > Choose folder*. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the data format and the SQLite export (`tools/stickypad_db.py`).

@@ -329,8 +329,115 @@ ed.addEventListener('drop', e => {
 async function reload() {
   note = await api.get();
   render(note.blocks && note.blocks.length ? note.blocks : (note.text && !note.locked ? [{ t: 'text', v: note.text }] : []));
-  apply(); undoS = []; redoS = []; undoChars = 0; cur = snap();
+  apply(); remindPaint(); undoS = []; redoS = []; undoChars = 0; cur = snap();
 }
+/* ---------- find in note (Ctrl+F) ---------- */
+const FIND_MAX = 5000;
+let finds = [], findAt = -1, findTimer = null;
+const fold1 = ch => { const f = ch.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); const c = f === 'ς' ? 'σ' : f; return c.length === 1 ? c : ch.toLowerCase().slice(0, 1) || ch; };
+const foldAll = s => { let o = ''; for (const ch of s) o += fold1(ch); return o; };   // ignores case and Greek/Latin accents, one character in -> one character out
+function findRanges(q) {
+  const out = []; if (!q) return out;
+  const needle = foldAll(q);
+  const tw = document.createTreeWalker(ed, NodeFilter.SHOW_TEXT, { acceptNode: n => n.parentElement && n.parentElement.closest('.x') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT });
+  for (let n = tw.nextNode(); n && out.length < FIND_MAX; n = tw.nextNode()) {
+    const t = n.nodeValue; if (t.length < needle.length) continue;
+    const hay = foldAll(t); if (hay.length !== t.length) continue;   // (never expected; skip a node that would shift positions)
+    for (let i = hay.indexOf(needle); i !== -1 && out.length < FIND_MAX; i = hay.indexOf(needle, i + needle.length)) {
+      const r = document.createRange(); r.setStart(n, i); r.setEnd(n, i + needle.length); out.push(r);
+    }
+  }
+  return out;
+}
+function findPaint() {
+  const hl = window.CSS && CSS.highlights; if (!hl) return;
+  hl.delete('find'); hl.delete('find-cur');
+  if (!finds.length) return;
+  hl.set('find', new Highlight(...finds));
+  if (findAt >= 0) hl.set('find-cur', new Highlight(finds[findAt]));
+}
+function findCount() {
+  const q = $('#findIn').value;
+  $('#findCnt').textContent = !q ? '' : !finds.length ? 'No match' : (findAt + 1) + ' / ' + finds.length + (finds.length >= FIND_MAX ? '+' : '');
+}
+function findGo(i, scroll = true) {
+  if (!finds.length) { findAt = -1; findPaint(); findCount(); return; }
+  findAt = (i + finds.length) % finds.length; findPaint(); findCount();
+  if (!scroll) return;
+  const r = finds[findAt].getBoundingClientRect(), box = ed.getBoundingClientRect();
+  if (r.top < box.top + 8 || r.bottom > box.bottom - 8) ed.scrollTop += r.top - box.top - box.height / 2;
+}
+function findRun(keep) {
+  const q = $('#findIn').value, prev = findAt;
+  finds = findRanges(q);
+  findAt = finds.length ? (keep && prev >= 0 ? Math.min(prev, finds.length - 1) : 0) : -1;
+  findGo(findAt, !keep);
+}
+function findOpen() {
+  if (bodyLocked()) return;
+  const bar = $('#findbar'), inp = $('#findIn');
+  const sel = window.getSelection();
+  if (sel && !sel.isCollapsed && ed.contains(sel.anchorNode)) { const s = sel.toString(); if (s && s.length <= 80 && !s.includes('\n')) inp.value = s; }
+  bar.hidden = false; inp.focus(); inp.select(); findRun(false);
+}
+function findClose() {
+  $('#findbar').hidden = true; finds = []; findAt = -1; findPaint();
+  const hl = window.CSS && CSS.highlights; if (hl) { hl.delete('find'); hl.delete('find-cur'); }
+  ed.focus();
+}
+$('#findIn').addEventListener('input', () => { clearTimeout(findTimer); findTimer = setTimeout(() => findRun(false), 120); });
+$('#findIn').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); clearTimeout(findTimer); if (!finds.length) findRun(false); else findGo(findAt + (e.shiftKey ? -1 : 1)); }
+  else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); findClose(); }
+});
+$('#findNext').onclick = () => findGo(findAt + 1);
+$('#findPrev').onclick = () => findGo(findAt - 1);
+$('#findX').onclick = findClose;
+ed.addEventListener('input', () => { if (!$('#findbar').hidden) { clearTimeout(findTimer); findTimer = setTimeout(() => findRun(true), 250); } });
+document.addEventListener('keydown', e => {
+  const k = e.key.toLowerCase();
+  if (e.ctrlKey && !e.altKey && !e.shiftKey && k === 'f') { e.preventDefault(); findOpen(); }
+  else if (e.key === 'F3' && !$('#findbar').hidden) { e.preventDefault(); findGo(findAt + (e.shiftKey ? -1 : 1)); }
+});
+
+/* ---------- version history ---------- */
+async function histOpen() {
+  const box = $('#histBox'); if (!box.hidden) { box.hidden = true; return; }
+  const list = $('#histList'); list.textContent = ''; box.hidden = false;
+  const r = (await api.histList()) || { items: [] };
+  $('#histMsg').textContent = r.locked ? 'A locked note keeps no older copies.' : r.items.length ? 'Copies are kept while you edit. Restoring keeps today\u2019s version here too.' : 'No older copies yet. They appear as you keep editing.';
+  r.items.forEach(it => {
+    const row = document.createElement('div'); row.className = 'hrow'; row.setAttribute('role', 'listitem');
+    const m = document.createElement('div'); m.className = 'hm';
+    const b = document.createElement('b'); b.textContent = new Date(it.t).toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+    const s = document.createElement('span'); s.textContent = it.words + (it.words === 1 ? ' word' : ' words') + (it.pics ? ' \u00b7 ' + it.pics + ' pic' + (it.pics > 1 ? 's' : '') : '') + (it.preview ? ' \u00b7 ' + it.preview : '');
+    m.append(b, s);
+    const btn = document.createElement('button'); btn.className = 'btn'; btn.textContent = 'Restore'; let armed = null;
+    btn.onclick = async () => {
+      if (!armed) { btn.textContent = 'Sure?'; armed = setTimeout(() => { armed = null; btn.textContent = 'Restore'; }, 3000); return; }
+      clearTimeout(armed); armed = null; btn.disabled = true;
+      if (timer) saveNow();
+      const ok = await api.histRestore(it.t);
+      if (ok) { await reload(); $('#histBox').hidden = true; ed.focus(); } else { btn.disabled = false; btn.textContent = 'Failed'; }
+    };
+    row.append(m, btn); list.appendChild(row);
+  });
+}
+$('#histBtn').onclick = histOpen;
+
+/* ---------- reminder ---------- */
+const REM = window.StickyReminders;
+function remindPaint() {
+  const t = note && note.remind > 0 ? note.remind : 0;
+  $('#remAt').value = REM.toLocalInput(t); $('#remClear').hidden = !t;
+  document.body.classList.toggle('hasRemind', !!t);
+  $('#remMsg').textContent = t ? 'Reminder: ' + new Date(t).toLocaleString([], { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Pick a time and a Windows notification will bring this note back.';
+}
+async function remindSet(ts) { const v = await api.remind(ts); if (note) note.remind = v; remindPaint(); }
+$('#remAt').addEventListener('change', () => { const t = REM.fromLocalInput($('#remAt').value); if (t > Date.now()) remindSet(t); else if (!$('#remAt').value) remindSet(0); else $('#remMsg').textContent = 'Pick a time in the future.'; });
+$('#remClear').onclick = () => remindSet(0);
+document.querySelectorAll('.rq').forEach(b => { b.onclick = () => remindSet(REM.quick(b.dataset.q, Date.now())); });
+
 api.onReload(() => { if (!timer && !edit && document.activeElement !== $('#topic')) reload(); });   // a note changed on another PC
 (async () => {
   await reload();
@@ -378,7 +485,13 @@ async function copyNote() {
   setTimeout(() => { b.textContent = old; }, 1400);
 }
 $('#copyTxt').onclick = copyNote;
-document.addEventListener('keydown', e => { if (e.ctrlKey && e.altKey && !e.shiftKey && e.key.toLowerCase() === 'c') { e.preventDefault(); copyNote(); } });
+$('#exportBtn').onclick = async () => {
+  if (bodyLocked()) { $('#exportMsg').textContent = 'Unlock the note first.'; return; }
+  if (timer) saveNow();
+  const r = await api.noteExport(); const m = $('#exportMsg');
+  m.textContent = r && r.ok ? 'Saved' + (r.pics ? ' (pictures are not included in the file)' : '') + '.' : r && r.error ? r.error : '';
+};
+document.addEventListener('keydown', e => { if (e.ctrlKey && !e.altKey && e.shiftKey && e.key.toLowerCase() === 't') { e.preventDefault(); copyNote(); } });
 
 async function refreshInfo() {
   chkRow();
@@ -589,11 +702,26 @@ $('#editStop').onclick = () => { if (edit) api.aiEditStop(edit.id); };
 $('#editUndo').onclick = () => { undo(); editBarHide(); };
 $('#editKeep').onclick = () => { editBarHide(); ed.focus(); };
 $('#aiEdit').onclick = liveEdit;
+$('#aiTr').onclick = () => { $('#editMode').value = 'translate'; liveEdit(); };
 ed.addEventListener('input', () => { if (!editBar.hidden && !edit) editBarHide(); });
 function updateAiButtons() {
   const off = !aiCfgState || aiCfgState.provider === 'off', locked = bodyLocked();
-  $('#aiSum').disabled = $('#aiFix').disabled = $('#aiList').disabled = $('#aiEdit').disabled = off || locked; $('#aiChat').disabled = locked;
-  $('#aiHint').textContent = locked ? 'Unlock this note first.' : off ? 'Turn the AI on below to use these.' : 'Works on the text of this note.';
+  $('#aiSum').disabled = $('#aiFix').disabled = $('#aiList').disabled = $('#aiEdit').disabled = $('#aiTr').disabled = off || locked; $('#aiChat').disabled = locked;
+  $('#aiHint').textContent = locked ? 'Unlock this note first.' : off ? 'Turn the AI on below to use these.' : 'Works on the text of this note. Select text to translate or edit just that part.';
+  if (!locked && !off) modelCheck();
+}
+// Tells you right away when the chosen Ollama model has not been downloaded, instead of failing on the first request.
+let modelCheckBusy = false;
+async function modelCheck() {
+  const c = aiCfgState; if (modelCheckBusy || !c || c.provider !== 'ollama' || !c.model) return;
+  modelCheckBusy = true;
+  try {
+    const st = await api.ollamaStatus(c.url);
+    if (!aiCfgState || aiCfgState.provider !== 'ollama' || bodyLocked()) return;
+    const has = n => st && st.models && st.models.some(m => m.name === n || m.name === n + ':latest');
+    if (st && !st.running) $('#aiHint').textContent = 'Ollama is not running. Open the Setup section below and press Start.';
+    else if (st && st.running && !has(aiCfgState.model)) $('#aiHint').textContent = 'The model "' + aiCfgState.model + '" is not installed yet. Pick it in Setup below and press Download.';
+  } catch (e) {} finally { modelCheckBusy = false; }
 }
 function aiFields() {
   const p = $('#aiProv').value, s = aiCfgState || {};

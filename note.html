@@ -55,6 +55,15 @@
       <button id="clearDone" class="btn" hidden>Remove ticked</button>
       <button id="toText" class="btn" title="Turn every checklist item back into a normal line of text">Make plain text</button>
     </div>
+    <div class="sect">History</div>
+    <div class="line"><button id="histBtn" class="btn" title="See older copies of this note and bring one back">Version history…</button></div>
+    <div id="histBox" hidden><p id="histMsg" class="hint"></p><div id="histList" class="hist" role="list"></div></div>
+    <div class="sect">Reminder</div>
+    <div class="line"><input id="remAt" class="field" type="datetime-local" aria-label="Remind me at" style="flex:1"><button id="remClear" class="btn" title="Remove the reminder" hidden>Clear</button></div>
+    <div class="line quick" role="group" aria-label="Quick reminders">
+      <button class="btn rq" data-q="m10">10 min</button><button class="btn rq" data-q="h1">1 hour</button><button class="btn rq" data-q="later">3 hours</button><button class="btn rq" data-q="tomorrow">Tomorrow 9:00</button>
+    </div>
+    <p id="remMsg" class="hint"></p>
     <div class="sect">Lock</div>
     <div id="lockNew">
       <div class="line"><input id="lockpw" class="field" type="password" placeholder="Password (4+ characters)" autocomplete="off" aria-label="New password" style="flex:1"><button id="lockBtn" class="btn primary">Lock</button></div>
@@ -65,7 +74,7 @@
       <div class="line" style="margin-top:6px"><input id="rmpw" class="field" type="password" placeholder="Password to remove lock" autocomplete="off" aria-label="Password" style="flex:1"><button id="rmLockBtn" class="btn">Remove</button></div>
     </div>
     <p id="lockmsg" class="hint"></p>
-    <div class="line"><button id="copyTxt" class="btn" title="Copy the whole note as plain text (Ctrl+Alt+C)">Copy note as text</button></div>
+    <div class="line"><button id="copyTxt" class="btn" title="Copy the whole note as plain text (Ctrl+Shift+T)">Copy note as text</button><button id="exportBtn" class="btn" title="Save this note as a Markdown or text file">Export…</button></div><p id="exportMsg" class="hint"></p>
     <button id="del" class="btn danger" title="Move this note to the trash">Move note to trash</button>
   </div>
 
@@ -87,10 +96,11 @@
       <button id="aiSum" class="btn primary">✨ Summarize</button>
       <button id="aiFix" class="btn primary">✨ Fix grammar</button>
       <button id="aiList" class="btn primary" title="Turn this note into a clean checklist">✨ To checklist</button>
+      <button id="aiTr" class="btn primary" title="Translate the selected text (or the paragraph with the cursor): Greek to English, anything else to Greek">🌐 Translate</button>
       <button id="aiChat" class="btn" title="Open the AI chat with this note as context">💬 Chat about it</button>
     </div>
     <div class="line editline">
-      <select id="editMode" class="field" aria-label="How to edit"><option value="fix">Fix spelling and grammar</option><option value="polish">Polish the writing</option><option value="shorten">Make it shorter</option><option value="friendly">Make it friendlier</option><option value="continue">Continue writing</option></select>
+      <select id="editMode" class="field" aria-label="How to edit"><option value="fix">Fix spelling and grammar</option><option value="polish">Polish the writing</option><option value="shorten">Make it shorter</option><option value="friendly">Make it friendlier</option><option value="translate">Translate Greek ⇄ English</option><option value="continue">Continue writing</option></select>
       <button id="aiEdit" class="btn primary" title="Edits the selected text, or the paragraph with the cursor, live (Ctrl+Shift+E)">✎ Edit live</button>
     </div>
     <p id="aiHint" class="hint"></p>
@@ -106,6 +116,14 @@
   </div>
   <div class="panelfoot"><button id="openSettings" class="linkbtn"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>All settings…</button></div>
 </section>
+
+<div id="findbar" hidden role="search">
+  <input id="findIn" class="field" type="text" placeholder="Find in note" autocomplete="off" spellcheck="false" aria-label="Find in note">
+  <span id="findCnt" class="cnt" aria-live="polite"></span>
+  <button id="findPrev" class="ib" title="Previous (Shift+Enter)" aria-label="Previous match"><svg class="i" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg></button>
+  <button id="findNext" class="ib" title="Next (Enter)" aria-label="Next match"><svg class="i" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+  <button id="findX" class="ib" title="Close (Esc)" aria-label="Close search"><svg class="i" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg></button>
+</div>
 
 <div id="editbar" hidden role="status"><span class="spin"></span><b id="editMsg">Editing…</b><span class="grow"></span><button id="editStop" class="btn">Stop</button><button id="editUndo" class="btn" hidden>Undo</button><button id="editKeep" class="btn primary" hidden>Keep</button></div>
 
@@ -125,6 +143,7 @@
 
 <div id="ed" contenteditable="true" spellcheck="true" role="textbox" aria-multiline="true" data-ph="Type here… paste or drop pictures"></div>
 <script src="themes.js"></script>
+<script src="reminders.js"></script>
 <script src="ollamaui.js"></script>
 <script src="note.js"></script>
 </body>

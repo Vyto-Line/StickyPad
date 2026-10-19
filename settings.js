@@ -74,6 +74,16 @@ arm($('#emptyTrash'), 'Empty trash', 'Sure? Cannot undo', async () => { const r 
 $('#backupNow').onclick = async () => { const b = $('#backupNow'); b.disabled = true; const r = await api.settingsAction('backupNow'); b.disabled = false; if (r.ok) { S = r.info; fill(); b.textContent = 'Done ✓'; setTimeout(() => b.textContent = 'Back up now', 1800); } else $('#backupInfo').textContent = r.error || 'Backup failed.'; };
 $('#openBackups').onclick = () => api.settingsAction('openBackups');
 $('#openData').onclick = () => api.settingsAction('openData');
+$('#exportAll').onclick = async () => {
+  const r = await api.settingsAction('exportAll'), m = $('#exportInfo');
+  if (r.ok) m.textContent = 'Exported ' + r.count + (r.count === 1 ? ' note' : ' notes') + (r.skipped ? ' (' + r.skipped + ' locked ' + (r.skipped === 1 ? 'note was' : 'notes were') + ' left out)' : '') + '.';
+  else if (!r.cancelled) m.textContent = r.error || 'Could not export.';
+};
+$('#importNotes').onclick = async () => {
+  const r = await api.settingsAction('importNotes'), m = $('#importInfo');
+  if (r.ok) m.textContent = 'Imported ' + r.count + (r.count === 1 ? ' note' : ' notes') + (r.failed ? ' (' + r.failed + ' could not be read)' : '') + '.';
+  else if (!r.cancelled) m.textContent = r.error || (r.failed ? 'Could not read those files.' : 'Nothing imported.');
+};
 /* ---------- updates ---------- */
 function showUpdate(u) {
   if (!u) return;
