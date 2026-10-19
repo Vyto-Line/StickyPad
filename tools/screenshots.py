@@ -39,13 +39,12 @@ def page(b, name, w=360, h=440, extra=''):
 def goto(pg, f): pg.goto('file://' + ROOT + '/' + f); pg.wait_for_timeout(500)
 def shot(pg, name): pg.screenshot(path=os.path.join(OUT, name + '.png'))
 
-def panel(pg, tab):
-    pg.set_viewport_size({'width': 360, 'height': 900}); pg.wait_for_timeout(150)
-    pg.click('#cfg'); pg.click('[data-tab=%s]' % tab); pg.wait_for_timeout(350)
+def panel(pg, tab, w=660, h=470):
+    pg.set_viewport_size({'width': w, 'height': h}); pg.wait_for_timeout(150)
+    pg.click('#cfg'); pg.click('[data-tab=%s]' % tab); pg.wait_for_timeout(450)
 
 def shot_panel(pg, name):
-    h = pg.evaluate("(()=>{const r=document.getElementById('panel').getBoundingClientRect();return Math.ceil(r.bottom)+4})()")
-    pg.screenshot(path=os.path.join(OUT, name + '.png'), clip={'x': 0, 'y': 0, 'width': 360, 'height': min(h, 900)})
+    pg.screenshot(path=os.path.join(OUT, name + '.png'))
 
 with sync_playwright() as p:
     b = p.chromium.launch()
@@ -64,6 +63,18 @@ with sync_playwright() as p:
     pg = page(b, 'greek'); goto(pg, 'note.html'); panel(pg, 'ai'); shot_panel(pg, 'feature_ai'); pg.close()
     # style tab with themes
     pg = page(b, 'ideas'); goto(pg, 'note.html'); panel(pg, 'style'); shot_panel(pg, 'feature_style'); pg.close()
+    # links underlined + the date bar + the update message
+    NOTES['links'] = dict(title='Weekend', color='#CDEFFF', font='Segoe UI', size=15,
+      blocks=[T('Tickets: https://www.aegeanair.com/booking\nHotel contact: reservations@seaview.gr\nDentist tomorrow at 5pm\nCall Nick'), ])
+    pg = page(b, 'links'); goto(pg, 'note.html'); pg.wait_for_timeout(1000); shot(pg, 'feature_links'); pg.close()
+    pg = page(b, 'links', extra="window.__S.updateNow={state:'ready',version:'1.14.8'}"); goto(pg, 'note.html'); pg.wait_for_timeout(1000); shot(pg, 'feature_update'); pg.close()
+    # shortcuts you can change
+    pg = page(b, None, 860, 700); goto(pg, 'settings.html'); pg.click('[data-cat=shortcuts]'); pg.wait_for_timeout(300)
+    pg.click('[data-key=g_clip]'); pg.keyboard.press('Control+Alt+Shift+V'); pg.wait_for_timeout(300); shot(pg, 'feature_shortcuts'); pg.close()
+    # chat across all notes
+    chatj = "window.api.chatLoad=async()=>({messages:[{role:'user',content:'What did I write about the dentist?'},{role:'assistant',content:'In your note **Weekend** you wrote: *Dentist tomorrow at 5pm*. Nothing else mentions it.'}],noteId:'*',provider:'ollama',model:'gemma3:4b'});window.api.chatNotes=async()=>[{id:'n1',title:'Weekend'},{id:'n2',title:'Groceries'}];"
+    pg = page(b, None, 420, 600, extra=chatj); goto(pg, 'chat.html'); pg.wait_for_timeout(300)
+    pg.evaluate("(()=>{const s=document.createElement('div');s.className='src';s.textContent='Looked at: Weekend · Groceries';const m=document.querySelectorAll('.msg');m[m.length-1].appendChild(s)})()"); shot(pg, 'feature_chat_all'); pg.close()
     # all notes
     allj = '''window.api.allList = async () => ({ emoji: '☀️', greeting: 'Good morning', notes: [
       {id:'a',title:'Groceries',text:'For the weekend dinner\\n☑ Tomatoes and basil\\n☐ Olive oil',color:'#FFF2A8',group:'g1',updated:Date.now()-3e5,open:true},
@@ -75,7 +86,7 @@ with sync_playwright() as p:
       groups: [{id:'g1',name:'Home',collapsed:false},{id:'g2',name:'Work',collapsed:false}], trash: [], prefs: {} });'''
     pg = page(b, None, 420, 600, extra=allj); goto(pg, 'all.html'); shot(pg, 'feature_all'); pg.close()
     # settings window
-    setj = "const o=window.api.settingsGet; window.api.settingsGet=async()=>({...(await o()),version:'1.13.2',notesCount:6,groups:[{id:'g1',name:'Home'},{id:'g2',name:'Work'}],autoBackup:true,backupCount:7,lastBackup:Date.now()-3600e3,dataPath:'C:/Users/you/OneDrive/StickyPad',dataCustom:true,autoUpdate:true,shortcuts:true,snap:true});"
+    setj = "const o=window.api.settingsGet; window.api.settingsGet=async()=>({...(await o()),version:'1.14.7',notesCount:6,groups:[{id:'g1',name:'Home'},{id:'g2',name:'Work'}],autoBackup:true,backupCount:7,lastBackup:Date.now()-3600e3,dataPath:'C:/Users/you/OneDrive/StickyPad',dataCustom:true,autoUpdate:true,shortcuts:true,snap:true});"
     pg = page(b, None, 860, 640, extra=setj); goto(pg, 'settings.html'); pg.click('[data-cat=data]'); pg.wait_for_timeout(300); shot(pg, 'feature_settings_data'); pg.click('[data-cat=about]'); pg.wait_for_timeout(300); shot(pg, 'feature_settings_about'); pg.close()
     b.close()
 

@@ -458,7 +458,7 @@ function dateCheck() {
   dateFound = found;
   const when = new Date(found.at), now = new Date(), sameDay = when.toDateString() === now.toDateString();
   const label = (sameDay ? 'today' : when.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })) + ' ' + when.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
-  $('#dateTxt').textContent = `“${found.text.length > 28 ? found.text.slice(0, 27) + '…' : found.text}” → ${label}`;
+  $('#dateTxt').textContent = `“${found.text.length > 18 ? found.text.slice(0, 17) + '…' : found.text}” → ${label}`;
   $('#dateTxt').title = 'Set a reminder for ' + label;
   bar.hidden = false;
 }

@@ -41,6 +41,7 @@ h2{margin:0 0 14px;font-size:20px}
 .krow .kbtn.bad{border-color:#d33}
 .krow .krst{border:0;background:none;color:var(--mute);cursor:pointer;font-size:12px;padding:2px 6px}
 .krow .krst[hidden]{display:none}
+.keysline{display:flex;flex-wrap:wrap;padding:0 14px 8px}
 .hint.warn{color:#c24d00}
 .ctl.keys{flex-wrap:wrap;max-width:430px;justify-content:flex-end}
 .kv{display:inline-flex;align-items:center;gap:3px;font-size:12px;color:var(--mute);margin:2px 8px 2px 0}

@@ -242,6 +242,7 @@ body.hasRemind #cfg::after{content:"";position:absolute;width:6px;height:6px;mar
 #cfg{position:relative}
 
 /* links and date suggestion */
+.aibtns #aiTr{grid-column:1/-1}
 ::highlight(links){color:#0b62d6;text-decoration:underline}
 body.dark ::highlight(links){color:#7db3ff;text-decoration:underline}
 #ed.linkhover{cursor:pointer}

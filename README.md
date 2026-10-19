@@ -19,17 +19,24 @@ Each note is its own small window on your desktop. Everything is stored on your 
 ## Everything it can do
 
 ### Notes
-<img align="right" width="300" src="docs/images/note_groceries.png" alt="A yellow checklist note">
+<img align="right" width="300" src="docs/images/feature_links.png" alt="A note with underlined links and a date suggestion bar">
 
 - **Colours, 9 themes, any font and size.** Pick a colour per note, or apply a theme to one note or all of them.
 - **Checklists** (Ctrl+Shift+C): tick items off, *Remove ticked* clears the finished ones, *Make plain text* turns them back into lines.
 - **Pictures**: paste or drop them straight into the text.
-- **Links**: web and e-mail addresses are underlined; **Ctrl+click** opens them, and a right-click offers *Open link* and *Copy link*.
+- **Links**: web and e-mail addresses are underlined; **Ctrl+click** opens them, and a right-click offers *Open link* and *Copy link*. The note on the right shows links, a date suggestion and the update bar.
 - **Pin** a note on top of other windows, **roll it up** to just its title, or **close** it and reopen it from the tray.
 - **Folders** to group notes; **snap** to screen edges and to other notes; **tidy up** arranges the open notes in rows.
 - **Trash** keeps deleted notes for 30 days, so nothing is lost by accident.
 
 The icons in the header, from the left: add a checklist item, pin, all notes, settings, roll up, close.
+
+### Settings panel on the right
+<img align="right" width="300" src="docs/images/feature_ai.png" alt="A note with the settings panel docked on its right side">
+
+The gear opens a panel **beside your text instead of on top of it**, so you can keep reading the note while you change its colour, set a reminder or run the AI. A narrow note grows to make room while the panel is open and returns to its size when you close it. The tabs are **Style**, **Note**, **App** and **AI**; *All settings…* opens the full settings window.
+
+<br clear="right">
 
 ### Find in a note (Ctrl+F)
 <img align="right" width="300" src="docs/images/feature_find_greek.png" alt="Searching a Greek note: both matches are highlighted">
@@ -66,7 +73,7 @@ Ctrl+Alt+A opens the **All notes** window: every note as a card, grouped by fold
 Give a note a password (4+ characters) and its text is stored **encrypted (AES-256-GCM)**. It shows a lock screen until you enter the password. A forgotten password cannot be recovered. Pictures stay on disk unencrypted, but are hidden in the app.
 
 ### AI helper (off by default)
-<img align="right" width="300" src="docs/images/feature_ai.png" alt="The AI tab with Summarize, Fix grammar, To checklist, Translate and Edit live">
+<img align="right" width="300" src="docs/images/feature_chat_all.png" alt="The AI chat answering a question from all notes, with a Looked at line">
 
 Open the gear, tab **AI**:
 
@@ -98,7 +105,9 @@ StickyPad remembers which screen each note is on. Unplug a monitor and its notes
 <img src="docs/images/feature_settings_data.png" width="560" alt="Settings window, Data and backup page">
 
 ### Updates
-StickyPad checks this repository's Releases when it starts and every few hours. A newer version downloads in the background and a small bar at the bottom of your notes offers **Restart to update** (or ✕ for later); if you ignore it, it installs when you quit. *Settings > About* has a switch, a **Check now** button, and, if anything goes wrong, **Open update log** and **Releases page**.
+StickyPad checks this repository's Releases when it starts and every few hours. A newer version downloads in the background and a small bar at the bottom of your notes offers **Restart to update** (or ✕ for later; no Windows dialog); if you ignore it, it installs when you quit. *Settings > About* has a switch, a **Check now** button, and, if anything goes wrong, **Open update log** and **Releases page**.
+
+<img src="docs/images/feature_update.png" width="300" alt="The Restart to update bar at the bottom of a note">
 
 ### Themes and look
 <img src="docs/images/feature_style.png" width="300" alt="The Style tab with colours, font, size and themes">
@@ -124,7 +133,10 @@ Download **StickyPad-Setup-x.y.z.exe** from the [Releases](../../releases) page 
 | Ctrl+Shift+T | copy the note as plain text |
 | Ctrl+, | all settings |
 
-Every shortcut below can be changed in **Settings > Shortcuts**.
+Every shortcut below can be changed in **Settings > Shortcuts**: press *Change*, then the keys you want. Clashes are flagged and *Reset* restores the default.
+
+<img src="docs/images/feature_shortcuts.png" width="420" alt="Settings, Shortcuts page with a recorded custom key">
+
 
 | Anywhere in Windows (Settings > Shortcuts can turn these off) | |
 |---|---|
