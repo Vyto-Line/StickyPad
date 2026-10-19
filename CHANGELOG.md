@@ -1,7 +1,9 @@
 # Changelog
 
-## 1.14.3
+## 1.14.4
 - **Right-click a link** in a note for *Open link* and *Copy link* (for an e-mail address: *Write an e-mail* and *Copy e-mail address*).
+
+## 1.14.3
 - **No more Windows pop-up for updates.** When an update has downloaded, StickyPad shows a quiet notification (click it to open Settings > About and restart) instead of a dialog window. The update still installs when you close the app.
 
 ## 1.14.2
