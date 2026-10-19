@@ -1078,6 +1078,7 @@ function updateLog(line) {
   } catch {}
 }
 ipcMain.handle('update:check', () => updater ? updater.check() : null);
+ipcMain.handle('update:download', () => updater ? updater.download() : null);
 ipcMain.handle('whatsnew:get', () => whatsNewData(whatsFrom));
 ipcMain.handle('whatsnew:close', (e, o) => {
   if (o && typeof o.off === 'boolean') { settings.whatsNew = !o.off; save(); }

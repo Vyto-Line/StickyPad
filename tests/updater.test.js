@@ -1,15 +1,24 @@
 const { createUpdater, friendly } = require('../updater.js'), assert = require('assert'), { EventEmitter } = require('events');
 (async () => {
-  const mk = (checkImpl) => { const au = new EventEmitter(); au.checkForUpdates = async () => checkImpl(au); au.quitAndInstall = (...a) => { au.quit = a; }; return au; };
+  const mk = (checkImpl, dlImpl) => { const au = new EventEmitter(); au.checkForUpdates = async () => checkImpl(au); au.downloadUpdate = async () => { au.dl = (au.dl || 0) + 1; if (dlImpl) return dlImpl(au); }; au.quitAndInstall = (...a) => { au.quit = a; }; return au; };
   // found, downloaded
   let ready = null, events = [];
-  let au = mk(a => { a.emit('checking-for-update'); a.emit('update-available', { version: '1.12.0' }); a.emit('download-progress', { percent: 42.4 }); a.emit('update-downloaded', { version: '1.12.0' }); });
+  let au = mk(a => { a.emit('checking-for-update'); a.emit('update-available', { version: '1.12.0' }); }, a => { a.emit('download-progress', { percent: 42.4 }); a.emit('update-downloaded', { version: '1.12.0' }); });
   let u = createUpdater({ autoUpdater: au, send: m => events.push(m.state), onReady: v => { ready = v; } });
-  assert.strictEqual(u.get().state, 'idle'); assert(au.autoDownload && au.autoInstallOnAppQuit && au.allowPrerelease);
-  let r = await u.check(); assert.strictEqual(r.state, 'ready'); assert.strictEqual(r.version, '1.12.0'); assert.strictEqual(ready, '1.12.0');
-  assert.deepStrictEqual(events.filter((x, i) => events.indexOf(x) === i), ['checking', 'downloading', 'ready']);
+  assert.strictEqual(u.get().state, 'idle'); assert(au.autoDownload === false && au.autoInstallOnAppQuit && au.allowPrerelease, 'nothing downloads until you press Download');
+  let r = await u.check(); assert.strictEqual(r.state, 'available'); assert.strictEqual(r.version, '1.12.0'); assert.strictEqual(ready, null); assert.ok(!au.dl, 'found, but not downloaded');
+  assert.strictEqual((await u.check()).state, 'available', 'an update that is waiting for Download is not checked again');
+  u.install(); assert.ok(!au.quit, 'Restart does nothing before the download is done');
+  r = await u.download(); assert.strictEqual(r.state, 'ready'); assert.strictEqual(r.version, '1.12.0'); assert.strictEqual(ready, '1.12.0'); assert.strictEqual(au.dl, 1);
+  assert.deepStrictEqual(events.filter((x, i) => events.indexOf(x) === i), ['checking', 'available', 'downloading', 'ready']);
+  await u.download(); assert.strictEqual(au.dl, 1, 'Download does nothing once it is downloaded');
   u.install(); assert.deepStrictEqual(au.quit, [true, true]);
   assert.strictEqual((await u.check()).state, 'ready', 'a downloaded update is not checked again');
+  // a download that fails
+  au = mk(a => { a.emit('update-available', { version: '2.0.0' }); }, () => { throw new Error('getaddrinfo ENOTFOUND github.com'); }); u = createUpdater({ autoUpdater: au });
+  await u.check(); r = await u.download(); assert.strictEqual(r.state, 'error'); assert(/internet/.test(r.error));
+  // Download with nothing found does nothing
+  au = mk(() => {}); u = createUpdater({ autoUpdater: au }); r = await u.download(); assert.strictEqual(r.state, 'idle'); assert.ok(!au.dl);
   // nothing new
   au = mk(a => { a.emit('checking-for-update'); a.emit('update-not-available', {}); }); u = createUpdater({ autoUpdater: au });
   r = await u.check(); assert.strictEqual(r.state, 'none'); assert(r.checkedAt > 0); u.install(); assert(!au.quit, 'install does nothing unless an update is ready');

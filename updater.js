@@ -1,6 +1,7 @@
 'use strict';
 // Looks for a newer StickyPad on GitHub Releases and installs it. A thin wrapper around electron-updater, written so it can be
-// tested with a fake updater (no Electron needed). States: idle, checking, downloading, ready, none, error, unsupported.
+// tested with a fake updater (no Electron needed). States: idle, checking, available (found, waiting for you to press Download),
+// downloading, ready (waiting for you to press Restart), none, error, unsupported.
 
 function friendly(err) {
   const m = String((err && err.message) || err || '');
@@ -32,23 +33,23 @@ function createUpdater({ autoUpdater, send = () => {}, onReady = () => {}, suppo
 
   if (!supported || !autoUpdater) {
     return {
-      get, install() {}, schedule() { return () => {}; },
+      get, install() {}, async download() { return get(); }, schedule() { return () => {}; },
       async check() { set({ state: 'unsupported', error: 'Updates work in the installed app, not when running from source.' }); return get(); }
     };
   }
 
-  autoUpdater.autoDownload = true;
+  autoUpdater.autoDownload = false;          // you press Download yourself
   autoUpdater.autoInstallOnAppQuit = true;   // if you pick "Later", it installs when you quit
   autoUpdater.allowPrerelease = true;        // releases marked "pre-release" count too
   autoUpdater.on('checking-for-update', () => { say('checking'); set({ state: 'checking', error: '', pct: null }); });
-  autoUpdater.on('update-available', info => { say('update available:', info && info.version); set({ state: 'downloading', version: info && info.version, pct: 0 }); });
+  autoUpdater.on('update-available', info => { say('update available:', info && info.version); set({ state: 'available', version: info && info.version, pct: null }); });
   autoUpdater.on('update-not-available', () => { say('no newer version'); set({ state: 'none', version: null, pct: null, checkedAt: Date.now() }); });
   autoUpdater.on('download-progress', p => set({ state: 'downloading', pct: Math.round((p && p.percent) || 0) }));
   autoUpdater.on('update-downloaded', info => { say('downloaded:', info && info.version); set({ state: 'ready', version: (info && info.version) || state.version, pct: 100, checkedAt: Date.now() }); onReady(state.version); });
   autoUpdater.on('error', err => { say('ERROR:', String((err && (err.stack || err.message)) || err).slice(0, 1500)); set({ state: 'error', error: friendly(err), pct: null, checkedAt: Date.now() }); });
 
   async function check() {
-    if (state.state === 'checking' || state.state === 'downloading' || state.state === 'ready') return get();
+    if (['checking', 'available', 'downloading', 'ready'].includes(state.state)) return get();
     set({ state: 'checking', error: '' });
     try {
       if (repo && fetchImpl && typeof autoUpdater.setFeedURL === 'function') {
@@ -61,6 +62,15 @@ function createUpdater({ autoUpdater, send = () => {}, onReady = () => {}, suppo
     catch (e) { say('ERROR:', String((e && (e.stack || e.message)) || e).slice(0, 1500)); set({ state: 'error', error: friendly(e), checkedAt: Date.now() }); }
     return get();
   }
+  // Download button: only after an update was found
+  async function download() {
+    if (state.state !== 'available') return get();
+    say('download started:', state.version);
+    set({ state: 'downloading', pct: 0, error: '' });
+    try { await autoUpdater.downloadUpdate(); }
+    catch (e) { say('ERROR:', String((e && (e.stack || e.message)) || e).slice(0, 1500)); set({ state: 'error', error: friendly(e), pct: null, checkedAt: Date.now() }); }
+    return get();
+  }
   const install = () => { if (state.state === 'ready') autoUpdater.quitAndInstall(true, true); };
 
   // checks shortly after start-up and then every few hours (the app can stay open in the tray for days)
@@ -69,7 +79,7 @@ function createUpdater({ autoUpdater, send = () => {}, onReady = () => {}, suppo
     const t1 = timers.setTimeout(run, delayMs), t2 = timers.setInterval(run, everyMs);
     return () => { clearTimeout(t1); clearInterval(t2); };
   }
-  return { get, check, install, schedule };
+  return { get, check, download, install, schedule };
 }
 
 module.exports = { createUpdater, friendly, findRelease };

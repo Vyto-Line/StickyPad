@@ -57,7 +57,7 @@
     updateState: async () => S.updateNow || null,
     whatsNewGet: async () => S.whats || { version: '1.14.12', off: false, sections: [{ version: '1.14.12', blocks: [{ t: 'p', v: 'Sample **intro**.' }, { t: 'li', v: '**One thing.** With `code` and *style* <b>not html</b>.' }] }, { version: '1.14.11', blocks: [{ t: 'li', v: 'Older item.' }] }] },
     whatsNewClose: async o => { S.calls.push(['whatsNewClose', o]); },
-    updateCheck: async () => { S.calls.push(['updateCheck']); return S.updateResult || { state: 'none', checkedAt: Date.now() }; }, updateInstall: async () => { S.calls.push(['updateInstall']); },
+    updateCheck: async () => { S.calls.push(['updateCheck']); return S.updateResult || { state: 'none', checkedAt: Date.now() }; }, updateInstall: async () => { S.calls.push(['updateInstall']); }, updateDownload: async () => { S.calls.push(['updateDownload']); return { state: 'downloading', version: (S.updateNow && S.updateNow.version) || '1.14.16', pct: 0 }; },
     onUpdateEvent: cb => L.update.push(cb),
     onOllamaEvent: cb => L.ollama.push(cb), onAiEvent: cb => L.ai.push(cb),
   };

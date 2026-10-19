@@ -9,7 +9,7 @@ Each note is its own small window on your desktop. Everything is stored on your 
 - **Light and simple**: one small window per note, a tray icon, and it can start with Windows.
 - **Private**: no account, no cloud. Lock a note with a password, or keep the AI on your own PC with [Ollama](https://ollama.com).
 - **Greek-friendly**: the AI has dedicated Greek rules (accents, spelling), and search ignores Greek accents.
-- **Updates itself** from this repository's Releases.
+- **Tells you about updates** from this repository's Releases: you press **Download**, then **Restart to update** when it is ready.
 - **Easy on memory**: Low memory mode (on by default) and an AI model that only stays loaded while you use it. *Settings > About > Measure* shows what StickyPad uses.
 
 [Download the latest installer](../../releases/latest) · [What's new](CHANGELOG.md) · [Report a problem](../../issues)
@@ -109,7 +109,7 @@ StickyPad remembers which screen each note is on. Unplug a monitor and its notes
 <img src="docs/images/feature_settings_data.png" width="560" alt="Settings window, Data and backup page">
 
 ### Updates
-StickyPad checks this repository's Releases when it starts and every few hours. A newer version downloads in the background with a glowing **neon progress bar** at the bottom of your notes, then the bar offers **Restart to update** (or ✕ for later; no Windows dialog); if you ignore it, it installs when you quit. The first time StickyPad starts after an update it shows a **What's new** window with what changed (switch it off there or in *Settings > About*). *Settings > About* has a switch, a **Check now** button, and, if anything goes wrong, **Open update log** and **Releases page**.
+StickyPad checks this repository's Releases when it starts and every few hours. When a newer version is found, a small bar at the bottom of your notes says so with a **Download** button (nothing is downloaded until you press it). While it downloads, a glowing **neon progress bar** shows how far it is; when it is ready the bar offers **Restart to update** (or ✕ for later; no Windows dialog). If you ignore it, a downloaded update installs when you quit. The first time StickyPad starts after an update it shows a **What's new** window with what changed (switch it off there or in *Settings > About*). *Settings > About* has a switch, a **Check now** button, the same Download and Restart buttons, and, if anything goes wrong, **Open update log** and **Releases page**.
 
 <img src="docs/images/feature_update_progress.png" width="300" alt="The neon progress bar while an update downloads"> <img src="docs/images/feature_update.png" width="300" alt="The Restart to update bar at the bottom of a note">
 

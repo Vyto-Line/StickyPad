@@ -154,12 +154,14 @@ $('#importNotes').onclick = async () => {
 function showUpdate(u) {
   if (!u) return;
   const t = { idle: 'Not checked yet.', checking: 'Checking GitHub…', none: 'You have the latest version ✓', unsupported: u.error || 'Updates work in the installed app.',
-    downloading: `Downloading version ${u.version || ''}${u.pct != null ? ' (' + u.pct + '%)' : ''}…`, ready: `Version ${u.version || ''} is ready: restart to install it.`, error: u.error || 'The update check failed.' }[u.state] || '';
+    available: `Version ${u.version || ''} is available.`, downloading: `Downloading version ${u.version || ''}${u.pct != null ? ' (' + u.pct + '%)' : ''}…`, ready: `Version ${u.version || ''} is ready: restart to install it.`, error: u.error || 'The update check failed.' }[u.state] || '';
   $('#updMsg').textContent = t + (u.state === 'none' && u.checkedAt ? '  ·  ' + new Date(u.checkedAt).toLocaleTimeString() : '');
-  $('#updCheck').disabled = u.state === 'checking' || u.state === 'downloading' || u.state === 'ready';
+  $('#updCheck').disabled = ['checking', 'available', 'downloading', 'ready'].includes(u.state);
+  $('#updDownload').hidden = u.state !== 'available'; $('#updDownload').disabled = false;
   $('#updInstall').hidden = u.state !== 'ready';
 }
 $('#updCheck').onclick = async () => showUpdate(await api.updateCheck());
+$('#updDownload').onclick = async () => { $('#updDownload').disabled = true; showUpdate(await api.updateDownload()); };
 $('#updInstall').onclick = () => api.updateInstall();
 $('#memBtn').onclick = async () => {
   const b = $('#memBtn'), m = $('#memInfo'); b.disabled = true;

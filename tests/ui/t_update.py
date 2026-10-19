@@ -11,6 +11,8 @@ with sync_playwright() as p:
     pg.add_init_script(STUB); pg.goto('file://' + ROOT + 'settings.html'); pg.wait_for_timeout(300); pg.click('[data-cat=about]'); pg.wait_for_timeout(100)
     ok(pg.is_visible('#updCheck') and pg.is_visible('#autoUpdate'), 'About shows the update controls')
     pg.click('#updCheck'); pg.wait_for_timeout(150); ok('latest version' in pg.inner_text('#updMsg'), 'check -> up to date: %r' % pg.inner_text('#updMsg'))
+    pg.evaluate("__emitUpdate({state:'available',version:'1.12.0'})"); ok(pg.is_visible('#updDownload') and 'available' in pg.inner_text('#updMsg') and pg.is_disabled('#updCheck') and pg.is_hidden('#updInstall'), 'found -> Download button (no restart yet)')
+    pg.click('#updDownload'); pg.wait_for_timeout(100); ok(['updateDownload'] in pg.evaluate('__S.calls'), 'Download button asks the app to download')
     pg.evaluate("__emitUpdate({state:'downloading',version:'1.12.0',pct:37})"); ok('1.12.0' in pg.inner_text('#updMsg') and '37%' in pg.inner_text('#updMsg') and pg.is_disabled('#updCheck'), 'download progress shown, check disabled')
     pg.evaluate("__emitUpdate({state:'ready',version:'1.12.0',pct:100})"); ok(pg.is_visible('#updInstall') and 'ready' in pg.inner_text('#updMsg'), 'ready -> restart button')
     pg.click('#updInstall'); ok(['updateInstall'] in pg.evaluate('__S.calls'), 'restart button asks the app to install')
