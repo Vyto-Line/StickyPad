@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.14.2
+- **Much more reliable translation (Greek ⇄ English).** The text is now translated in small pieces (so long notes work too), each piece is wrapped so the model translates it instead of answering it, and the prompt includes short examples. Every piece is **checked**: if the model answered in the wrong language, or the answer is far too short or too long, it is asked once more, and if it still fails **nothing is changed** and you get a clear message instead of garbage in your note. Paragraph breaks and spacing are kept.
+- The model list now says honestly which models are good for Greek and translating (Gemma 3 4B / 12B, Qwen 2.5 7B) and which are weak (the 1B ones).
+
 ## 1.14.1
 - **Clickable links.** Web addresses (`https://…`, `www.…`) and e-mail addresses in a note are underlined; **Ctrl+click** opens them. Only safe web and e-mail links are ever opened.
 - **New note from the clipboard** (Ctrl+Alt+V from anywhere): whatever text you last copied becomes a new note. Markdown headings and `- [ ]` lines turn into a title and checklist items.

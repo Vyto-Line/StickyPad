@@ -44,3 +44,32 @@ const stream=ch=>({ok:true,status:200,body:{getReader(){let i=0;return{read:asyn
   await assert.rejects(A.suggestTitle({ provider: 'ollama', model: 'm' }, '  ', fake), /nothing to title/);
   console.log('ai title ok');
 })().catch(e => { console.error(e); process.exit(1); });
+
+// ---- translation: pieces, examples, checks, one retry ----
+(async () => {
+  const assert = require('assert'), A = require('../ai');
+  const nd = txt => ({ ok: true, status: 200, body: { getReader() { let d = false; return { read: async () => d ? { done: true } : (d = true, { value: new TextEncoder().encode(JSON.stringify({ message: { content: txt } }) + '\n' + '{"done":true}\n'), done: false }) }; } } });
+  const cfg = { provider: 'ollama', model: 'm', url: 'http://x' };
+  assert.strictEqual(A.translationProblem('Καλημέρα σε όλους σας εδώ', 'Good morning to all of you here', 'English'), '');
+  assert.strictEqual(A.translationProblem('Καλημέρα σε όλους', 'Καλημέρα σε όλους', 'English'), 'same language');
+  assert.strictEqual(A.translationProblem('Hello everyone here today', 'Καλημέρα σε όλους σήμερα', 'Greek'), '');
+  assert.strictEqual(A.translationProblem('Hello everyone here today', 'Hello everyone', 'Greek'), 'same language');
+  assert.strictEqual(A.translationProblem('A fairly long sentence that must stay long enough.', 'Ok', 'Greek'), 'same language');
+  assert.strictEqual(A.translationProblem('12345', '12345', 'English'), '', 'numbers only: nothing to check');
+  // good answer: the text goes in <text> tags with examples before it; spacing between paragraphs is kept
+  const P1 = ('πρώτη ' + 'λέξη '.repeat(90)).trim(), P2 = ('δεύτερη ' + 'λέξη '.repeat(90)).trim();
+  const F1 = 'first paragraph ' + 'word '.repeat(80), F2 = 'second paragraph ' + 'word '.repeat(80);
+  let bodies = [];
+  const good = async (u, o) => { const b = JSON.parse(o.body); bodies.push(b); const last = b.messages[b.messages.length - 1].content; return nd(last.includes('πρώτη') ? F1 : F2); };
+  let got = ''; const r = await A.editStream(cfg, 'translate', P1 + '\n\n' + P2 + '\n', t => { got += t; }, null, good);
+  assert.strictEqual(r, got); assert.strictEqual(got, F1.trim() + '\n\n' + F2.trim() + '\n', JSON.stringify(got));
+  const m = bodies[0].messages; assert.ok(m[0].role === 'system' && m.length === 8 && m[m.length - 1].content === '<text>' + P1.trim() + '</text>', 'system + 3 examples + the text in tags: ' + m.length);
+  // wrong language first, fine on the second try (which is colder)
+  let n = 0, temps = [];
+  const flaky = async (u, o) => { const b = JSON.parse(o.body); temps.push(b.options.temperature); return nd(n++ === 0 ? 'Δεν καταλαβαίνω τι εννοείς, μπορείς να το πεις αλλιώς;' : 'Remember to call the doctor tomorrow morning'); };
+  assert.strictEqual((await A.editStream(cfg, 'translate', 'Θυμήσου να καλέσεις τον γιατρό αύριο το πρωί', () => {}, null, flaky)).trim(), 'Remember to call the doctor tomorrow morning'); assert.deepStrictEqual(temps, [0.2, 0]);
+  // wrong twice: nothing is written and the user is told what to do
+  let written = ''; const bad = async () => nd('Θυμήσου να καλέσεις τον γιατρό αύριο το πρωί');
+  await assert.rejects(A.editStream(cfg, 'translate', 'Θυμήσου να καλέσεις τον γιατρό αύριο το πρωί', t => { written += t; }, null, bad), /wrong language[\s\S]*Gemma 3 12B/); assert.strictEqual(written, '');
+  console.log('ai translate ok');
+})().catch(e => { console.error(e); process.exit(1); });

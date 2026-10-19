@@ -7,16 +7,16 @@ const { spawn } = require('child_process');
 
 const DEFAULT_URL = 'http://localhost:11434';
 const RECOMMENDED = [   // sizes are approximate; ordered from smallest to largest
-  { name: 'gemma3:1b', label: 'Gemma 3 · 1B', size: '0.8 GB', note: 'Tiny and very fast' },
-  { name: 'llama3.2:1b', label: 'Llama 3.2 · 1B', size: '1.3 GB', note: 'Fast, good for quick fixes' },
+  { name: 'gemma3:1b', label: 'Gemma 3 · 1B', size: '0.8 GB', note: 'Tiny and fast, weak in Greek' },
+  { name: 'llama3.2:1b', label: 'Llama 3.2 · 1B', size: '1.3 GB', note: 'Fast, mostly for English' },
   { name: 'qwen2.5:3b', label: 'Qwen 2.5 · 3B', size: '1.9 GB', note: 'Light, decent Greek' },
   { name: 'llama3.2:3b', label: 'Llama 3.2 · 3B', size: '2.0 GB', note: 'Recommended balance' },
   { name: 'phi4-mini', label: 'Phi-4 mini · 3.8B', size: '2.5 GB', note: 'Sharp, English first' },
-  { name: 'gemma3:4b', label: 'Gemma 3 · 4B', size: '3.3 GB', note: 'Very good Greek' },
+  { name: 'gemma3:4b', label: 'Gemma 3 · 4B', size: '3.3 GB', note: 'Good Greek, good for translating' },
   { name: 'mistral:7b', label: 'Mistral · 7B', size: '4.1 GB', note: 'Solid all-rounder' },
-  { name: 'qwen2.5:7b', label: 'Qwen 2.5 · 7B', size: '4.7 GB', note: 'Strong Greek, slower' },
+  { name: 'qwen2.5:7b', label: 'Qwen 2.5 · 7B', size: '4.7 GB', note: 'Strong Greek and translation, slower' },
   { name: 'llama3.1:8b', label: 'Llama 3.1 · 8B', size: '4.9 GB', note: 'Best Llama, slower' },
-  { name: 'gemma3:12b', label: 'Gemma 3 · 12B', size: '8.1 GB', note: 'Best Greek, needs 16 GB RAM' }
+  { name: 'gemma3:12b', label: 'Gemma 3 · 12B', size: '8.1 GB', note: 'Best Greek and translation, needs 16 GB RAM' }
 ];
 const NAME_RE = /^[A-Za-z0-9][A-Za-z0-9._\-:/]{0,100}$/;
 const validName = n => typeof n === 'string' && NAME_RE.test(n);
