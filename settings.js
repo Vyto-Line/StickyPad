@@ -168,6 +168,7 @@ $('#memBtn').onclick = async () => {
 };
 $('#aiKeep').onchange = () => save({ aiKeep: $('#aiKeep').value });
 $('#lowMemRestart').onclick = () => api.settingsAction('restartApp');
+$('#whatsBtn').onclick = () => api.settingsAction('openWhatsNew');
 $('#updLog').onclick = () => api.settingsAction('openUpdateLog');
 $('#updPage').onclick = () => api.settingsAction('openReleases');
 api.onUpdateEvent(showUpdate);

@@ -8,6 +8,8 @@ This release also contains everything from 1.14.8 to 1.14.11 (Home window, theme
 - Translating into Greek no longer tells the model that the (English) text "is Greek", which confused small models.
 - **Settings has one menu**: its pages are listed under *Settings* in the Home sidebar, and the search box sits at the top of the page.
 - **The chat's note context is a chip** inside the message box (📎 No note / a note / ★ All my notes).
+- **"What's new" after an update.** The first time StickyPad starts after an update, a window lists what changed since your old version (you can switch it off there or in *Settings > About*, and open it any time with *Show what's new*). A new install does not show it.
+- **The startup animation no longer flashes and vanishes** on a slow start: its 2.7 seconds now count from the moment it appears, and it starts only once the window is visible.
 - Not tried on a real Windows PC yet.
 
 ## 1.14.11

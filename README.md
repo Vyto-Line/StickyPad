@@ -107,7 +107,7 @@ StickyPad remembers which screen each note is on. Unplug a monitor and its notes
 <img src="docs/images/feature_settings_data.png" width="560" alt="Settings window, Data and backup page">
 
 ### Updates
-StickyPad checks this repository's Releases when it starts and every few hours. A newer version downloads in the background with a glowing **neon progress bar** at the bottom of your notes, then the bar offers **Restart to update** (or ✕ for later; no Windows dialog); if you ignore it, it installs when you quit. *Settings > About* has a switch, a **Check now** button, and, if anything goes wrong, **Open update log** and **Releases page**.
+StickyPad checks this repository's Releases when it starts and every few hours. A newer version downloads in the background with a glowing **neon progress bar** at the bottom of your notes, then the bar offers **Restart to update** (or ✕ for later; no Windows dialog); if you ignore it, it installs when you quit. The first time StickyPad starts after an update it shows a **What's new** window with what changed (switch it off there or in *Settings > About*). *Settings > About* has a switch, a **Check now** button, and, if anything goes wrong, **Open update log** and **Releases page**.
 
 <img src="docs/images/feature_update_progress.png" width="300" alt="The neon progress bar while an update downloads"> <img src="docs/images/feature_update.png" width="300" alt="The Restart to update bar at the bottom of a note">
 

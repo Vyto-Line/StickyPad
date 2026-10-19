@@ -25,6 +25,7 @@ contextBridge.exposeInMainWorld('api', {
   onOllamaEvent: cb => ipcRenderer.on('ollama:event', (e, m) => cb(m)),
   updateCheck: call('update:check'), updateState: call('update:state'), updateInstall: call('update:install'),
   onUpdateEvent: cb => ipcRenderer.on('update:event', (e, m) => cb(m)),
+  whatsNewGet: call('whatsnew:get'), whatsNewClose: call('whatsnew:close'),
   openLink: call('app:openLink'), panel: call('note:panel'), linkMenu: call('app:linkMenu'), onKeys: cb => ipcRenderer.on('keys:changed', (e, m) => cb(m)),
   aiGet: call('ai:get'), aiSet: call('ai:set'), aiRun: call('ai:run'),
   onAllTab: cb => ipcRenderer.on('all:tab', (e, t) => cb(t)),

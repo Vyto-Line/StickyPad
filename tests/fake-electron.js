@@ -8,7 +8,7 @@ class FakeWin {
   static fromWebContents() { return null; }
   constructor(o) { this.o = o; this.id = ++wid; this._b = { x: Number.isFinite(o && o.x) ? o.x : 0, y: Number.isFinite(o && o.y) ? o.y : 0, width: (o && o.width) || 300, height: (o && o.height) || 320 }; this.moves = []; this.webContents = { id: wid, isDestroyed: () => false, sent: [], send: (...a) => this.webContents.sent.push(a), focus() {}, on() {}, setWindowOpenHandler() {} }; wins.push(this); }
   getBounds() { return this._b; } isDestroyed() { return false; } isMinimized() { return false; }
-  once() {} on(ev, f) { (this.ls = this.ls || {})[ev] = ((this.ls || {})[ev] || []).concat(f); } loadFile() {} show() {} focus() {} close() {} restore() {} flashFrame() {} setAlwaysOnTop() {} setMinimumSize() {} setMaximumSize() {} setBounds(b) { this._b = { ...this._b, ...b }; this.moves.push({ ...b }); ['move', 'resize'].forEach(ev => ((this.ls || {})[ev] || []).forEach(f => f())); } setPosition(x, y) { this._b = { ...this._b, x, y }; } setSkipTaskbar() {} getPosition() { return [0, 0]; } getSize() { return [300, 320]; }
+  once() {} on(ev, f) { (this.ls = this.ls || {})[ev] = ((this.ls || {})[ev] || []).concat(f); } loadFile() {} setMenu() {} show() {} focus() {} close() {} restore() {} flashFrame() {} setAlwaysOnTop() {} setMinimumSize() {} setMaximumSize() {} setBounds(b) { this._b = { ...this._b, ...b }; this.moves.push({ ...b }); ['move', 'resize'].forEach(ev => ((this.ls || {})[ev] || []).forEach(f => f())); } setPosition(x, y) { this._b = { ...this._b, x, y }; } setSkipTaskbar() {} getPosition() { return [0, 0]; } getSize() { return [300, 320]; }
 }
 FakeWin.getAllWindows = () => wins.slice();
 const dialogCalls = [];

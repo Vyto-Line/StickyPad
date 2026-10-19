@@ -19,6 +19,7 @@ const links = require('./links');
 const notesearch = require('./notesearch');
 const importers = require('./importers');
 const placement = require('./placement');
+const changelog = require('./changelog');
 
 // A second launch must stop immediately (otherwise it would open duplicate notes).
 if (!app.requestSingleInstanceLock()) process.exit(0);
@@ -39,11 +40,11 @@ let file, saveTimer, allTimer, firstRun = false, DATA = null, dirty = false, las
 const dataDir = () => DATA || app.getPath('userData');
 const DEFAULT_SETTINGS = {
   hideTaskbar: true, snap: true, launch: 'notes', splash: true, name: '', lang: 'en', theme: 'classic',
-  snapDistance: 10, defaultSize: 16, trashDays: 30, shortcuts: true, keys: {}, chatHistory: true, autoBackup: true, lastBackup: 0, autoUpdate: true,
+  snapDistance: 10, defaultSize: 16, trashDays: 30, shortcuts: true, keys: {}, chatHistory: true, autoBackup: true, lastBackup: 0, autoUpdate: true, whatsNew: true, seenVersion: '',
   ai: { provider: 'off', model: '', url: 'http://localhost:11434', keyEnc: '', keepAlive: '5m' }
 };
 let notes = {}, trash = [], groups = [], settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
-let allWin = null, settingsWin = null, tray = null, splashWin = null, memKey = null, chatWin = null, chatState = null;
+let allWin = null, settingsWin = null, tray = null, splashWin = null, whatsWin = null, whatsFrom = null, whatsMax = 3, memKey = null, chatWin = null, chatState = null;
 const chatJobs = new Map();
 const wins = new Map();       // noteId -> BrowserWindow
 const byContents = new Map(); // webContents.id -> noteId
@@ -377,6 +378,25 @@ function showSplash() {
       setTimeout(finish, 9000);
     } catch { finish(); }
   });
+}
+/* ---------- "What's new": shown once on the first start after an update ---------- */
+function whatsNewData(from) {
+  let md = ''; try { md = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8'); } catch {}
+  return { version: app.getVersion(), sections: changelog.since(changelog.parse(md), from || null, app.getVersion(), from ? 12 : whatsMax), off: settings.whatsNew === false };
+}
+function openWhatsNew(from, max) {
+  whatsFrom = from || null; whatsMax = max || 3;
+  whatsWin = utilWindow(whatsWin, "What's new in StickyPad", 'whatsnew.html', 540, 620);
+  whatsWin.setMinimumSize(380, 360);
+  whatsWin.on('closed', () => { whatsWin = null; });
+}
+function maybeWhatsNew() {
+  const cur = app.getVersion(), seen = String(settings.seenVersion || '');
+  if (seen === cur) return;
+  settings.seenVersion = cur; save();
+  if (firstRun || settings.whatsNew === false) return;                 // a brand-new install has nothing to compare with
+  if (seen && changelog.cmp(cur, seen) <= 0) return;                   // went back to an older version: nothing new
+  setTimeout(() => { try { openWhatsNew(seen || null, 5); } catch {} }, 900);
 }
 function openStartup() {
   const mode = settings.launch, any = Object.keys(notes).length > 0;
@@ -1014,6 +1034,11 @@ function updateLog(line) {
   } catch {}
 }
 ipcMain.handle('update:check', () => updater ? updater.check() : null);
+ipcMain.handle('whatsnew:get', () => whatsNewData(whatsFrom));
+ipcMain.handle('whatsnew:close', (e, o) => {
+  if (o && typeof o.off === 'boolean') { settings.whatsNew = !o.off; save(); }
+  if (whatsWin && !whatsWin.isDestroyed()) whatsWin.close();
+});
 ipcMain.handle('update:state', () => updater ? updater.get() : null);
 ipcMain.handle('update:install', () => { flush(); if (updater) updater.install(); });
 
@@ -1111,7 +1136,7 @@ function allSettings() {
     hideTaskbar: !!settings.hideTaskbar, snap: !!settings.snap, snapDistance: settings.snapDistance, defaultSize: settings.defaultSize,
     trashDays: settings.trashDays, trashCount: trash.length, shortcuts: !!settings.shortcuts, suggestDates: settings.suggestDates !== false, keys: curKeys(), keysFailed: settings.shortcuts ? keysFailed : [], chatHistory: !!settings.chatHistory,
     autoBackup: !!settings.autoBackup, lastBackup: settings.lastBackup || 0, backupCount: backup.list(app.getPath('userData')).length,
-    autoUpdate: settings.autoUpdate !== false, update: updater ? updater.get() : null,
+    autoUpdate: settings.autoUpdate !== false, whatsNew: settings.whatsNew !== false, update: updater ? updater.get() : null,
     theme: settings.theme, mode: modeOf(), notesFollowMode: settings.notesFollowMode !== false, uiDark: uiDark(), prefs: prefs(), groups, notesCount: Object.keys(notes).length,
     lowMemory: launchcfg.read(app.getPath('userData')).lowMemory, lowMemoryActive: LAUNCH.lowMemory, aiKeep: settings.ai.keepAlive || '5m'
   };
@@ -1133,6 +1158,7 @@ ipcMain.handle('settings:set', (e, p) => {
     if ('suggestDates' in p) settings.suggestDates = !!p.suggestDates;
     if ('autoBackup' in p) settings.autoBackup = !!p.autoBackup;
     if ('autoUpdate' in p) settings.autoUpdate = !!p.autoUpdate;
+    if ('whatsNew' in p) settings.whatsNew = !!p.whatsNew;
     if ('lowMemory' in p) { try { launchcfg.write(app.getPath('userData'), { lowMemory: !!p.lowMemory }); } catch {} }   // used at the next start
     if (typeof p.aiKeep === 'string' && ['0', '5m', '30m'].includes(p.aiKeep)) settings.ai.keepAlive = p.aiKeep;
     let themeTouched = false;
@@ -1176,6 +1202,7 @@ ipcMain.handle('settings:action', (e, name, arg) => {
       app.relaunch(); setTimeout(() => app.exit(0), 200);
       return { ok: true, restarting: true };
     }
+    if (name === 'openWhatsNew') { openWhatsNew(null); return { ok: true }; }
     if (name === 'openBackups') { const d = path.join(app.getPath('userData'), 'backups'); fs.mkdirSync(d, { recursive: true }); shell.openPath(d); return { ok: true }; }
     if (name === 'clearChat') { clearChat(); return { ok: true }; }
     if (name === 'emptyTrash') { trash.forEach(dropImages); trash.forEach(t => dropHistory(t.id)); trash = []; save(); pingTrash(); return { ok: true, info: allSettings() }; }
@@ -1199,6 +1226,7 @@ app.whenReady().then(async () => {
   if (settings.shortcuts) registerShortcuts();
   if (settings.splash) await showSplash();
   openStartup();
+  maybeWhatsNew();
   save();
   initUpdater();
   checkReminders(); setInterval(checkReminders, 15000);   // also fires reminders that came due while the app was closed

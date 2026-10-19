@@ -112,6 +112,13 @@ const H = require('./fake-electron');
   await h['settings:set']({}, { notesFollowMode: false, mode: 'light' }); assert.strictEqual((await h['settings:get']({})).notesFollowMode, false);
   await h['settings:set']({}, { mode: 'system', notesFollowMode: true }); NTf.__sys = true; NTf.__cb && NTf.__cb(); assert.strictEqual((await h['ui:theme']({})).dark, true, 'follows Windows when set to Same as Windows');
   NTf.__sys = false; NTf.__cb && NTf.__cb();
+  // "What's new" after an update
+  const wn = await h['whatsnew:get']({}); assert.strictEqual(wn.version, '9.9.9'); assert.ok(Array.isArray(wn.sections), 'sections list');
+  assert.strictEqual((await h['settings:get']({})).whatsNew, true, 'on by default');
+  await h['settings:set']({}, { whatsNew: false }); assert.strictEqual((await h['settings:get']({})).whatsNew, false);
+  assert.strictEqual((await h['whatsnew:get']({})).off, true, 'the window shows the choice');
+  await h['whatsnew:close']({}, { off: false }); assert.strictEqual((await h['settings:get']({})).whatsNew, true, 'the checkbox in the window changes the setting');
+  const wo = await h['settings:action']({}, 'openWhatsNew'); assert.ok(wo && wo.ok, 'the button in Settings opens it: ' + JSON.stringify(wo));
   console.log('main harness ok');
   process.exit(0);
 })().catch(e => { console.error('HARNESS FAIL', e); process.exit(1); });
