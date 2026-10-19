@@ -86,7 +86,7 @@ Open the gear: the **AI** part is one list and a **Run** button (the model and c
 | **Translate Greek ⇄ English** | **Greek → English**, anything else → Greek, right in the note. Works on the selected text, or the paragraph with the cursor. |
 | **Polish / shorter / friendlier / fix it right in the note / continue writing** | The model rewrites the selected text **right in the note as it types** (Ctrl+Shift+E does it too). **Stop** cancels, **Undo** brings the original back. |
 
-Under *Look*, a **Transparency** bar makes the note see-through (0 to 70%), one setting per note.
+Under *Look*, a **Transparency** bar makes the note see-through (0 to 70%), one setting per note. *Keep the text solid* fades only the background (it needs *Low memory mode* off in *Settings > General*).
 
 **Chat about this note** (bottom of the panel) opens the AI chat with the note, or **all your notes** (pick *★ All my notes*). In the chat, the **🧠 model chip** under the messages switches between your installed models without leaving the chat.
 

@@ -30,6 +30,8 @@
     <span class="sz"><input id="size" type="range" min="10" max="48" aria-label="Font size"><b id="sizeLabel"></b></span>
   </div>
   <div class="line op"><span class="oplbl" id="opLbl">Transparency</span><input id="opac" type="range" min="0" max="70" step="5" aria-labelledby="opLbl"><b id="opacLabel"></b></div>
+  <label class="line op chk" id="solidRow"><input id="solidText" class="toggle" type="checkbox" aria-describedby="solidHint"><span>Keep the text solid</span></label>
+  <p class="shint" id="solidHint" hidden>Turn off Low memory mode in Settings > General (then restart) to fade only the background. For now the whole note fades.</p>
   <datalist id="fonts">
     <option>Segoe UI</option><option>Calibri</option><option>Arial</option><option>Verdana</option>
     <option>Georgia</option><option>Times New Roman</option><option>Consolas</option><option>Courier New</option>

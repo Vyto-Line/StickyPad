@@ -2,13 +2,14 @@
 const Module = require('module'), path = require('path'), fs = require('fs'), os = require('os');
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'sp-main-'));
 if (process.env.SP_SEED) { fs.mkdirSync(path.join(tmp, 'userData'), { recursive: true }); fs.copyFileSync(process.env.SP_SEED, path.join(tmp, 'userData', 'notes.json')); }
+if (process.env.SP_GPU) { fs.mkdirSync(path.join(tmp, 'userData'), { recursive: true }); fs.writeFileSync(path.join(tmp, 'userData', 'launch.json'), JSON.stringify({ lowMemory: false })); }
 const handlers = {}; let wid = 0; const wins = [];
 const noop = new Proxy(function () {}, { get: (t, k) => k === 'then' ? undefined : noop, apply: () => noop, construct: () => noop });
 class FakeWin {
   static fromWebContents() { return null; }
   constructor(o) { this.o = o; this.id = ++wid; this._b = { x: Number.isFinite(o && o.x) ? o.x : 0, y: Number.isFinite(o && o.y) ? o.y : 0, width: (o && o.width) || 300, height: (o && o.height) || 320 }; this.moves = []; this.webContents = { id: wid, isDestroyed: () => false, sent: [], send: (...a) => this.webContents.sent.push(a), focus() {}, on() {}, setWindowOpenHandler() {} }; wins.push(this); }
-  getBounds() { return this._b; } isDestroyed() { return false; } isMinimized() { return false; }
-  once() {} on(ev, f) { (this.ls = this.ls || {})[ev] = ((this.ls || {})[ev] || []).concat(f); } loadFile() {} setMenu() {} setOpacity(v) { this.opacity = v; } show() {} isVisible() { return true; } focus() {} close() {} restore() {} flashFrame() {} setAlwaysOnTop() {} setMinimumSize() {} setMaximumSize() {} setBounds(b) { this._b = { ...this._b, ...b }; this.moves.push({ ...b }); ['move', 'resize'].forEach(ev => ((this.ls || {})[ev] || []).forEach(f => f())); } setPosition(x, y) { this._b = { ...this._b, x, y }; } setSkipTaskbar() {} getPosition() { return [0, 0]; } getSize() { return [300, 320]; }
+  getBounds() { return this._b; } isDestroyed() { return !!this._d; } isMinimized() { return false; }
+  once() {} on(ev, f) { (this.ls = this.ls || {})[ev] = ((this.ls || {})[ev] || []).concat(f); } loadFile() {} setMenu() {} setOpacity(v) { this.opacity = v; } destroy() { this._d = true; ((this.ls || {}).closed || []).forEach(f => f()); } show() {} isVisible() { return true; } focus() {} close() {} restore() {} flashFrame() {} setAlwaysOnTop() {} setMinimumSize() {} setMaximumSize() {} setBounds(b) { this._b = { ...this._b, ...b }; this.moves.push({ ...b }); ['move', 'resize'].forEach(ev => ((this.ls || {})[ev] || []).forEach(f => f())); } setPosition(x, y) { this._b = { ...this._b, x, y }; } setSkipTaskbar() {} getPosition() { return [0, 0]; } getSize() { return [300, 320]; }
 }
 FakeWin.getAllWindows = () => wins.slice();
 const dialogCalls = [];

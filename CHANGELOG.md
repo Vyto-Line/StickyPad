@@ -2,6 +2,7 @@
 
 ## 1.14.16
 - **A Transparency bar for every note.** In the note's settings panel, under *Look*, drag *Transparency* to make that note see-through, from 0% (solid) up to 70%, so you can read what is behind it. Each note remembers its own setting. It never goes fainter than 30% visible, so a note cannot disappear.
+- **Keep the text solid.** A switch under the Transparency bar fades only the note's background and leaves the text, buttons and pictures fully solid. It needs a see-through window, so it works when *Low memory mode* is off (*Settings > General*, then restart); with Low memory mode on, the whole note fades as before and the switch says so. Switching it on or off reopens that one note once.
 - Not tried on a real Windows PC yet.
 
 ## 1.14.15

@@ -2,7 +2,7 @@
 body.dark{--fg:#f3f3f0;--tint:rgba(255,255,255,.09);--tint2:rgba(255,255,255,.17);--line:rgba(255,255,255,.2);--accent:#9db2ff}
 *{box-sizing:border-box}
 html,body{height:100%;margin:0}
-body{display:flex;flex-direction:column;overflow:hidden;background:var(--bg);color:var(--fg);border:1px solid var(--line);
+body{display:flex;flex-direction:column;overflow:hidden;background:var(--bgA,var(--bg));color:var(--fg);border:1px solid var(--line);
   font:14px/1.4 "Segoe UI Variable Text","Segoe UI",system-ui,sans-serif}
 *::-webkit-scrollbar{width:8px;height:8px}
 *::-webkit-scrollbar-thumb{background:var(--tint2);border-radius:8px}
@@ -79,7 +79,7 @@ body{position:relative}
 .line{display:flex;gap:8px;align-items:center}
 .line[hidden]{display:none}
 .sz{display:flex;align-items:center;gap:6px;flex:1;min-width:0}
-.op{margin-top:2px}.oplbl{font-size:12px;opacity:.75;white-space:nowrap}.op input[type=range]{flex:1;min-width:0;accent-color:var(--accent)}.op b{min-width:34px;text-align:right;font-size:12px;font-weight:600}
+.shint{margin:0;font-size:11.5px;opacity:.7;line-height:1.35}.chk{cursor:pointer;font-size:12.5px}.op{margin-top:2px}.oplbl{font-size:12px;opacity:.75;white-space:nowrap}.op input[type=range]{flex:1;min-width:0;accent-color:var(--accent)}.op b{min-width:34px;text-align:right;font-size:12px;font-weight:600}
 #size{flex:1;min-width:0;accent-color:var(--accent)}
 #sizeLabel{font-size:11px;font-weight:600;min-width:28px;text-align:right;opacity:.75}
 #chkTools .btn{flex:1;min-width:0;white-space:nowrap;padding:6px 8px}

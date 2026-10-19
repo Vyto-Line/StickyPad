@@ -48,6 +48,7 @@ app.setAppUserModelId('com.stickypad.app');   // Windows shows this app as "Stic
 
 // Memory-saving start-up options (they must be set before the app is ready). See Settings > General > Low memory mode.
 const LAUNCH = launchcfg.read(app.getPath('userData'));
+const GPU_OK = !LAUNCH.lowMemory;   // a see-through background with solid text needs a see-through window, which only draws reliably with the GPU on (Low memory mode off)
 {
   const plan = launchcfg.plan(LAUNCH);
   if (plan.disableGpu) app.disableHardwareAcceleration();
@@ -249,6 +250,7 @@ function onScreensChanged() {
   });
 }
 function openNote(n) {
+  const solid = GPU_OK && !!n.solidText;   // only notes that ask for it get a see-through window (the rest stay as safe as before)
   const existing = wins.get(n.id);
   if (existing && !existing.isDestroyed()) { existing.show(); return existing; }
   let b = { ...n.bounds }; if (n.rolled) b.height = ROLL_H;
@@ -258,11 +260,12 @@ function openNote(n) {
   }
   const w = new BrowserWindow({
     ...b, minWidth: MIN_W, minHeight: n.rolled ? ROLL_H : MIN_H, frame: false, show: false, icon: iconPath,
-    maximizable: false, fullscreenable: false, skipTaskbar: !!settings.hideTaskbar, backgroundColor: n.color,
+    maximizable: false, fullscreenable: false, skipTaskbar: !!settings.hideTaskbar, backgroundColor: solid ? '#00000000' : n.color, transparent: solid,
     webPreferences: { preload, contextIsolation: true, nodeIntegration: false }
   });
   if (n.rolled) w.setMaximumSize(10000, ROLL_H);
-  if (Number.isFinite(n.opacity) && n.opacity < 1) { try { w.setOpacity(Math.min(1, Math.max(0.3, n.opacity))); } catch {} }
+  if (!solid && Number.isFinite(n.opacity) && n.opacity < 1) { try { w.setOpacity(Math.min(1, Math.max(0.3, n.opacity))); } catch {} }   // whole note fades
+  seeThrough.set(n.id, solid);
   wins.set(n.id, w); byContents.set(w.webContents.id, n.id);
   if (n.pinned) w.setAlwaysOnTop(true, 'screen-saver');
   w.loadFile('note.html', { query: { id: n.id } });
@@ -288,10 +291,17 @@ function openNote(n) {
   });
   w.on('focus', () => { if (!w.isDestroyed()) w.webContents.focus(); });
   const cid = w.webContents.id;
-  w.on('closed', () => { panelGrow.delete(n.id); wins.delete(n.id); byContents.delete(cid); relock(notes[n.id]); pingAll(); });
+  w.on('closed', () => { panelGrow.delete(n.id); wins.delete(n.id); byContents.delete(cid); if (!reopening.has(n.id)) relock(notes[n.id]); pingAll(); });
   return w;
 }
 
+const seeThrough = new Map(), reopening = new Set();   // noteId -> its window is a see-through one; ids being reopened
+function reopenNote(id) {
+  const w = wins.get(id), n = notes[id]; if (!w || !n || w.isDestroyed()) return;
+  reopening.add(id);
+  try { w.destroy(); } catch {}
+  reopening.delete(id); openNote(n);
+}
 function makeNote(near, over) {
   const k = Object.keys(notes).length % 8;
   const b = near && !near.isDestroyed() ? near.getBounds() : { x: 80 + k * 28, y: 80 + k * 28, width: 300, height: 320 };
@@ -480,7 +490,7 @@ ipcMain.handle('note:get', e => {
   const n = notes[idOf(e)]; if (!n) return null;
   const { lock, ...rest } = n;
   const bs = canEditBody(n) ? blocksOf(n).map(b => b.t === 'img' ? { t: 'img', id: b.id, src: readImg(b.id) } : b).filter(b => b.t !== 'img' || b.src) : [];
-  return { ...rest, blocks: bs, locked: !!lock, unlocked: sessions.has(n.id), imgBase: imgBase(), keys: curKeys(), suggestDates: settings.suggestDates !== false };
+  return { ...rest, solidOk: GPU_OK, blocks: bs, locked: !!lock, unlocked: sessions.has(n.id), imgBase: imgBase(), keys: curKeys(), suggestDates: settings.suggestDates !== false };
 });
 
 /* ---------- export and import (Markdown / plain text files) ---------- */
@@ -626,9 +636,15 @@ ipcMain.handle('note:update', (e, p) => {
   if (typeof p.color === 'string' && /^#[0-9a-f]{6}$/i.test(p.color)) n.color = p.color;
   if (typeof p.font === 'string') n.font = p.font.replace(/["'\\;{}]/g, '').slice(0, 60) || 'Segoe UI';
   if (Number.isFinite(p.size)) n.size = Math.min(72, Math.max(8, Math.round(p.size)));
-  if (Number.isFinite(p.opacity)) {   // see-through notes: 100% (solid) down to 30%, so a note never disappears
-    n.opacity = Math.min(1, Math.max(0.3, Math.round(p.opacity * 100) / 100));
-    const w = winOf(e); if (w && !w.isDestroyed()) { try { w.setOpacity(n.opacity); } catch {} }
+  if (Number.isFinite(p.opacity)) n.opacity = Math.min(1, Math.max(0.3, Math.round(p.opacity * 100) / 100));   // see-through notes: 100% (solid) down to 30%, so a note never disappears
+  if (typeof p.solidText === 'boolean') n.solidText = p.solidText;
+  if (Number.isFinite(p.opacity) || typeof p.solidText === 'boolean') {
+    const w = winOf(e), solid = GPU_OK && !!n.solidText;
+    if (w && !w.isDestroyed()) {
+      // text stays solid: the page paints a see-through background itself; otherwise the whole window fades
+      try { w.setOpacity(solid ? 1 : (Number.isFinite(n.opacity) ? n.opacity : 1)); } catch {}
+      if (seeThrough.get(n.id) !== solid) setTimeout(() => reopenNote(n.id), 60);   // a window cannot change between see-through and normal: open it again once
+    }
   }
   n.updated = Date.now();
   save();

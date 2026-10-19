@@ -63,7 +63,12 @@ function apply() {
   $('#pin').classList.toggle('on', note.pinned);
   $('#pin').setAttribute('aria-pressed', note.pinned);
   $('#size').value = note.size; $('#sizeLabel').textContent = note.size + 'px';
-  const tr = Math.round((1 - (Number.isFinite(note.opacity) ? note.opacity : 1)) * 100); $('#opac').value = tr; $('#opacLabel').textContent = tr + '%';
+  const op = Number.isFinite(note.opacity) ? note.opacity : 1, tr = Math.round((1 - op) * 100); $('#opac').value = tr; $('#opacLabel').textContent = tr + '%';
+  // "keep the text solid": the window is see-through and only the background gets the transparency (needs the GPU on)
+  $('#solidText').checked = !!note.solidText && !!note.solidOk; $('#solidText').disabled = !note.solidOk; $('#solidHint').hidden = !!note.solidOk;
+  const rgb = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(note.color || '');
+  if (note.solidText && note.solidOk && rgb && op < 1) document.documentElement.style.setProperty('--bgA', `rgba(${parseInt(rgb[1], 16)},${parseInt(rgb[2], 16)},${parseInt(rgb[3], 16)},${op})`);
+  else document.documentElement.style.removeProperty('--bgA');
   $('#font').value = note.font; $('#color').value = note.color;
   document.querySelectorAll('.sw[data-c]').forEach(b => b.classList.toggle('on', b.dataset.c.toLowerCase() === note.color.toLowerCase()));
 }
@@ -531,6 +536,7 @@ $('#color').addEventListener('input', e => set({ color: e.target.value }));
 $('#font').addEventListener('change', e => { const f = e.target.value.trim(); if (f) set({ font: f }); });
 $('#size').addEventListener('input', e => set({ size: +e.target.value }));
 $('#opac').addEventListener('input', e => set({ opacity: 1 - (+e.target.value) / 100 }));
+$('#solidText').addEventListener('change', e => set({ solidText: e.target.checked }));
 $('#pin').onclick = async () => { note.pinned = await api.pin(!note.pinned); apply(); };
 /* ---------- removing checklist items in bulk ---------- */
 function chkRow() {
