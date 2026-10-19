@@ -1,0 +1,9 @@
+{
+  "identifier": "default",
+  "description": "Permissions for every StickyPad window",
+  "windows": ["*"],
+  "permissions": [
+    "core:default",
+    "core:window:allow-start-dragging"
+  ]
+}
