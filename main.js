@@ -396,7 +396,7 @@ function maybeWhatsNew() {
   settings.seenVersion = cur; save();
   if (firstRun || settings.whatsNew === false) return;                 // a brand-new install has nothing to compare with
   if (seen && changelog.cmp(cur, seen) <= 0) return;                   // went back to an older version: nothing new
-  setTimeout(() => { try { openWhatsNew(seen || null, 5); } catch {} }, 900);
+  setTimeout(() => { try { openWhatsNew(seen || null, 6); } catch {} }, 900);
 }
 function openStartup() {
   const mode = settings.launch, any = Object.keys(notes).length > 0;

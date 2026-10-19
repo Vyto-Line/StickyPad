@@ -33,7 +33,7 @@ assert.deepStrictEqual(C.since(s, '1.14.12', '1.14.12'), [], 'nothing newer');
 assert.deepStrictEqual(C.since(s, '1.14.8', '1.14.11').map(x => x.version), ['1.14.11', '1.14.9'], 'versions above the installed one are left out');
 // unknown old version: just the newest few
 assert.deepStrictEqual(C.since(s, null, '1.14.12', 2).map(x => x.version), ['1.14.12', '1.14.11']);
-assert.strictEqual(C.since(s, null, '1.14.12', 99).length, 5, 'never more than 5 without a known old version');
+assert.strictEqual(C.since(s, null, '1.14.12', 99).length, 5, 'all of them when there are fewer than 6'); assert.strictEqual(C.since(C.parse(md + '\n## 1.14.6\n- a\n## 1.14.5\n- b'), null, '1.14.12', 99).length, 6, 'never more than 6 without a known old version');
 // the real file
 const real = C.parse(fs.readFileSync(path.join(__dirname, '..', 'CHANGELOG.md'), 'utf8'));
 const cur = require('../package.json').version;

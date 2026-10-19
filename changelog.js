@@ -29,6 +29,6 @@ function parse(md) {
 function since(sections, from, to, max) {
   const lim = max || 8;
   const list = sections.filter(s => (!to || cmp(s.version, to) <= 0) && (!from || cmp(s.version, from) > 0));
-  return list.sort((a, b) => cmp(b.version, a.version)).slice(0, from ? Math.max(lim, 12) : Math.min(lim, 5));
+  return list.sort((a, b) => cmp(b.version, a.version)).slice(0, from ? Math.max(lim, 12) : Math.min(lim, 6));
 }
 module.exports = { parse, since, cmp };
