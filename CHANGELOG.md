@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.12.1
+- **Copy note as text**: one click (Settings tab *Note* > "Copy note as text") or **Ctrl+Alt+C** copies the whole note to the clipboard as plain text: the topic first, checklist items as `[ ]` / `[x]`, pictures left out. Handy for pasting a list into an email or chat.
+
 ## 1.12.0
 - **Auto-update**: when StickyPad starts (and every 6 hours while it runs) it looks for a newer version on this GitHub repo's Releases, downloads it in the background and asks whether to restart now or install when you quit. Settings > About has a switch and a "Check now" button. Only works in the installed app.
 - **Select all + Delete fixed**: Ctrl+A followed by Delete, Backspace, Ctrl+X or typing now replaces the *whole* note, including checklist items and pictures, even when a picture was selected or the focus was outside the text. Ctrl+A works from anywhere in the note window.

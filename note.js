@@ -359,6 +359,27 @@ $('#toText').onclick = () => {
   ed.normalize(); mark(); queue(); commitNow(); chkRow();
 };
 
+/* ---------- copy the whole note as plain text ---------- */
+function noteForCopy() {
+  const parts = [];
+  const topic = $('#topic').value.trim(); if (topic) parts.push(topic + '\n');
+  let out = '';
+  serialize().forEach(b => {
+    if (b.t === 'text') out += b.v;
+    else if (b.t === 'check') out += (out && !out.endsWith('\n') ? '\n' : '') + (b.done ? '[x] ' : '[ ] ') + b.v + '\n';
+  });
+  parts.push(out.replace(/\n{3,}/g, '\n\n').trim());
+  return parts.join('\n').trim();
+}
+async function copyNote() {
+  if (bodyLocked()) return;
+  const b = $('#copyTxt'), old = 'Copy note as text';
+  try { await navigator.clipboard.writeText(noteForCopy()); b.textContent = 'Copied ✓'; } catch (x) { b.textContent = 'Could not copy'; }
+  setTimeout(() => { b.textContent = old; }, 1400);
+}
+$('#copyTxt').onclick = copyNote;
+document.addEventListener('keydown', e => { if (e.ctrlKey && e.altKey && !e.shiftKey && e.key.toLowerCase() === 'c') { e.preventDefault(); copyNote(); } });
+
 async function refreshInfo() {
   chkRow();
   const i = await api.info();
