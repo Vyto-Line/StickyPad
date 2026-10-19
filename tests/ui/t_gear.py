@@ -10,6 +10,11 @@ with sync_playwright() as p:
     q.goto('file://'+ROOT+'note.html'); q.wait_for_timeout(400)
     ok(q.get_attribute('#cfg','aria-label')=='This note' and 'This note' in q.get_attribute('#cfg','title'),'title-bar button is "This note", not a gear')
     ok(q.locator('#cfg svg circle').count()==2 and q.locator('#cfg svg path').count()==1,'it shows the sliders icon (two knobs)')
+    ok(q.is_visible('#allTop') and q.get_attribute('#allTop','aria-label')=='Home' and q.evaluate("document.querySelector('header .ib').id")=='allTop','a Home button is visible, first in the title bar')
+    q.click('#allTop'); q.wait_for_timeout(100); ok(['openAll'] in q.evaluate('__S.calls'),'the Home button opens the Home window')
+    q.set_viewport_size({'width':260,'height':300}); q.wait_for_timeout(150)
+    ok(q.evaluate("(()=>{const h=document.querySelector('header');return h.scrollWidth<=h.clientWidth+1})()"),'at the smallest note width the title bar still fits')
+    q.set_viewport_size({'width':660,'height':470}); q.wait_for_timeout(150)
     q.click('#cfg'); q.wait_for_timeout(300)
     ok(q.locator('#tabSettings').count()==0 and q.locator('.ph .tabgear').count()==0,'the second gear inside the panel is gone')
     q.evaluate("document.getElementById('allSet').scrollIntoView()"); 

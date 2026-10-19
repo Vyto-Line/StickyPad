@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.14.19
+- **A Home button in every note.** A house icon, first in the title bar, opens the Home window (all notes, trash, the AI chat and settings), the same as Ctrl+Alt+A or the tray icon.
+- Not tried on a real Windows PC yet.
+
 ## 1.14.18
 - **No more two gears.** The button in a note's title bar is now a *sliders* icon named "This note" (colours, transparency, reminder, folder, lock, AI). The gear inside the panel is gone: **All settings…** is now a link at the bottom of the panel, next to *Chat about this note* and *Move to trash*. A gear no longer means two different things.
 - **The update buttons are colourful.** *Download* and *Restart to update* (in the bar and in *Settings > About*) use the same pink, purple and cyan as the neon progress bar instead of yellow, with dark text that stays easy to read.
