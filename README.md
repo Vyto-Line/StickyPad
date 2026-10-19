@@ -46,7 +46,7 @@ A search bar appears with **every match highlighted** and the current one in ora
 ### Reminders
 <img align="right" width="300" src="docs/images/feature_reminder.png" alt="The Note tab showing a reminder set for 5:55 PM">
 
-Open the sliders button (*This note*) and click **Reminder**. Pick a date and time, or press **10 min**, **1 hour**, **3 hours** or **Tomorrow 9:00**. When the time comes, **Windows shows a notification and clicking it opens the note**. A reminder that came due while StickyPad was closed fires the next time you start it. A small dot on the gear shows that a note has a reminder.
+Open the sliders button (*This note*) and click **Reminder**. Pick a date and time, or press **10 min**, **1 hour**, **3 hours** or **Tomorrow 9:00**. When the time comes, **Windows shows a notification and clicking it opens the note**. A reminder that came due while StickyPad was closed fires the next time you start it. A small dot on the sliders button shows that a note has a reminder.
 
 A small bar also appears when a note **mentions a date** ("tomorrow at 5pm", "αύριο στις 17:30", "15/11 10:00", "in 2 hours") and offers to set the reminder for it. It works without the AI, in Greek and English, and can be switched off in Settings.
 
