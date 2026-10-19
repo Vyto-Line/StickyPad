@@ -11,6 +11,7 @@
     get: async () => JSON.parse(JSON.stringify(S.note)),
     histList: async () => ({ locked: false, items: S.hist || [{ t: Date.now() - 3600e3, words: 12, pics: 0, preview: 'old first line' }, { t: Date.now() - 86400e3, words: 3, pics: 1, preview: '' }] }),
     histRestore: async t => { S.calls.push(['histRestore', t]); S.note.blocks = [{ t: 'text', v: 'RESTORED' }]; return true; },
+    panel: async open => { S.calls.push(['panel', open]); return !!open && window.innerWidth >= 560; },
     linkMenu: async u => { S.calls.push(['linkMenu', u]); return true; },
     openLink: async u => { S.calls.push(['openLink', u]); return true; },
     aiWarmup: async () => { S.calls.push(['warm']); return true; },

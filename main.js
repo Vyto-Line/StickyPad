@@ -208,6 +208,7 @@ function tidy() {   // lay open notes out in rows, folder by folder
 }
 
 /* ---------- windows ---------- */
+const panelGrow = new Map();   // noteId -> the size it had before the settings panel made it wider
 const relocated = new Set();   // notes shown somewhere else for now because their screen is not connected
 const displayList = () => screen.getAllDisplays().map(d => ({ id: d.id, bounds: d.bounds, workArea: d.workArea }));
 // A screen was plugged in or out: bring stranded notes to the main screen, and send them back when their screen returns.
@@ -245,7 +246,8 @@ function openNote(n) {
   const keep = (byHand) => {
     const m = notes[n.id]; if (!m || w.isDestroyed()) return;
     const ds = displayList();
-    if (byHand === true) relocated.delete(n.id);
+    if (byHand === true) { relocated.delete(n.id); panelGrow.delete(n.id); }
+    else if (panelGrow.has(n.id)) return;   // wider only because the settings panel is open: the real size is kept
     else if (relocated.has(n.id) || (m.home && !ds.some(d => d.id === m.home.id))) { relocated.add(n.id); return; }   // its screen is gone: where it sits now is temporary, so the real place is kept
     const nb = w.getBounds(), d = placement.displayOf(nb, ds);
     m.bounds = m.rolled ? { ...m.bounds, x: nb.x, y: nb.y, width: nb.width } : nb;   // a rolled-up note remembers its full height
@@ -262,7 +264,7 @@ function openNote(n) {
   });
   w.on('focus', () => { if (!w.isDestroyed()) w.webContents.focus(); });
   const cid = w.webContents.id;
-  w.on('closed', () => { wins.delete(n.id); byContents.delete(cid); relock(notes[n.id]); pingAll(); });
+  w.on('closed', () => { panelGrow.delete(n.id); wins.delete(n.id); byContents.delete(cid); relock(notes[n.id]); pingAll(); });
   return w;
 }
 
@@ -726,6 +728,22 @@ ipcMain.handle('ai:set', (e, p) => {
 });
 ipcMain.handle('app:openLink', (e, url) => { if (!links.safe(url)) return false; shell.openExternal(String(url)); return true; });
 // right-click on a link in a note: open it or copy the address
+// The settings panel is open/closed in a note: a narrow note gets wider so the panel fits beside the text, and goes back afterwards.
+ipcMain.handle('note:panel', (e, open) => {
+  const id = idOf(e), w = wins.get(id); if (!w || w.isDestroyed() || !notes[id]) return false;
+  const cur = w.getBounds();
+  if (open) {
+    if (notes[id].rolled) return false;
+    if (!panelGrow.has(id)) {
+      const wa = screen.getDisplayMatching(cur).workArea, g = placement.growForPanel(cur, wa);
+      if (g.grown) { panelGrow.set(id, { x: cur.x, width: cur.width }); w.setMinimumSize(MIN_W, MIN_H); w.setBounds(g.bounds); }
+    }
+    return w.getBounds().width >= placement.DOCK_MIN;
+  }
+  const was = panelGrow.get(id);
+  if (was) { panelGrow.delete(id); w.setBounds({ ...w.getBounds(), x: was.x, width: was.width }); }
+  return false;
+});
 ipcMain.handle('app:linkMenu', (e, url) => {
   if (!links.safe(url)) return false;
   const mail = /^mailto:/i.test(url), plain = String(url).replace(/^mailto:/i, '');

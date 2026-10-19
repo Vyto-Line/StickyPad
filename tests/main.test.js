@@ -67,6 +67,16 @@ const H = require('./fake-electron');
   tpl[1].click(); assert.strictEqual(electron.__written, 'https://example.com/x'); tpl[0].click(); assert.ok(H.dialogCalls.some(c => c[0] === 'external' && c[1] === 'https://example.com/x'));
   await h['app:linkMenu'](e, 'mailto:a@b.io'); tpl = electron.__menus.pop(); assert.strictEqual(tpl[1].label, 'Copy e-mail address'); tpl[1].click(); assert.strictEqual(electron.__written, 'a@b.io', 'copies the address without mailto:');
   assert.strictEqual(await h['app:linkMenu'](e, 'file:///c:/x.exe'), false); assert.strictEqual(electron.__menus.length, 0, 'no menu for an unsafe address');
+  // settings panel: a narrow note grows to the right, goes back afterwards, and the saved size never changes
+  await h['note:new']({ sender: { id: 0 } }); const pw = wins[wins.length - 1], pe = H.ev(pw); pw._b = { x: 100, y: 50, width: 300, height: 320 };
+  await h['note:update'](pe, { title: 'Panel note', blocks: [{ t: 'text', v: 'x' }] });
+  assert.strictEqual(await h['note:panel'](pe, true), true, 'wide enough to dock'); assert.deepStrictEqual([pw._b.x, pw._b.width], [100, 630]);
+  assert.strictEqual((await h['note:get'](pe)).bounds.width, 300, 'the saved width is still the real one');
+  await h['note:panel'](pe, true); assert.strictEqual(pw._b.width, 630, 'opening twice does not grow twice');
+  await h['note:panel'](pe, false); assert.deepStrictEqual([pw._b.x, pw._b.width], [100, 300]);
+  pw._b = { x: 1700, y: 50, width: 300, height: 320 }; await h['note:panel'](pe, true); assert.deepStrictEqual([pw._b.x, pw._b.width], [1290, 630], 'no room on the right: it grows to the left');
+  await h['note:panel'](pe, false); assert.deepStrictEqual([pw._b.x, pw._b.width], [1700, 300]);
+  pw._b = { x: 10, y: 50, width: 700, height: 320 }; assert.strictEqual(await h['note:panel'](pe, true), true); assert.strictEqual(pw._b.width, 700, 'a wide note is left alone'); await h['note:panel'](pe, false); assert.strictEqual(pw._b.width, 700);
   // dates setting reaches the note; title needs the AI
   assert.strictEqual((await h['note:get'](e)).suggestDates, true); await h['settings:set']({}, { suggestDates: false }); assert.strictEqual((await h['note:get'](e)).suggestDates, false);
   const tr = await h['ai:run'](e, 'title', { text: 'hello' }); assert.strictEqual(tr.ok, false, 'AI is off by default');

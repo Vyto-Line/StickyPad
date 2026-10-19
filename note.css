@@ -173,16 +173,16 @@ body.dark .aibody .cl.done b::after{border-color:#14181f}
 [hidden]{display:none !important}
 
 /* wide window: the panel is a column on the right, the note keeps the rest */
-@media (min-width:560px){
-  body:has(#panel:not([hidden])){display:grid;grid-template-columns:minmax(0,1fr) 330px;grid-template-rows:auto auto auto auto auto minmax(0,1fr) auto}
-  body:has(#panel:not([hidden])) > header{grid-column:1/-1;grid-row:1}
-  body:has(#panel:not([hidden])) > #findbar{grid-column:1;grid-row:2}
-  body:has(#panel:not([hidden])) > #editbar{grid-column:1;grid-row:3}
-  body:has(#panel:not([hidden])) > #aibox{grid-column:1;grid-row:4}
-  body:has(#panel:not([hidden])) > #lockscreen{grid-column:1;grid-row:5}
-  body:has(#panel:not([hidden])) > #ed{grid-column:1;grid-row:6;min-height:0}
-  body:has(#panel:not([hidden])) > #datebar{grid-column:1;grid-row:7}
-  body:has(#panel:not([hidden])) > #panel{grid-column:2;grid-row:2/8;max-height:none;border-bottom:0;border-left:1px solid var(--line)}
+@media all{
+  body.dock:has(#panel:not([hidden])){display:grid;grid-template-columns:minmax(0,1fr) 330px;grid-template-rows:auto auto auto auto auto minmax(0,1fr) auto}
+  body.dock:has(#panel:not([hidden])) > header{grid-column:1/-1;grid-row:1}
+  body.dock:has(#panel:not([hidden])) > #findbar{grid-column:1;grid-row:2}
+  body.dock:has(#panel:not([hidden])) > #editbar{grid-column:1;grid-row:3}
+  body.dock:has(#panel:not([hidden])) > #aibox{grid-column:1;grid-row:4}
+  body.dock:has(#panel:not([hidden])) > #lockscreen{grid-column:1;grid-row:5}
+  body.dock:has(#panel:not([hidden])) > #ed{grid-column:1;grid-row:6;min-height:0}
+  body.dock:has(#panel:not([hidden])) > #datebar{grid-column:1;grid-row:7}
+  body.dock:has(#panel:not([hidden])) > #panel{grid-column:2;grid-row:2/8;max-height:none;border-bottom:0;border-left:1px solid var(--line)}
 }
 
 /* ---- 1.10: compact ---- */

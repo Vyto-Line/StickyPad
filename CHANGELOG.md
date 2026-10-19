@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.14.7
+- **The settings panel is now a column on the right, beside your text, in every note.** A narrow note grows wider to the right while the panel is open (to the left if there is no room on that side of the screen) and goes back to its size when you close it. The saved size of the note never changes. The panel stays open while you click in the note, so you can select text and press *Translate* or *Edit live* straight away. If the screen is too small to fit it, the panel opens above the text instead.
+
 ## 1.14.6
 - **The settings panel no longer covers your note.** In a narrow note the panel now sits above the text and the note stays visible below it (the panel scrolls if it is tall). In a wide note (about 560 px and more) the panel is a column on the right, beside the text, and it stays open while you click in the note, so you can select text and press *Translate* or *Edit live* right away.
 

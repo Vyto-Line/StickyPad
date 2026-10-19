@@ -19,3 +19,12 @@ assert.strictEqual(P.comeHome({ id: 3, bounds: D2.bounds }, nb(3200, 720), [D1, 
 r = P.place(nb(5000, 0, 3000, 2000), { id: 2, bounds: D2.bounds }, [D1], 1); assert.ok(r.bounds.width <= 1920 && r.bounds.height <= 1040);
 assert.strictEqual(P.displayOf(nb(2000, 10), [D1, D2]).id, 2);
 console.log('placement ok');
+// settings panel makes a narrow note wider
+{
+  const wa = { x: 0, y: 0, width: 1920, height: 1040 };
+  let g = P.growForPanel({ x: 100, y: 10, width: 300, height: 320 }, wa); assert.ok(g.grown && g.bounds.width === 630 && g.bounds.x === 100);
+  g = P.growForPanel({ x: 1700, y: 10, width: 300, height: 320 }, wa); assert.ok(g.grown && g.bounds.x === 1290 && g.bounds.width === 630);
+  g = P.growForPanel({ x: 5, y: 10, width: 600, height: 320 }, wa); assert.strictEqual(g.grown, false);
+  g = P.growForPanel({ x: 0, y: 0, width: 300, height: 320 }, { x: 0, y: 0, width: 500, height: 600 }); assert.strictEqual(g.bounds.width, 500, 'never wider than the screen');
+  console.log('panel grow ok');
+}

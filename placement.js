@@ -44,4 +44,13 @@ function comeHome(home, savedBounds, displays) {
   const hd = displays.find(d => d.id === home.id); if (!hd || !reachable(savedBounds, hd)) return null;
   return savedBounds;
 }
-module.exports = { place, comeHome, displayOf, reachable, clampTo, area };
+// The settings panel sits beside the text, so a narrow note grows to the right (or to the left when there is no room) while it is open.
+const DOCK_MIN = 560, PANEL_W = 330;
+function growForPanel(bounds, workArea) {   // -> { bounds, grown } ; grown = false when the note is wide enough already
+  if (bounds.width >= DOCK_MIN) return { bounds, grown: false };
+  const width = Math.min(bounds.width + PANEL_W, workArea.width);
+  let x = bounds.x;
+  if (x + width > workArea.x + workArea.width) x = Math.max(workArea.x, workArea.x + workArea.width - width);
+  return { bounds: { ...bounds, x, width }, grown: width !== bounds.width };
+}
+module.exports = { growForPanel, DOCK_MIN, PANEL_W, place, comeHome, displayOf, reachable, clampTo, area };

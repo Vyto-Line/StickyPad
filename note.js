@@ -235,7 +235,7 @@ function addTodo() {
 const clearSel = () => ed.querySelectorAll('img.sel').forEach(i => i.classList.remove('sel'));
 
 // the settings popover closes as soon as you go back to typing
-ed.addEventListener('focus', () => { const p = $('#panel'); if (!p.hidden && window.innerWidth < 560) {   // in a wide window the panel sits beside the text, so it stays open
+ed.addEventListener('focus', () => { const p = $('#panel'); if (!p.hidden && !document.body.classList.contains('dock')) {   // when the panel sits beside the text it stays open
     p.hidden = true; $('#cfg').setAttribute('aria-expanded', 'false'); } });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && edit) { api.aiEditStop(edit.id); return; } if (e.key === 'Escape' && !aiBox.hidden) { aiToken++; aiBusy = false; aiClose(); return; } if (e.key === 'Escape' && !$('#panel').hidden) { $('#panel').hidden = true; $('#cfg').setAttribute('aria-expanded', 'false'); } });
 ed.addEventListener('input', () => { repairTodos(); mark(); queue(); schedule(); });
@@ -402,6 +402,15 @@ document.addEventListener('keydown', e => {
   if (KEY(e, 'n_find')) { e.preventDefault(); findOpen(); }
   else if (e.key === 'F3' && !$('#findbar').hidden) { e.preventDefault(); findGo(findAt + (e.shiftKey ? -1 : 1)); }
 });
+
+// The settings panel sits beside the text: a narrow note grows wider while it is open (the app does that), and goes back when it closes.
+new MutationObserver(async () => {
+  const open = !$('#panel').hidden;
+  if (open && screen.availWidth >= 700) document.body.classList.add('dock');   // at once, so nothing jumps
+  const docked = await api.panel(open);
+  document.body.classList.toggle('dock', !!docked && open);
+  if (!open) document.body.classList.remove('dock');
+}).observe($('#panel'), { attributes: true, attributeFilter: ['hidden'] });
 
 /* ---------- links (Ctrl+click opens them) and a reminder for dates written in the note ---------- */
 const LINKHL = (window.CSS && CSS.highlights && window.Highlight) ? new Highlight() : null;
