@@ -30,6 +30,7 @@
     <div class="row"><div class="lbl"><b>Start with Windows</b><span>Open StickyPad automatically when you sign in.</span><span id="startupNote" class="warn" hidden>Available in the installed app (build it with build.bat).</span></div><div class="ctl"><input id="startup" class="toggle" type="checkbox" data-set="startup"></div></div>
     <div class="row"><div class="lbl"><b>When StickyPad starts</b><span>What opens on launch.</span></div><div class="ctl"><select id="launch" class="field" data-pref="launch"><option value="notes">Open my notes</option><option value="all">Open the All notes window only</option><option value="both">Open both</option></select></div></div>
     <div class="row"><div class="lbl"><b>Startup animation</b><span>The short intro with the greeting (about 2.7 seconds).</span></div><div class="ctl"><input id="splash" class="toggle" type="checkbox" data-pref="splash"></div></div>
+    <div class="row"><div class="lbl"><b>Suggest a reminder for dates</b><span>When a note says something like "tomorrow at 5pm" or "15/11 10:00", a small bar offers to set a reminder for it.</span></div><div class="ctl"><input id="suggestDates" class="toggle" type="checkbox" data-set="suggestDates"></div></div>
     <div class="row"><div class="lbl"><b>Low memory mode</b><span id="lowMemInfo">Draws windows without the graphics card process and tunes the engine for size. Uses noticeably less memory; applies after a restart.</span></div><div class="ctl"><input id="lowMemory" class="toggle" type="checkbox" data-set="lowMemory"><button id="lowMemRestart" class="btn" hidden>Restart now</button></div></div>
     <div class="row"><div class="lbl"><b>Hide notes from the taskbar</b><span>Notes stay open but no longer take space on the taskbar. Use the tray icon to find them.</span></div><div class="ctl"><input id="hideTaskbar" class="toggle" type="checkbox" data-set="hideTaskbar"></div></div>
     <div class="row"><div class="lbl"><b>Your name</b><span>Shown in the greeting at the top of All notes and in the startup animation.</span></div><div class="ctl"><input id="name" class="field" data-pref="name" maxlength="30" placeholder="Optional" autocomplete="off" spellcheck="false"></div></div>
@@ -54,8 +55,14 @@
   <section class="cat" id="cat-shortcuts" data-title="Shortcuts">
     <h2>Shortcuts</h2>
     <div class="row"><div class="lbl"><b>Global shortcuts</b><span>Work from anywhere in Windows. Turn them off if they clash with another program or your keyboard layout.</span></div><div class="ctl"><input id="shortcuts" class="toggle" type="checkbox" data-set="shortcuts"></div></div>
-    <div class="row"><div class="lbl"><b>Anywhere in Windows</b></div><div class="ctl keys"><span class="kv"><kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>N</kbd> New note</span><span class="kv"><kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>A</kbd> All notes</span><span class="kv"><kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>C</kbd> AI chat</span><span class="kv"><kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>S</kbd> Settings</span></div></div>
-    <div class="row"><div class="lbl"><b>Inside a note</b></div><div class="ctl keys"><span class="kv"><kbd>Ctrl</kbd><kbd>N</kbd> New note</span><span class="kv"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>C</kbd> Add checklist item</span><span class="kv"><kbd>Ctrl</kbd><kbd>Z</kbd> Undo</span><span class="kv"><kbd>Ctrl</kbd><kbd>Y</kbd> Redo</span><span class="kv"><kbd>Esc</kbd> Close a panel</span><span class="kv"><kbd>Enter</kbd> Next checklist item</span><span class="kv"><kbd>Backspace</kbd> Remove an empty item</span></div></div>
+    <div class="row"><div class="lbl"><b>Anywhere in Windows</b><span>Click a shortcut, then press the new keys. Backspace puts the original back, Esc cancels.</span></div></div>
+    <div id="keysGlobal" class="keylist"></div>
+    <p id="keysWarn" class="hint warn" hidden></p>
+    <div class="row"><div class="lbl"><b>Inside a note</b></div></div>
+    <div id="keysNote" class="keylist"></div>
+    <p id="keysMsg" class="hint" hidden></p>
+    <div class="row"><div class="lbl"><b>Always the same</b><span>These are needed for editing and cannot be changed.</span></div><div class="ctl keys"><span class="kv"><kbd>Ctrl</kbd><kbd>Z</kbd> Undo</span><span class="kv"><kbd>Ctrl</kbd><kbd>Y</kbd> Redo</span><span class="kv"><kbd>Ctrl</kbd><kbd>Click</kbd> Open a link</span><span class="kv"><kbd>Esc</kbd> Close a panel</span><span class="kv"><kbd>Enter</kbd> Next checklist item</span></div></div>
+    <div class="row"><div class="lbl"><b>Back to the original shortcuts</b></div><div class="ctl"><button id="keysReset" class="btn">Reset all</button></div></div>
   </section>
 
   <section class="cat" id="cat-ai" data-title="AI">
@@ -83,6 +90,7 @@
     <div class="row"><div class="lbl"><b>Back up now</b><span id="backupInfo"></span></div><div class="ctl"><button id="backupNow" class="btn primary">Back up now</button></div></div>
     <div class="row"><div class="lbl"><b>Open the backups folder</b><span>Each backup is a dated folder you can copy back into the data folder to restore.</span></div><div class="ctl"><button id="openBackups" class="btn">Open folder</button></div></div>
     <div class="row"><div class="lbl"><b>Export all notes</b><span id="exportInfo">Saves every note as a Markdown file (one file each, in folders like yours). Pictures are not included.</span></div><div class="ctl"><button id="exportAll" class="btn">Export…</button></div></div>
+    <div class="row"><div class="lbl"><b>Import from other apps</b><span id="importOtherInfo">Google Keep (the .json files from Google Takeout, or the whole Keep folder) and Windows Sticky Notes.</span></div><div class="ctl"><button id="impKeep" class="btn">Google Keep…</button><button id="impSticky" class="btn">Sticky Notes…</button></div></div>
     <div class="row"><div class="lbl"><b>Import notes</b><span id="importInfo">Turns .md and .txt files into notes. Lines like "- [ ] item" become checklist items.</span></div><div class="ctl"><button id="importNotes" class="btn">Import…</button></div></div>
     <div class="row"><div class="lbl"><b>Open the data folder</b><span id="dataPath" class="path"></span></div><div class="ctl"><button id="openData" class="btn">Open folder</button></div></div>
     <div class="row"><div class="lbl"><b>Use your notes on every PC</b><span id="dataMsg" class="status">Move the data folder into a folder that OneDrive, Dropbox, Google Drive or Syncthing keeps in sync, and choose the same folder on your other PCs. Changes from another PC appear within a few seconds. If two PCs edit at the same moment, the other version is saved in the "conflicts" folder, never lost.</span></div><div class="ctl"><button id="chooseData" class="btn primary">Choose folder…</button><button id="resetData" class="btn" hidden>Use default</button></div></div>
@@ -100,6 +108,7 @@
   </section>
 </main>
 <script src="themes.js"></script>
+<script src="keys.js"></script>
 <script src="ollamaui.js"></script>
 <script src="settings.js"></script>
 </body>

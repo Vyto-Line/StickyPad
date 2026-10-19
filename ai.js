@@ -163,6 +163,23 @@ async function summarize(cfg, text, fetchImpl = fetch) {
   return (await callModel(cfg, sys + ' The input is a list of partial summaries of one long note, in order. Merge them into one short summary of the whole note.', notes.join('\n'), { predict: 320 }, fetchImpl)).trim();
 }
 
+// A short title for a note (2 to 6 words, in the language of the note).
+const SYS_TITLE = 'You write a short title for a sticky note. Reply with ONLY the title: 2 to 6 words, no quotes, no full stop, no emoji, no explanation. Use the same language as the note.';
+function cleanTitle(t) {
+  t = stripThink(String(t || '')).replace(/^```[a-z]*\n?/i, '').replace(/```$/, '').trim().split('\n').map(x => x.trim()).find(Boolean) || '';
+  t = t.replace(/^(title|τίτλος|τιτλος)\s*[:\-–]\s*/i, '').replace(/^["'“”«»‘’*#\s]+|["'“”«»‘’*\s.:;,!…]+$/g, '').replace(/\s+/g, ' ');
+  return t.length > 60 ? t.slice(0, 60).replace(/\s+\S*$/, '') : t;
+}
+async function suggestTitle(cfg, text, fetchImpl = fetch) {
+  text = String(text || '').trim();
+  if (!text) throw fail('There is nothing to title yet.');
+  const sample = text.length > 2500 ? text.slice(0, 2500) : text;
+  const sys = withLang(SYS_TITLE, sample) + (isGreek(sample) ? ' Write the title in Greek.' : '');
+  const t = cleanTitle(await callModel(cfg, sys, sample, { predict: 40 }, fetchImpl));
+  if (!t) throw fail('The AI did not give a title. Try again.');
+  return t;
+}
+
 async function fixGrammar(cfg, items, fetchImpl = fetch) {
   if (!Array.isArray(items) || !items.length || !items.every(x => typeof x === 'string')) throw fail('There is no text to check yet.');
   if (items.join('').length > MAX_TOTAL) throw fail('This note is too long to check.');
@@ -336,4 +353,4 @@ async function ping(cfg, fetchImpl = fetch) {
   return r.trim().slice(0, 40);
 }
 
-module.exports = { keepOf, translateTarget, splitPieces, isGreek, greekShare, ctxFor, GREEK_RULES, editStream, editSystem, EDIT_MODES, warmup, summarize, fixGrammar, toChecklist, parseChecklist, chatStream, SYS_CHAT, ping, parseItems, callModel, DEFAULT_CLAUDE_MODEL, DEFAULT_OLLAMA_URL };
+module.exports = { suggestTitle, cleanTitle, keepOf, translateTarget, splitPieces, isGreek, greekShare, ctxFor, GREEK_RULES, editStream, editSystem, EDIT_MODES, warmup, summarize, fixGrammar, toChecklist, parseChecklist, chatStream, SYS_CHAT, ping, parseItems, callModel, DEFAULT_CLAUDE_MODEL, DEFAULT_OLLAMA_URL };

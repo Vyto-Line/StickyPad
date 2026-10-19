@@ -30,3 +30,17 @@ const stream=ch=>({ok:true,status:200,body:{getReader(){let i=0;return{read:asyn
   await A.warmup({ ...cfg, keepAlive: '30m' }, fake); assert.strictEqual(sent[0][1].keep_alive, '30m');
   console.log('ai keepalive ok');
 })().catch(e => { console.error(e); process.exit(1); });
+
+// ---- automatic title ----
+(async () => {
+  const assert = require('assert'), A = require('../ai');
+  assert.strictEqual(A.cleanTitle('"Λίστα για το σούπερ μάρκετ."'), 'Λίστα για το σούπερ μάρκετ');
+  assert.strictEqual(A.cleanTitle('Title: Weekend trip plan\nHere is why…'), 'Weekend trip plan');
+  assert.strictEqual(A.cleanTitle('<think>hmm</think>**Budget 2026**'), 'Budget 2026');
+  let sent;
+  const fake = async (u, o) => { sent = JSON.parse(o.body); return { ok: true, status: 200, json: async () => ({ message: { content: '"Ψώνια εβδομάδας"' } }) }; };
+  const t = await A.suggestTitle({ provider: 'ollama', model: 'm', url: 'http://x' }, 'γάλα ψωμί αυγά τυρί', fake);
+  assert.strictEqual(t, 'Ψώνια εβδομάδας'); assert.ok(/Greek/.test(sent.messages[0].content) && sent.options.num_predict <= 60);
+  await assert.rejects(A.suggestTitle({ provider: 'ollama', model: 'm' }, '  ', fake), /nothing to title/);
+  console.log('ai title ok');
+})().catch(e => { console.error(e); process.exit(1); });

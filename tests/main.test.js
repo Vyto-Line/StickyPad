@@ -44,6 +44,40 @@ const H = require('./fake-electron');
   // pictures are given out as file addresses, not as big text
   const nn = await h['note:get'](e); assert.ok(/^file:\/\/\/.*\/images\/$/.test(nn.imgBase.replace(/\\/g, '/')), nn.imgBase);
   fs.mkdirSync(path.join(tmp, 'userData', 'images'), { recursive: true }); fs.writeFileSync(path.join(tmp, 'userData', 'images', 'aaaaaa.png'), Buffer.from([137, 80, 78, 71]));
+  // ---- 1.14.1: shortcuts, clipboard note, links, title, ask-all-notes, import from other apps ----
+  const KEYS = require('../keys');
+  let st2 = await h['settings:set']({}, { keys: { g_new: 'ctrl+alt+q', g_all: 'Ctrl+Alt+Q', n_find: 'Ctrl+Z', g_chat: 'Ctrl+Alt+H' } });
+  assert.strictEqual(st2.keys.g_new, 'Ctrl+Alt+Q'); assert.strictEqual(st2.keys.g_all, 'Ctrl+Alt+A', 'clashing keys keep the default'); assert.strictEqual(st2.keys.n_find, 'Ctrl+F', 'reserved keys are refused'); assert.strictEqual(st2.keys.g_chat, 'Ctrl+Alt+H');
+  assert.ok(electron.__reg['Control+Alt+Q'] && electron.__reg['Control+Alt+H'] && !electron.__reg['Control+Alt+N'], 'global shortcuts re-registered with the new keys');
+  assert.ok((await h['note:get'](e)).keys.g_new === 'Ctrl+Alt+Q', 'notes get the shortcuts too'); assert.ok(w.webContents.sent.some(m => m[0] === 'keys:changed' && m[1].g_new === 'Ctrl+Alt+Q'), 'open notes are told');
+  electron.__failAccels.add('Control+Alt+V'); st2 = await h['settings:set']({}, { shortcuts: true, keys: {} }); assert.deepStrictEqual(st2.keysFailed, ['g_clip'], 'a shortcut Windows refuses is reported');
+  electron.__failAccels.clear(); st2 = await h['settings:set']({}, { keys: {} }); assert.deepStrictEqual(st2.keys, KEYS.DEFAULTS); assert.deepStrictEqual(st2.keysFailed, []);
+  // note from clipboard
+  const before = JSON.stringify(await h['all:list']({})).length; const cnt0 = Object.keys(JSON.parse(JSON.stringify(await h['all:list']({})))).length;
+  electron.__clip = '# Idea\n- [ ] call Nick\nsome words'; const wcount = wins.length; electron.__reg['Control+Alt+V']();
+  assert.strictEqual(wins.length, wcount + 1, 'a window opened for the clipboard note'); const cw = wins[wins.length - 1]; const cn = await h['note:get'](H.ev(cw));
+  assert.strictEqual(cn.title, 'Idea'); assert.ok(cn.blocks.some(b => b.t === 'check' && b.v === 'call Nick')); 
+  electron.__clip = '   '; electron.__notes.length = 0; const wc2 = wins.length; electron.__reg['Control+Alt+V'](); assert.strictEqual(wins.length, wc2, 'empty clipboard: no note'); assert.ok(electron.__notes.length === 1, 'and it says so');
+  // links: only safe addresses are opened
+  H.dialogCalls.length = 0;
+  assert.strictEqual(await h['app:openLink'](e, 'https://example.com/a'), true); assert.strictEqual(await h['app:openLink'](e, 'file:///c:/windows/system32/calc.exe'), false); assert.strictEqual(await h['app:openLink'](e, 'javascript:alert(1)'), false);
+  assert.deepStrictEqual(H.dialogCalls.filter(c => c[0] === 'external').map(c => c[1]), ['https://example.com/a']);
+  // dates setting reaches the note; title needs the AI
+  assert.strictEqual((await h['note:get'](e)).suggestDates, true); await h['settings:set']({}, { suggestDates: false }); assert.strictEqual((await h['note:get'](e)).suggestDates, false);
+  const tr = await h['ai:run'](e, 'title', { text: 'hello' }); assert.strictEqual(tr.ok, false, 'AI is off by default');
+  // ask all my notes: the question picks the notes, the chat window is told which ones
+  const cw2 = wins[wins.length - 1]; cw2.webContents.sent.length = 0;
+  await h['chat:send']({ sender: cw2.webContents }, { id: 'q1', noteId: '*', messages: [{ role: 'user', content: 'what did I write about Idea?' }] });
+  const srcMsg = cw2.webContents.sent.find(m => m[0] === 'chat:event' && m[1].type === 'sources'); assert.ok(srcMsg && srcMsg[1].titles.includes('Idea'), JSON.stringify(cw2.webContents.sent.map(m => m[1])));
+  // import from other apps
+  const FX = path.join(__dirname, 'fixtures');
+  electron.__open = [path.join(FX, 'keep')]; const ik = await h['settings:action']({}, 'importOther', 'keep');
+  assert.ok(ik.ok && ik.count === 2 && ik.skipped === 1, JSON.stringify(ik));
+  const listed = JSON.stringify(await h['all:list']({})); assert.ok(listed.includes('Ψώνια') && listed.includes('Σπίτι'), 'Keep note and its label (as a folder) are there');
+  electron.__open = [path.join(FX, 'plum_copy.sqlite')]; const is = await h['settings:action']({}, 'importOther', 'sticky'); assert.ok(is.ok && is.count === 1, JSON.stringify(is));
+  electron.__open = [path.join(FX, 'keep', 'other.json')]; const ib = await h['settings:action']({}, 'importOther', 'keep'); assert.strictEqual(ib.ok, false); assert.ok(/No Google Keep notes/.test(ib.error));
+  electron.__open = [path.join(FX, 'keep', 'old.json')]; assert.strictEqual((await h['settings:action']({}, 'importOther', 'nope')).ok, false);
+  electron.__open = undefined; assert.strictEqual((await h['settings:action']({}, 'importOther', 'keep')).cancelled, true);
   console.log('main harness ok');
   process.exit(0);
 })().catch(e => { console.error('HARNESS FAIL', e); process.exit(1); });

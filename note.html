@@ -96,6 +96,7 @@
       <button id="aiSum" class="btn primary">✨ Summarize</button>
       <button id="aiFix" class="btn primary">✨ Fix grammar</button>
       <button id="aiList" class="btn primary" title="Turn this note into a clean checklist">✨ To checklist</button>
+      <button id="aiTitle" class="btn primary" title="Suggest a short title for this note">✨ Title</button>
       <button id="aiTr" class="btn primary" title="Translate the selected text (or the paragraph with the cursor): Greek to English, anything else to Greek">🌐 Translate</button>
       <button id="aiChat" class="btn" title="Open the AI chat with this note as context">💬 Chat about it</button>
     </div>
@@ -142,7 +143,11 @@
 </div>
 
 <div id="ed" contenteditable="true" spellcheck="true" role="textbox" aria-multiline="true" data-ph="Type here… paste or drop pictures"></div>
+<div id="datebar" hidden role="status"><span class="dbIc" aria-hidden="true">⏰</span><span id="dateTxt"></span><button id="dateSet" class="btn primary">Remind me</button><button id="dateNo" class="btn" aria-label="Not now" title="Not now">✕</button></div>
 <script src="themes.js"></script>
+<script src="keys.js"></script>
+<script src="links.js"></script>
+<script src="dates.js"></script>
 <script src="reminders.js"></script>
 <script src="ollamaui.js"></script>
 <script src="note.js"></script>

@@ -1,0 +1,11 @@
+const assert = require('assert'), L = require('../links');
+const f = t => L.find(t).map(x => x.url);
+assert.deepStrictEqual(f('see https://example.com/a?b=1, ok'), ['https://example.com/a?b=1']);
+assert.deepStrictEqual(f('(https://en.wikipedia.org/wiki/Foo_(bar)).'), ['https://en.wikipedia.org/wiki/Foo_(bar)']);
+assert.deepStrictEqual(f('Δες www.google.gr. Και'), ['https://www.google.gr']);
+assert.deepStrictEqual(f('mail me: john.doe+x@mail.example.org!'), ['mailto:john.doe+x@mail.example.org']);
+assert.deepStrictEqual(f('no links here, price 5.50 or a@b'), []);
+assert.deepStrictEqual(f('http://a.io και https://b.io'), ['http://a.io', 'https://b.io']);
+const t = 'x https://a.io/p y'; const l = L.find(t)[0]; assert.strictEqual(t.slice(l.start, l.end), 'https://a.io/p'); assert.ok(L.at(t, 5) && !L.at(t, 0));
+assert.ok(L.safe('https://a.io') && L.safe('mailto:a@b.io') && !L.safe('file:///c:/x') && !L.safe('javascript:alert(1)') && !L.safe('https://a b'));
+console.log('links ok');

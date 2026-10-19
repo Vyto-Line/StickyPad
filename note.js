@@ -1,6 +1,9 @@
 const $ = s => document.querySelector(s);
 const ed = $('#ed'), MAXW = 800;
 let note, timer;
+let KEYMAP = StickyKeys.DEFAULTS;   // the shortcuts (Settings > Shortcuts can change them)
+const KEY = (e, id) => StickyKeys.matches(e, KEYMAP[id]);
+if (window.api.onKeys) api.onKeys(m => { KEYMAP = m || StickyKeys.DEFAULTS; });
 const srcCache = new Map();
 let themeId = 'classic', scopeAll = false;
 const TH = window.StickyThemes;
@@ -269,7 +272,7 @@ ed.addEventListener('keydown', e => {
     if (k === 'z' && !e.shiftKey) { e.preventDefault(); undo(); return; }
     if (k === 'y' || (k === 'z' && e.shiftKey)) { e.preventDefault(); redo(); return; }
   }
-  if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'c') { e.preventDefault(); addTodo(); return; }
+  if (KEY(e, 'n_todo')) { e.preventDefault(); addTodo(); return; }
   const sel = getSelection(), td = sel.rangeCount ? closestTodo(sel.anchorNode) : null;
   if (td) {
     const tx = td.querySelector('.tx');
@@ -327,7 +330,7 @@ ed.addEventListener('drop', e => {
 
 /* ---------- startup ---------- */
 async function reload() {
-  note = await api.get();
+  note = await api.get(); if (note && note.keys) KEYMAP = note.keys;
   render(note.blocks && note.blocks.length ? note.blocks : (note.text && !note.locked ? [{ t: 'text', v: note.text }] : []));
   apply(); remindPaint(); undoS = []; redoS = []; undoChars = 0; cur = snap();
 }
@@ -395,10 +398,65 @@ $('#findPrev').onclick = () => findGo(findAt - 1);
 $('#findX').onclick = findClose;
 ed.addEventListener('input', () => { if (!$('#findbar').hidden) { clearTimeout(findTimer); findTimer = setTimeout(() => findRun(true), 250); } });
 document.addEventListener('keydown', e => {
-  const k = e.key.toLowerCase();
-  if (e.ctrlKey && !e.altKey && !e.shiftKey && k === 'f') { e.preventDefault(); findOpen(); }
+  if (KEY(e, 'n_find')) { e.preventDefault(); findOpen(); }
   else if (e.key === 'F3' && !$('#findbar').hidden) { e.preventDefault(); findGo(findAt + (e.shiftKey ? -1 : 1)); }
 });
+
+/* ---------- links (Ctrl+click opens them) and a reminder for dates written in the note ---------- */
+const LINKHL = (window.CSS && CSS.highlights && window.Highlight) ? new Highlight() : null;
+if (LINKHL) CSS.highlights.set('links', LINKHL);
+function linkRanges() {
+  const out = [];
+  const tw = document.createTreeWalker(ed, NodeFilter.SHOW_TEXT);
+  for (let n = tw.nextNode(); n && out.length < 2000; n = tw.nextNode()) {
+    const v = n.nodeValue; if (v.length < 4 || !/[:@.]/.test(v)) continue;
+    for (const l of StickyLinks.find(v)) { const r = document.createRange(); r.setStart(n, l.start); r.setEnd(n, l.end); out.push({ r, url: l.url }); }
+  }
+  return out;
+}
+function paintLinks() { if (!LINKHL) return; LINKHL.clear(); if (bodyLocked()) return; linkRanges().forEach(x => LINKHL.add(x.r)); }
+function linkAt(cx, cy) {
+  if (bodyLocked()) return '';
+  const el = document.elementFromPoint(cx, cy); if (!el || !ed.contains(el)) return '';
+  const r = document.caretRangeFromPoint ? document.caretRangeFromPoint(cx, cy) : null;
+  if (!r || r.startContainer.nodeType !== 3 || !ed.contains(r.startContainer)) return '';
+  const l = StickyLinks.at(r.startContainer.nodeValue, r.startOffset); if (!l) return '';
+  const lr = document.createRange(); lr.setStart(r.startContainer, l.start); lr.setEnd(r.startContainer, l.end);
+  for (const q of lr.getClientRects()) if (cx >= q.left - 1 && cx <= q.right + 1 && cy >= q.top - 1 && cy <= q.bottom + 1) return l.url;   // really on the text, not just near it
+  return '';
+}
+ed.addEventListener('click', e => {
+  if (!(e.ctrlKey || e.metaKey) || e.button !== 0) return;
+  const u = linkAt(e.clientX, e.clientY); if (u) { e.preventDefault(); api.openLink(u); }
+});
+let hoverRaf = 0;
+ed.addEventListener('mousemove', e => {
+  if (hoverRaf) return; const x = e.clientX, y = e.clientY, ctrl = e.ctrlKey || e.metaKey;
+  hoverRaf = requestAnimationFrame(() => { hoverRaf = 0; ed.classList.toggle('linkhover', ctrl && !!linkAt(x, y)); });
+});
+ed.addEventListener('mouseleave', () => ed.classList.remove('linkhover'));
+
+// dates: "tomorrow at 5pm", "αύριο στις 17:30" ... -> offer a reminder (rules, not the AI: instant, works offline)
+const dateDismissed = new Set();
+let dateFound = null;
+function dateCheck() {
+  const bar = $('#datebar');
+  if (!note || bodyLocked() || note.suggestDates === false || note.remind > Date.now()) { bar.hidden = true; dateFound = null; return; }
+  const found = StickyDates.first(noteAsText(), Date.now());
+  if (!found || dateDismissed.has(found.text + '|' + found.at)) { bar.hidden = true; dateFound = null; return; }
+  dateFound = found;
+  const when = new Date(found.at), now = new Date(), sameDay = when.toDateString() === now.toDateString();
+  const label = (sameDay ? 'today' : when.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })) + ' ' + when.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+  $('#dateTxt').textContent = `“${found.text.length > 28 ? found.text.slice(0, 27) + '…' : found.text}” → ${label}`;
+  $('#dateTxt').title = 'Set a reminder for ' + label;
+  bar.hidden = false;
+}
+$('#dateSet').onclick = async () => { if (!dateFound) return; const f = dateFound; $('#datebar').hidden = true; await remindSet(f.at); };
+$('#dateNo').onclick = () => { if (dateFound) dateDismissed.add(dateFound.text + '|' + dateFound.at); $('#datebar').hidden = true; dateFound = null; };
+var lookTimer = 0;
+function scheduleLook() { clearTimeout(lookTimer); lookTimer = setTimeout(() => { paintLinks(); dateCheck(); }, 700); }
+new MutationObserver(scheduleLook).observe(ed, { childList: true, subtree: true, characterData: true });
+$('#aiTitle').onclick = () => runAI('title');
 
 /* ---------- version history ---------- */
 async function histOpen() {
@@ -430,7 +488,7 @@ const REM = window.StickyReminders;
 function remindPaint() {
   const t = note && note.remind > 0 ? note.remind : 0;
   $('#remAt').value = REM.toLocalInput(t); $('#remClear').style.visibility = t ? 'visible' : 'hidden';
-  document.body.classList.toggle('hasRemind', !!t);
+  document.body.classList.toggle('hasRemind', !!t); if (typeof scheduleLook === 'function') scheduleLook();
   $('#remMsg').textContent = t ? 'Reminder: ' + new Date(t).toLocaleString([], { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Pick a time and a Windows notification will bring this note back.';
 }
 async function remindSet(ts) { const v = await api.remind(ts); if (note) note.remind = v; remindPaint(); }
@@ -491,7 +549,7 @@ $('#exportBtn').onclick = async () => {
   const r = await api.noteExport(); const m = $('#exportMsg');
   m.textContent = r && r.ok ? 'Saved' + (r.pics ? ' (pictures are not included in the file)' : '') + '.' : r && r.error ? r.error : '';
 };
-document.addEventListener('keydown', e => { if (e.ctrlKey && !e.altKey && e.shiftKey && e.key.toLowerCase() === 't') { e.preventDefault(); copyNote(); } });
+document.addEventListener('keydown', e => { if (KEY(e, 'n_copy')) { e.preventDefault(); copyNote(); } });
 
 async function refreshInfo() {
   chkRow();
@@ -587,6 +645,13 @@ function showGrammar(segs, items) {
     ['Cancel', aiClose]
   ]);
 }
+function showTitle(t) {
+  aiShow('Suggested title', t, [
+    ['Use this title', () => { const f = $('#topic'); f.value = t; f.dispatchEvent(new Event('input', { bubbles: true })); aiClose(); }, true],
+    ['Try again', () => { aiClose(); runAI('title'); }],
+    ['Cancel', aiClose]
+  ]);
+}
 async function runAI(task) {
   if (aiBusy || bodyLocked()) return;
   if (!aiCfgState) aiCfgState = (await api.aiGet()) || { provider: 'off' };
@@ -597,6 +662,9 @@ async function runAI(task) {
   if (task === 'summarize') {
     payload = { text: noteAsText() };
     if (!payload.text) { aiShow('Summary', 'There is nothing to summarise yet.', [['Close', aiClose, true]]); return; }
+  } else if (task === 'title') {
+    payload = { text: noteAsText() };
+    if (!payload.text) { aiShow('Title', 'There is nothing to title yet.', [['Close', aiClose, true]]); return; }
   } else if (task === 'checklist') {
     payload = { text: noteAsText() };
     if (!payload.text) { aiShow('Checklist', 'There is nothing to turn into a checklist yet.', [['Close', aiClose, true]]); return; }
@@ -607,12 +675,12 @@ async function runAI(task) {
   }
   aiBusy = true; const mine = ++aiToken;
   const w = document.createElement('span'), sp = document.createElement('span'); sp.className = 'spin'; w.append(sp, document.createTextNode('Asking the AI…'));
-  aiShow(task === 'summarize' ? 'Summary' : task === 'checklist' ? 'Checklist' : 'Grammar', w, [['Cancel', () => { aiToken++; aiBusy = false; aiClose(); }]]);
-  const r = await api.aiRun(task === 'summarize' ? 'summarize' : task === 'checklist' ? 'checklist' : 'grammar', payload);
+  aiShow(task === 'summarize' ? 'Summary' : task === 'title' ? 'Title' : task === 'checklist' ? 'Checklist' : 'Grammar', w, [['Cancel', () => { aiToken++; aiBusy = false; aiClose(); }]]);
+  const r = await api.aiRun(task === 'summarize' ? 'summarize' : task === 'title' ? 'title' : task === 'checklist' ? 'checklist' : 'grammar', payload);
   if (mine !== aiToken) return;   // cancelled
   aiBusy = false;
   if (!r.ok) { aiShow('Something went wrong', r.error, [['Close', aiClose, true]]); return; }
-  if (task === 'summarize') showSummary(r.text); else if (task === 'checklist') showChecklist(r.items); else showGrammar(segs, r.items);
+  if (task === 'title') showTitle(r.text); else if (task === 'summarize') showSummary(r.text); else if (task === 'checklist') showChecklist(r.items); else showGrammar(segs, r.items);
 }
 
 /* ---------- live edit: the AI rewrites your text right in the note while you watch ---------- */
@@ -706,7 +774,7 @@ $('#aiTr').onclick = () => { $('#editMode').value = 'translate'; liveEdit(); };
 ed.addEventListener('input', () => { if (!editBar.hidden && !edit) editBarHide(); });
 function updateAiButtons() {
   const off = !aiCfgState || aiCfgState.provider === 'off', locked = bodyLocked();
-  $('#aiSum').disabled = $('#aiFix').disabled = $('#aiList').disabled = $('#aiEdit').disabled = $('#aiTr').disabled = off || locked; $('#aiChat').disabled = locked;
+  $('#aiTitle').disabled = $('#aiSum').disabled = $('#aiFix').disabled = $('#aiList').disabled = $('#aiEdit').disabled = $('#aiTr').disabled = off || locked; $('#aiChat').disabled = locked;
   $('#aiHint').textContent = locked ? 'Unlock this note first.' : off ? 'Turn the AI on below to use these.' : 'Works on the text of this note. Select text to translate or edit just that part.';
   if (!locked && !off) modelCheck();
 }
@@ -815,8 +883,8 @@ document.addEventListener('keydown', e => {   // Ctrl+A anywhere outside a text 
     if (a !== ed && !(a && a.closest && a.closest('#ed')) && tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT') { e.preventDefault(); ed.focus(); selectAllNote(); }
   }
 });
-document.addEventListener('keydown', e => { if (e.ctrlKey && e.key.toLowerCase() === 'n') { e.preventDefault(); api.newNote(); } });
-document.addEventListener('keydown', e => { if (e.ctrlKey && !e.altKey && e.shiftKey && e.key.toLowerCase() === 'e') { e.preventDefault(); liveEdit(); } });
-document.addEventListener('keydown', e => { if (e.ctrlKey && !e.altKey && !e.shiftKey && e.key === ',') { e.preventDefault(); openAllSettings(); } });
+document.addEventListener('keydown', e => { if (KEY(e, 'n_new')) { e.preventDefault(); api.newNote(); } });
+document.addEventListener('keydown', e => { if (KEY(e, 'n_edit')) { e.preventDefault(); liveEdit(); } });
+document.addEventListener('keydown', e => { if (KEY(e, 'n_settings')) { e.preventDefault(); openAllSettings(); } });
 function openAllSettings(section) { $('#panel').hidden = true; $('#cfg').setAttribute('aria-expanded', 'false'); api.openSettings(section); }
 $('#tabSettings').onclick = () => openAllSettings();

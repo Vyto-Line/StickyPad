@@ -1,11 +1,21 @@
 # Changelog
 
+## 1.14.1
+- **Clickable links.** Web addresses (`https://…`, `www.…`) and e-mail addresses in a note are underlined; **Ctrl+click** opens them. Only safe web and e-mail links are ever opened.
+- **New note from the clipboard** (Ctrl+Alt+V from anywhere): whatever text you last copied becomes a new note. Markdown headings and `- [ ]` lines turn into a title and checklist items.
+- **Your own keyboard shortcuts.** Settings > Shortcuts: click a shortcut, press the keys you want. Works for the global shortcuts and for those inside a note. Clashes and keys needed for editing are refused, **Reset** restores the original, and if Windows will not give a shortcut to StickyPad (another program holds it) you are told. Shortcuts now also work with a Greek keyboard layout.
+- **AI: automatic title.** *AI* tab > **✨ Title** suggests a short title in the language of the note; you accept, retry or cancel.
+- **AI: ask all your notes.** In the AI chat, *Note context* > **★ All my notes**. StickyPad picks the notes that best fit your question (accents and word endings do not matter, locked notes are never read), gives them to the AI, and shows under the answer which notes it looked at.
+- **Dates become reminders.** If a note says "tomorrow at 5pm", "αύριο στις 17:30", "15/11 10:00", "Friday 14:00" or "σε 2 ώρες", a small bar offers *Remind me*. It is rule-based (instant, works without the AI, Greek and English) and can be switched off in Settings > General.
+- **Import from other apps.** Settings > Data & backup > *Import from other apps*: **Google Keep** (the `.json` files from Google Takeout, or the whole Keep folder; colours and the first label are kept, trashed notes are skipped) and **Windows Sticky Notes** (reads its `plum.sqlite` directly, no extra program needed).
+- **Several screens.** StickyPad remembers which screen each note is on. If you unplug a monitor, its notes appear on your main screen (nothing is lost, and the saved place is kept); when the monitor comes back, they return to where they were. Notes that were left off screen are brought back too.
+- **Fixed**: reminder notifications showed an Electron/author name in Windows instead of just "StickyPad". The time field in *Note > Reminder* no longer shifts sideways when a reminder is set.
+
 ## 1.14.0
 - **Much lower memory use.** New *Low memory mode* (Settings > General, on by default, applies after a restart): StickyPad no longer starts the separate graphics-card process, trims background services Chromium does not need for sticky notes, and tunes the JavaScript engine for size.
 - **The AI model is no longer loaded at start.** It used to be preloaded and kept in memory for 30 minutes, which could take several GB. Now it loads when you open the AI tab or chat, stays for 5 minutes by default, and *Settings > AI > Keep the model in memory* lets you choose Unload right away, 5 minutes or 30 minutes.
 - **Pictures are read from files** instead of being copied into the page as huge text, which saves memory in notes with many images.
 - **Memory meter**: Settings > About > *Measure* shows how much memory StickyPad uses right now, split into notes, main process, graphics and other. Press it with Low memory mode on and off to see the difference on your PC.
-- **Fixed**: reminder notifications showed an Electron/author name in Windows instead of just "StickyPad". The time field in *Note > Reminder* no longer shifts sideways when a reminder is set.
 - Smaller things: the notes file is written in a compact form, notes open one after another at start instead of all at once, and the undo history of very large notes is capped by size.
 
 ## 1.13.2

@@ -24,6 +24,7 @@ Each note is its own small window on your desktop. Everything is stored on your 
 - **Colours, 9 themes, any font and size.** Pick a colour per note, or apply a theme to one note or all of them.
 - **Checklists** (Ctrl+Shift+C): tick items off, *Remove ticked* clears the finished ones, *Make plain text* turns them back into lines.
 - **Pictures**: paste or drop them straight into the text.
+- **Links**: web and e-mail addresses are underlined; **Ctrl+click** opens them.
 - **Pin** a note on top of other windows, **roll it up** to just its title, or **close** it and reopen it from the tray.
 - **Folders** to group notes; **snap** to screen edges and to other notes; **tidy up** arranges the open notes in rows.
 - **Trash** keeps deleted notes for 30 days, so nothing is lost by accident.
@@ -40,6 +41,8 @@ A search bar appears with **every match highlighted** and the current one in ora
 
 Open the gear, tab **Note**, **Reminder**. Pick a date and time, or press **10 min**, **1 hour**, **3 hours** or **Tomorrow 9:00**. When the time comes, **Windows shows a notification and clicking it opens the note**. A reminder that came due while StickyPad was closed fires the next time you start it. A small dot on the gear shows that a note has a reminder.
 
+A small bar also appears when a note **mentions a date** ("tomorrow at 5pm", "αύριο στις 17:30", "15/11 10:00", "in 2 hours") and offers to set the reminder for it. It works without the AI, in Greek and English, and can be switched off in Settings.
+
 ### Version history
 <img align="right" width="300" src="docs/images/feature_history.png" alt="The version history list with Restore buttons">
 
@@ -48,6 +51,7 @@ StickyPad quietly keeps **up to 30 older copies of each note** while you edit: a
 ### Export and import
 - **Note > Export…** saves the note as a **Markdown (.md)** or **text (.txt)** file. Checklist items become `- [x] done` and `- [ ] to do`.
 - **Settings > Data & backup > Export all notes** writes one file per note, in folders that match your note folders.
+- **Import from other apps** reads **Google Keep** (the `.json` files from Google Takeout) and **Windows Sticky Notes**.
 - **Import notes** turns `.md` and `.txt` files into notes. A first line `# Title` becomes the note's topic and lines like `- [ ] item` become checklist items.
 - **Copy note as text** (Ctrl+Shift+T) puts the whole note on the clipboard.
 
@@ -73,13 +77,17 @@ Open the gear, tab **AI**:
 | ✨ **To checklist** | Turns the note into a clean checklist. |
 | 🌐 **Translate** | **Greek → English**, anything else → Greek. Works on the selected text, or the paragraph with the cursor. |
 | ✎ **Edit live** (Ctrl+Shift+E) | The model rewrites the selected text **right in the note as it types**: fix, polish, shorten, friendlier, translate or continue writing. **Stop** cancels, **Undo** brings the original back. |
-| 💬 **Chat about it** | Opens a chat sidebar that knows the note. |
+| ✨ **Title** | Suggests a short title for the note. |
+| 💬 **Chat about it** | Opens a chat sidebar that knows the note, or **all your notes** (pick *★ All my notes*). |
 
 - Works with **Ollama on your PC (free, private)** or the **Claude API (online)**.
 - A built-in **model list** offers ten models from 0.8 GB to 8 GB (Gemma 3, Qwen 2.5, Phi-4 mini, Mistral, Llama) and downloads them with a progress bar. If Ollama itself is missing, one button downloads and installs it.
 - If the model you picked is not downloaded, or Ollama is not running, the AI tab tells you **right away** and shows where to press Download.
 - **Long notes** are processed in pieces, so even a very large note is handled completely.
 - **Greek** has dedicated rules (accents, final ς, spelling) and a guard: if the model answers in English or rewrites your text too heavily, the answer is discarded and your original stays.
+
+### Several screens
+StickyPad remembers which screen each note is on. Unplug a monitor and its notes move to your main screen; plug it back in and they return to where they were.
 
 ### Sync, backup and your data
 - **Use your notes on every PC**: *Settings > Data & backup > Choose folder…* moves the data into a folder kept in sync by OneDrive, Dropbox, Google Drive or Syncthing. Choose the same folder on your other PCs; changes appear within seconds. If two PCs edit at the same moment, the other version is saved in a `conflicts` folder, never lost.
@@ -116,12 +124,15 @@ Download **StickyPad-Setup-x.y.z.exe** from the [Releases](../../releases) page 
 | Ctrl+Shift+T | copy the note as plain text |
 | Ctrl+, | all settings |
 
+Every shortcut below can be changed in **Settings > Shortcuts**.
+
 | Anywhere in Windows (Settings > Shortcuts can turn these off) | |
 |---|---|
 | Ctrl+Alt+N | new note |
 | Ctrl+Alt+A | all notes |
 | Ctrl+Alt+C | AI chat |
 | Ctrl+Alt+S | settings |
+| Ctrl+Alt+V | new note from the clipboard |
 
 ## Your data
 Stored in `%APPDATA%\StickyPad` (`notes.json`, `images/`, `history/`, `chat.json`). Move it with *Settings > Data & backup > Choose folder*. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the data format and how the pieces fit together.

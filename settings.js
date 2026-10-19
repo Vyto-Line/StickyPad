@@ -31,8 +31,51 @@ function fill() {
   $('#lowMemory').checked = !!S.lowMemory; $('#lowMemRestart').hidden = !!S.lowMemory === !!S.lowMemoryActive;
   if (S.aiKeep) $('#aiKeep').value = S.aiKeep;
   $('#aboutNotes').textContent = `${S.notesCount} note${S.notesCount === 1 ? '' : 's'}, ${S.groups.length} folder${S.groups.length === 1 ? '' : 's'}`;
-  drawThemes(); drawFolders();
+  drawThemes(); drawFolders(); drawKeys();
 }
+/* ---------- keyboard shortcuts ---------- */
+const KS = window.StickyKeys;
+let recording = null;
+function drawKeys() {
+  if (!S || !S.keys) return;
+  for (const [box, ids] of [['#keysGlobal', KS.GLOBAL], ['#keysNote', KS.NOTE]]) {
+    const el = $(box); if (el.contains(document.activeElement) && recording) continue;
+    el.textContent = '';
+    ids.forEach(id => {
+      const row = document.createElement('div'); row.className = 'krow';
+      const n = document.createElement('span'); n.className = 'kn'; n.textContent = KS.LABELS[id];
+      const b = document.createElement('button'); b.className = 'kbtn'; b.type = 'button'; b.dataset.key = id; b.textContent = S.keys[id].replace(/\+/g, ' + ');
+      b.title = 'Click, then press the new shortcut'; b.onclick = () => recordKey(id, b);
+      const r = document.createElement('button'); r.className = 'krst'; r.type = 'button'; r.textContent = 'Reset'; r.hidden = S.keys[id] === KS.DEFAULTS[id]; r.dataset.reset = id;
+      r.onclick = () => setKey(id, KS.DEFAULTS[id]);
+      row.append(n, b, r); el.appendChild(row);
+    });
+  }
+  const w = $('#keysWarn'), bad = (S.keysFailed || []).map(id => KS.LABELS[id]);
+  w.hidden = !bad.length || !S.shortcuts; w.textContent = bad.length ? 'Windows would not give these shortcuts to StickyPad because another program uses them: ' + bad.join(', ') + '. Pick other keys.' : '';
+}
+function keyMsg(t) { const m = $('#keysMsg'); m.hidden = !t; m.textContent = t || ''; }
+function setKey(id, accel) {
+  const map = { ...S.keys, [id]: accel }; keyMsg('');
+  return save({ keys: map });
+}
+function recordKey(id, btn) {
+  if (recording) recording.stop();
+  btn.textContent = 'Press the keys…'; btn.classList.add('rec'); btn.classList.remove('bad'); keyMsg('');
+  const stop = () => { document.removeEventListener('keydown', onKey, true); btn.classList.remove('rec'); recording = null; btn.textContent = S.keys[id].replace(/\+/g, ' + '); };
+  const onKey = e => {
+    e.preventDefault(); e.stopPropagation();
+    if (e.key === 'Escape') { stop(); return; }
+    if (e.key === 'Backspace' || e.key === 'Delete') { stop(); setKey(id, KS.DEFAULTS[id]); return; }
+    const a = KS.fromEvent(e); if (!a) return;   // only Ctrl/Alt/Shift so far: wait for the real key
+    const why = KS.problem(id, a), other = !why && KS.clash(S.keys, id, a);
+    if (why || other) { btn.classList.add('bad'); btn.textContent = a.replace(/\+/g, ' + '); keyMsg(why || `${a} is already used for “${KS.LABELS[other]}”.`); return; }
+    stop(); setKey(id, a);
+  };
+  recording = { stop }; document.addEventListener('keydown', onKey, true);
+  btn.onblur = () => { if (recording && recording.stop === stop) stop(); };
+}
+$('#keysReset').onclick = () => { keyMsg(''); save({ keys: {} }); };
 function drawThemes() {
   const box = $('#themes'); box.textContent = '';
   TH.THEMES.forEach(t => {
@@ -81,6 +124,14 @@ $('#exportAll').onclick = async () => {
   if (r.ok) m.textContent = 'Exported ' + r.count + (r.count === 1 ? ' note' : ' notes') + (r.skipped ? ' (' + r.skipped + ' locked ' + (r.skipped === 1 ? 'note was' : 'notes were') + ' left out)' : '') + '.';
   else if (!r.cancelled) m.textContent = r.error || 'Could not export.';
 };
+for (const [id, kind] of [['#impKeep', 'keep'], ['#impSticky', 'sticky']]) {
+  $(id).onclick = async () => {
+    const b = $(id), m = $('#importOtherInfo'), old = b.textContent; b.disabled = true; b.textContent = 'Importing…';
+    const r = await api.settingsAction('importOther', kind); b.disabled = false; b.textContent = old;
+    if (r && r.ok) m.textContent = `Imported ${r.count} note${r.count === 1 ? '' : 's'}.` + (r.skipped ? ` ${r.skipped} trashed or empty skipped.` : '') + (r.failed ? ` ${r.failed} could not be read.` : '');
+    else if (r && r.error) m.textContent = r.error;
+  };
+}
 $('#importNotes').onclick = async () => {
   const r = await api.settingsAction('importNotes'), m = $('#importInfo');
   if (r.ok) m.textContent = 'Imported ' + r.count + (r.count === 1 ? ' note' : ' notes') + (r.failed ? ' (' + r.failed + ' could not be read)' : '') + '.';

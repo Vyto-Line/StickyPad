@@ -228,6 +228,16 @@ body.rolled #editbar{display:none}
 body.hasRemind #cfg::after{content:"";position:absolute;width:6px;height:6px;margin:-9px 0 0 9px;border-radius:50%;background:var(--accent)}
 #cfg{position:relative}
 
+/* links and date suggestion */
+::highlight(links){color:#0b62d6;text-decoration:underline}
+body.dark ::highlight(links){color:#7db3ff;text-decoration:underline}
+#ed.linkhover{cursor:pointer}
+#datebar{flex:none;display:flex;align-items:center;gap:6px;padding:5px 8px;background:var(--tint);border-top:1px solid var(--line);font-size:12.5px}
+#datebar[hidden]{display:none}
+#datebar #dateTxt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#datebar .btn{flex:none;padding:3px 8px;font-size:11.5px}
+body.rolled #datebar{display:none}
+
 /* find in note */
 #findbar{flex:none;display:flex;align-items:center;gap:3px;padding:4px 6px;background:var(--tint);border-bottom:1px solid var(--line)}
 #findbar[hidden]{display:none}

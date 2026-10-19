@@ -32,6 +32,16 @@ h2{margin:0 0 14px;font-size:20px}
 .lbl .path{font-family:Consolas,monospace;font-size:11.5px;overflow-wrap:anywhere}
 .ctl{flex:none;display:flex;align-items:center;gap:8px}
 .ctl.wide{width:100%}
+.keylist{display:flex;flex-direction:column;gap:2px;margin:-4px 0 6px}
+.krow{display:flex;align-items:center;gap:8px;padding:5px 10px;border-radius:8px}
+.krow:hover{background:var(--bg)}
+.krow .kn{flex:1;font-size:13px}
+.krow .kbtn{min-width:150px;text-align:center;font:600 12px Consolas,monospace;padding:4px 10px;border:1px solid var(--line);border-bottom-width:2px;border-radius:7px;background:var(--bg);color:var(--fg);cursor:pointer}
+.krow .kbtn.rec{border-color:var(--accent,#d98c00);outline:2px solid var(--accent,#d98c00);outline-offset:1px}
+.krow .kbtn.bad{border-color:#d33}
+.krow .krst{border:0;background:none;color:var(--mute);cursor:pointer;font-size:12px;padding:2px 6px}
+.krow .krst[hidden]{display:none}
+.hint.warn{color:#c24d00}
 .ctl.keys{flex-wrap:wrap;max-width:430px;justify-content:flex-end}
 .kv{display:inline-flex;align-items:center;gap:3px;font-size:12px;color:var(--mute);margin:2px 8px 2px 0}
 kbd{font:600 11px Consolas,monospace;background:var(--bg);border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 6px;color:var(--fg)}

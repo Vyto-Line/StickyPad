@@ -13,6 +13,11 @@ const fs = require('fs');
 const crypto = require('crypto');
 const { pathToFileURL } = require('url');
 const launchcfg = require('./launchcfg');
+const KEYS = require('./keys');
+const links = require('./links');
+const notesearch = require('./notesearch');
+const importers = require('./importers');
+const placement = require('./placement');
 
 // A second launch must stop immediately (otherwise it would open duplicate notes).
 if (!app.requestSingleInstanceLock()) process.exit(0);
@@ -33,7 +38,7 @@ let file, saveTimer, allTimer, firstRun = false, DATA = null, dirty = false, las
 const dataDir = () => DATA || app.getPath('userData');
 const DEFAULT_SETTINGS = {
   hideTaskbar: true, snap: true, launch: 'notes', splash: true, name: '', lang: 'en', theme: 'classic',
-  snapDistance: 10, defaultSize: 16, trashDays: 30, shortcuts: true, chatHistory: true, autoBackup: true, lastBackup: 0, autoUpdate: true,
+  snapDistance: 10, defaultSize: 16, trashDays: 30, shortcuts: true, keys: {}, chatHistory: true, autoBackup: true, lastBackup: 0, autoUpdate: true,
   ai: { provider: 'off', model: '', url: 'http://localhost:11434', keyEnc: '', keepAlive: '5m' }
 };
 let notes = {}, trash = [], groups = [], settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
@@ -203,10 +208,30 @@ function tidy() {   // lay open notes out in rows, folder by folder
 }
 
 /* ---------- windows ---------- */
+const relocated = new Set();   // notes shown somewhere else for now because their screen is not connected
+const displayList = () => screen.getAllDisplays().map(d => ({ id: d.id, bounds: d.bounds, workArea: d.workArea }));
+// A screen was plugged in or out: bring stranded notes to the main screen, and send them back when their screen returns.
+function onScreensChanged() {
+  const ds = displayList(), prim = screen.getPrimaryDisplay().id;
+  wins.forEach((w, id) => {
+    const n = notes[id]; if (!n || w.isDestroyed()) return;
+    if (relocated.has(id)) {
+      const back = placement.comeHome(n.home, n.bounds, ds);
+      if (back) { relocated.delete(id); w.setBounds({ ...back, height: n.rolled ? ROLL_H : back.height }); }
+      return;
+    }
+    const r = placement.place(w.getBounds(), n.home, ds, prim);
+    if (r.moved) { relocated.add(id); w.setBounds(r.bounds); }
+  });
+}
 function openNote(n) {
   const existing = wins.get(n.id);
   if (existing && !existing.isDestroyed()) { existing.show(); return existing; }
-  const b = { ...n.bounds }; if (n.rolled) b.height = ROLL_H;
+  let b = { ...n.bounds }; if (n.rolled) b.height = ROLL_H;
+  if (Number.isFinite(b.x) && Number.isFinite(b.y)) {   // a screen that is gone (or a note off screen) brings the note to a screen you can see
+    const pl = placement.place(b, n.home, displayList(), screen.getPrimaryDisplay().id);
+    if (pl.moved) { b = pl.bounds; relocated.add(n.id); } else relocated.delete(n.id);
+  }
   const w = new BrowserWindow({
     ...b, minWidth: MIN_W, minHeight: n.rolled ? ROLL_H : MIN_H, frame: false, show: false, icon: iconPath,
     maximizable: false, fullscreenable: false, skipTaskbar: !!settings.hideTaskbar, backgroundColor: n.color,
@@ -217,14 +242,20 @@ function openNote(n) {
   if (n.pinned) w.setAlwaysOnTop(true, 'screen-saver');
   w.loadFile('note.html', { query: { id: n.id } });
   w.once('ready-to-show', () => { w.show(); pingAll(); });
-  const keep = () => {
+  const keep = (byHand) => {
     const m = notes[n.id]; if (!m || w.isDestroyed()) return;
-    const nb = w.getBounds();
+    const ds = displayList();
+    if (byHand === true) relocated.delete(n.id);
+    else if (relocated.has(n.id) || (m.home && !ds.some(d => d.id === m.home.id))) { relocated.add(n.id); return; }   // its screen is gone: where it sits now is temporary, so the real place is kept
+    const nb = w.getBounds(), d = placement.displayOf(nb, ds);
     m.bounds = m.rolled ? { ...m.bounds, x: nb.x, y: nb.y, width: nb.width } : nb;   // a rolled-up note remembers its full height
+    if (d) m.home = { id: d.id, bounds: d.bounds };                                     // and which screen it was on
     save();
   };
-  w.on('move', keep); w.on('resize', keep);
+  w.on('move', () => keep()); w.on('resize', () => keep());
+  w.on('resized', () => keep(true));
   w.on('moved', () => {   // fires once when you release the note, so nothing tugs at it while you drag
+    keep(true);
     if (!settings.snap || w.isDestroyed()) return;
     const nb = w.getBounds(), p = snapPos(w, nb);
     if (p.x !== nb.x || p.y !== nb.y) w.setPosition(p.x, p.y);
@@ -376,7 +407,7 @@ ipcMain.handle('note:get', e => {
   const n = notes[idOf(e)]; if (!n) return null;
   const { lock, ...rest } = n;
   const bs = canEditBody(n) ? blocksOf(n).map(b => b.t === 'img' ? { t: 'img', id: b.id, src: readImg(b.id) } : b).filter(b => b.t !== 'img' || b.src) : [];
-  return { ...rest, blocks: bs, locked: !!lock, unlocked: sessions.has(n.id), imgBase: imgBase() };
+  return { ...rest, blocks: bs, locked: !!lock, unlocked: sessions.has(n.id), imgBase: imgBase(), keys: curKeys(), suggestDates: settings.suggestDates !== false };
 });
 
 /* ---------- export and import (Markdown / plain text files) ---------- */
@@ -429,6 +460,62 @@ function importNotes(parent) {
     } catch { failed++; }
   });
   save(); return { ok: count > 0, count, failed };
+}
+
+// Notes from other apps: Google Keep (Takeout .json files or a folder) and Windows Sticky Notes (plum.sqlite).
+function groupByName(name) {
+  name = String(name || '').trim().slice(0, 40); if (!name) return null;
+  const g = groups.find(x => x.name.toLowerCase() === name.toLowerCase()); if (g) return g.id;
+  const ng = { id: rid(), name, collapsed: false }; groups.push(ng); return ng.id;
+}
+function jsonFilesIn(p, out = [], depth = 0) {
+  let st; try { st = fs.statSync(p); } catch { return out; }
+  if (st.isFile()) { if (/\.json$/i.test(p)) out.push(p); }
+  else if (st.isDirectory() && depth < 4) { for (const f of fs.readdirSync(p)) if (out.length < 20000) jsonFilesIn(path.join(p, f), out, depth + 1); }
+  return out;
+}
+function addImported(list) {
+  let count = 0;
+  list.forEach((c, i) => {
+    const blocks = sanitizeBlocks(c.blocks); if (!blocks.length && !c.title) return;
+    const k = (Object.keys(notes).length + i) % 8;
+    const n = newNote({ title: String(c.title || '').slice(0, 60), blocks, text: textOf(blocks), color: c.color || undefined, group: groupByName(c.folder),
+      bounds: { x: 80 + k * 28, y: 80 + k * 28, width: 300, height: 320 } });
+    if (c.updated) n.updated = c.updated;
+    notes[n.id] = n; count++;
+    if (count <= 5) openNote(n);   // a big import does not flood the screen: the rest are in All notes
+  });
+  save(); return count;
+}
+function importOther(parent, kind) {
+  try {
+    if (kind === 'keep') {
+      const r = dialog.showOpenDialogSync(parent || undefined, { title: 'Choose your Google Keep files (the .json files, or the Keep folder from Google Takeout)', properties: ['openFile', 'openDirectory', 'multiSelections'],
+        filters: [{ name: 'Google Keep notes (.json)', extensions: ['json'] }], defaultPath: app.getPath('downloads') });
+      if (!r || !r.length) return { ok: false, cancelled: true };
+      const files = r.flatMap(p => jsonFilesIn(p)); const list = []; let failed = 0, skipped = 0;
+      for (const f of files) {
+        try { if (fs.statSync(f).size > MAX_TEXT) { failed++; continue; } const c = importers.fromKeep(fs.readFileSync(f, 'utf8')); if (!c) continue; if (c.skipped) { skipped++; continue; } list.push(c); } catch { failed++; }
+      }
+      if (!list.length) return { ok: false, error: files.length ? 'No Google Keep notes were found in those files.' : 'No .json files were found there.', skipped };
+      return { ok: true, count: addImported(list), failed, skipped };
+    }
+    if (kind === 'sticky') {
+      const def = path.join(process.env.LOCALAPPDATA || '', 'Packages', 'Microsoft.MicrosoftStickyNotes_8wekyb3d8bbwe', 'LocalState', 'plum.sqlite');
+      let f = fs.existsSync(def) ? def : null;
+      if (!f) {
+        const r = dialog.showOpenDialogSync(parent || undefined, { title: 'Choose plum.sqlite (Windows Sticky Notes keeps it in %LocalAppData%\\Packages\\Microsoft.MicrosoftStickyNotes_8wekyb3d8bbwe\\LocalState)',
+          properties: ['openFile'], filters: [{ name: 'Sticky Notes database', extensions: ['sqlite'] }], defaultPath: process.env.LOCALAPPDATA || app.getPath('home') });
+        if (!r || !r[0]) return { ok: false, cancelled: true };
+        f = r[0];
+      }
+      const wal = fs.existsSync(f + '-wal') ? fs.readFileSync(f + '-wal') : null;
+      const list = importers.fromStickyNotes(fs.readFileSync(f), wal);
+      if (!list.length) return { ok: false, error: 'No notes were found in Windows Sticky Notes.' };
+      return { ok: true, count: addImported(list), failed: 0, skipped: 0 };
+    }
+    return { ok: false, error: 'Unknown app.' };
+  } catch (err) { return { ok: false, error: 'Could not read that file: ' + (err && err.message ? err.message : err) }; }
 }
 
 /* ---------- version history (older copies of a note) ---------- */
@@ -637,12 +724,14 @@ ipcMain.handle('ai:set', (e, p) => {
   if (p.clearKey) { settings.ai.keyEnc = ''; memKey = null; }
   save(); return true;   // (the model is loaded into memory only when you actually use the AI, see ai:warmup)
 });
+ipcMain.handle('app:openLink', (e, url) => { if (!links.safe(url)) return false; shell.openExternal(String(url)); return true; });
 ipcMain.handle('ai:run', async (e, task, payload) => {
   try {
     const cfg = aiCfg();
     if (task === 'summarize') return { ok: true, text: await ai.summarize(cfg, String((payload && payload.text) || '')) };
     if (task === 'grammar') return { ok: true, items: await ai.fixGrammar(cfg, payload && payload.items) };
     if (task === 'checklist') return { ok: true, items: await ai.toChecklist(cfg, String((payload && payload.text) || '')) };
+    if (task === 'title') return { ok: true, text: await ai.suggestTitle(cfg, String((payload && payload.text) || '')) };
     if (task === 'ping') return { ok: true, text: await ai.ping(cfg) };
     return { ok: false, error: 'Unknown task.' };
   } catch (err) {
@@ -766,8 +855,18 @@ function chatContext(text) {
   text = String(text || ''); const MAX = 40000;
   return text.length <= MAX ? text : text.slice(0, MAX * 0.4) + '\n[… middle of the note left out …]\n' + text.slice(-MAX * 0.6);
 }
-function chatSystem(noteId) {
+// noteId '*' = "all my notes": the notes that best fit the question are given to the AI
+function chatSystem(noteId, question, sources) {
   let sys = ai.SYS_CHAT;
+  if (noteId === '*') {
+    const open = Object.values(notes).filter(x => !x.lock);
+    const r = notesearch.build(open, question || '');
+    if (sources) { sources.length = 0; r.used.forEach(u => sources.push(u.title)); }
+    sys += '\n\nThe user lets you read their sticky notes (' + r.count + ' notes, locked ones excluded). ' +
+      (r.matched ? 'These are the notes that best fit their question. Answer from them and say which note you used. If the answer is not in them, say so; do not guess.' : 'No note clearly matches the question; these are the newest notes. If the answer is not in them, say so; do not guess.') +
+      (r.context ? '\n---\n' + r.context + '\n---' : '\n(There are no notes yet.)') + (r.titles.length ? '\nAll note titles: ' + r.titles.join(' | ') : '');
+    return sys;
+  }
   const n = notes[noteId];
   if (n && !n.lock) sys += `\n\nThe user attached this sticky note as context.\nTitle: ${n.title || '(none)'}\n---\n${chatContext(n.text)}\n---`;
   return sys;
@@ -811,7 +910,10 @@ ipcMain.handle('chat:send', async (e, p) => {
   const send = m => { if (!sender.isDestroyed()) sender.send('chat:event', { id, ...m }); };
   const ac = new AbortController(); chatJobs.set(id, ac);
   try {
-    const full = await ai.chatStream(aiCfg(), chatSystem(p && p.noteId), cleanChat(p && p.messages, 20), t => send({ type: 'chunk', text: t }), ac.signal);
+    const msgs = cleanChat(p && p.messages, 20), lastUser = [...msgs].reverse().find(m => m.role === 'user'), src = [];
+    const sys = chatSystem(p && p.noteId, lastUser ? lastUser.content : '', src);
+    if (src.length) send({ type: 'sources', titles: src });
+    const full = await ai.chatStream(aiCfg(), sys, msgs, t => send({ type: 'chunk', text: t }), ac.signal);
     send({ type: 'done', text: full });
   } catch (err) {
     if (ac.signal.aborted) send({ type: 'done', stopped: true });
@@ -888,13 +990,35 @@ ipcMain.handle('note:remind', (e, ts) => {
 
 /* ---------- global shortcuts ---------- */
 function unregisterShortcuts() { try { globalShortcut.unregisterAll(); } catch {} }
+let keysFailed = [];   // shortcuts Windows would not give us (another program already uses them)
+const curKeys = () => KEYS.merge(settings.keys);
 function registerShortcuts() {
-  unregisterShortcuts();
-  const reg = (accel, fn) => { try { globalShortcut.register(accel, fn); } catch {} };
-  reg('Control+Alt+N', () => makeNote(null));
-  reg('Control+Alt+A', () => openAll());
-  reg('Control+Alt+C', () => openChat());
-  reg('Control+Alt+S', () => openSettings());
+  unregisterShortcuts(); keysFailed = [];
+  const k = curKeys();
+  const reg = (id, fn) => { let ok = false; try { ok = globalShortcut.register(KEYS.toElectron(k[id]), fn); } catch {} if (!ok) keysFailed.push(id); };
+  reg('g_new', () => makeNote(null));
+  reg('g_all', () => openAll());
+  reg('g_chat', () => openChat());
+  reg('g_settings', () => openSettings());
+  reg('g_clip', () => newFromClipboard());
+}
+// A new note holding whatever text you last copied.
+function newFromClipboard() {
+  let text = ''; try { text = clipboard.readText() || ''; } catch {}
+  if (!text.trim()) { try { new Notification({ title: 'StickyPad', body: 'There is no text on the clipboard to make a note from.' }).show(); } catch {} return null; }
+  if (text.length > MAX_TEXT) text = text.slice(0, MAX_TEXT);
+  const c = convert.fromMarkdown(text, ''), blocks = sanitizeBlocks(c.blocks);
+  const n = makeNote(null, { title: c.title, blocks, text: textOf(blocks) });
+  return n;
+}
+function setKeys(p) {
+  const want = {};
+  for (const id of Object.keys(KEYS.DEFAULTS)) { const a = KEYS.norm(p && p[id]); if (a && !KEYS.problem(id, a)) want[id] = a; }
+  const merged = KEYS.merge(want);   // two actions with the same keys: the later one keeps its default
+  settings.keys = Object.fromEntries(Object.keys(merged).filter(id => merged[id] !== KEYS.DEFAULTS[id]).map(id => [id, merged[id]]));   // only what differs is stored
+  if (settings.shortcuts) registerShortcuts();
+  wins.forEach(w => { if (!w.isDestroyed()) w.webContents.send('keys:changed', curKeys()); });
+  save();
 }
 
 /* ---------- backups and trash retention ---------- */
@@ -932,7 +1056,7 @@ function allSettings() {
   return {
     version: app.getVersion(), packaged: app.isPackaged, startup: startupOn(), dataPath: dataDir(), dataCustom: dataDir() !== app.getPath('userData'),
     hideTaskbar: !!settings.hideTaskbar, snap: !!settings.snap, snapDistance: settings.snapDistance, defaultSize: settings.defaultSize,
-    trashDays: settings.trashDays, trashCount: trash.length, shortcuts: !!settings.shortcuts, chatHistory: !!settings.chatHistory,
+    trashDays: settings.trashDays, trashCount: trash.length, shortcuts: !!settings.shortcuts, suggestDates: settings.suggestDates !== false, keys: curKeys(), keysFailed: settings.shortcuts ? keysFailed : [], chatHistory: !!settings.chatHistory,
     autoBackup: !!settings.autoBackup, lastBackup: settings.lastBackup || 0, backupCount: backup.list(app.getPath('userData')).length,
     autoUpdate: settings.autoUpdate !== false, update: updater ? updater.get() : null,
     theme: settings.theme, prefs: prefs(), groups, notesCount: Object.keys(notes).length,
@@ -950,8 +1074,10 @@ ipcMain.handle('settings:set', (e, p) => {
     if (Number.isFinite(p.snapDistance)) settings.snapDistance = clampInt(p.snapDistance, 4, 40);
     if (Number.isFinite(p.defaultSize)) settings.defaultSize = clampInt(p.defaultSize, 10, 48);
     if ([7, 14, 30, 60, 90].includes(p.trashDays)) { settings.trashDays = p.trashDays; purgeTrash(); pingTrash(); }
+    if (p.keys && typeof p.keys === 'object') setKeys(p.keys);
     if ('shortcuts' in p) { settings.shortcuts = !!p.shortcuts; if (settings.shortcuts) registerShortcuts(); else unregisterShortcuts(); }
     if ('chatHistory' in p) { settings.chatHistory = !!p.chatHistory; if (!settings.chatHistory) clearChat(); }
+    if ('suggestDates' in p) settings.suggestDates = !!p.suggestDates;
     if ('autoBackup' in p) settings.autoBackup = !!p.autoBackup;
     if ('autoUpdate' in p) settings.autoUpdate = !!p.autoUpdate;
     if ('lowMemory' in p) { try { launchcfg.write(app.getPath('userData'), { lowMemory: !!p.lowMemory }); } catch {} }   // used at the next start
@@ -962,11 +1088,12 @@ ipcMain.handle('settings:set', (e, p) => {
   }
   return allSettings();
 });
-ipcMain.handle('settings:action', (e, name) => {
+ipcMain.handle('settings:action', (e, name, arg) => {
   try {
     if (name === 'backupNow') { doBackup(); return { ok: true, info: allSettings() }; }
     if (name === 'exportAll') return exportAll(settingsWin);
     if (name === 'importNotes') return importNotes(settingsWin);
+    if (name === 'importOther') return importOther(settingsWin, arg);
     if (name === 'memory') return { ok: true, ...memoryUse() };
     if (name === 'restartApp') { flush(); app.relaunch(); setTimeout(() => app.exit(0), 200); return { ok: true }; }
     if (name === 'openUpdateLog') {
@@ -1007,6 +1134,7 @@ app.whenReady().then(async () => {
   load(); sweepHistory(); sweepImages(); lastMtime = datadir.mtimeOf(file); watchData();
   if (settings.autoBackup && !firstRun && !backup.sameDay(settings.lastBackup)) { try { doBackup(); } catch {} }   // one safety copy a day
   createTray();
+  ['display-added', 'display-removed', 'display-metrics-changed'].forEach(ev => screen.on(ev, () => setTimeout(onScreensChanged, 400)));
   // Only the very first launch (or a missing tray) creates a blank note; otherwise closed empty notes stay gone.
   if (!Object.keys(notes).length && (firstRun || !tray)) { const n = newNote(); notes[n.id] = n; }
   if (settings.shortcuts) registerShortcuts();

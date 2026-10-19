@@ -78,13 +78,16 @@ function generate() {
   curId = 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); curText = '';
   const r = addMsg('assistant', ''); curBubble = r;
   const dots = document.createElement('span'); dots.className = 'typing'; dots.innerHTML = '<i></i><i></i><i></i>'; r.b.appendChild(dots);
+  curSources = null;
   api.chatSend({ id: curId, messages, noteId });
 }
 let raf = 0;
 function paint() { if (raf) return; raf = requestAnimationFrame(() => { raf = 0; if (curBubble) { renderMd(curBubble.b, curText); toBottom(); } }); }
 
+let curSources = null;
 api.onChatEvent(m => {
   if (m.id !== curId) return;
+  if (m.type === 'sources') { curSources = Array.isArray(m.titles) ? m.titles.slice(0, 8) : null; return; }
   if (m.type === 'chunk') { curText += m.text; paint(); return; }
   const r = curBubble; curBubble = null; curId = null; setBusy(false);
   if (m.type === 'error') {
@@ -97,6 +100,7 @@ api.onChatEvent(m => {
   }
   if (!curText.trim()) { r.wrap.remove(); if (!messages.length) $('#empty').hidden = false; return; }   // stopped before anything arrived
   renderMd(r.b, curText); addActions(r.wrap, curText);
+  if (curSources && curSources.length) { const s = document.createElement('div'); s.className = 'src'; s.textContent = 'Looked at: ' + curSources.join(' · '); r.wrap.appendChild(s); }
   messages.push({ role: 'assistant', content: curText }); persist();
 });
 
@@ -122,9 +126,10 @@ $('#newChat').onclick = () => { if (busy) api.chatStop(curId); messages = []; pe
 async function loadNotes(select) {
   const list = await api.chatNotes(), sel = $('#ctx');
   sel.innerHTML = ''; const none = document.createElement('option'); none.value = ''; none.textContent = 'None'; sel.appendChild(none);
+  const all = document.createElement('option'); all.value = '*'; all.textContent = '★ All my notes (search them)'; sel.appendChild(all);
   list.forEach(n => { const o = document.createElement('option'); o.value = n.id; o.textContent = n.title; sel.appendChild(o); });
   const want = select !== undefined ? select : noteId;
-  sel.value = list.some(n => n.id === want) ? want : ''; noteId = sel.value || null;
+  sel.value = want === '*' || list.some(n => n.id === want) ? want : ''; noteId = sel.value || null;
 }
 $('#ctx').onchange = e => { noteId = e.target.value || null; persist(); };
 api.onChatAttach(async id => { await loadNotes(id); persist(); input.focus(); });
