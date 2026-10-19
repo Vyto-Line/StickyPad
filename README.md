@@ -34,7 +34,7 @@ The icons in the header, from the left: add a checklist item, pin, all notes, se
 ### Settings panel on the right
 <img align="right" width="300" src="docs/images/feature_ai.png" alt="A note with the settings panel docked on its right side">
 
-The gear opens a panel **beside your text instead of on top of it**, so you can keep reading the note while you change its colour, set a reminder or run the AI. A narrow note grows to make room while the panel is open and returns to its size when you close it. It is **one short list, no tabs**: *Look* (colour, font, size), *This note* (Reminder, Folder, Lock, Earlier versions, Copy or export: each is one line and only the one you click opens) and *AI* (one list and a **Run** button). The small gear at the top (or Ctrl+,) opens the full Settings. Everything about *the app* (start with Windows, snapping, shortcuts, backups) lives in Settings only, so each thing has one place.
+The **sliders button** (*This note*) opens a panel **beside your text instead of on top of it**, so you can keep reading the note while you change its colour, set a reminder or run the AI. A narrow note grows to make room while the panel is open and returns to its size when you close it. It is **one short list, no tabs**: *Look* (colour, font, size), *This note* (Reminder, Folder, Lock, Earlier versions, Copy or export: each is one line and only the one you click opens) and *AI* (one list and a **Run** button). The small gear at the top (or Ctrl+,) opens the full Settings. Everything about *the app* (start with Windows, snapping, shortcuts, backups) lives in Settings only, so each thing has one place.
 
 <br clear="right">
 
@@ -46,17 +46,17 @@ A search bar appears with **every match highlighted** and the current one in ora
 ### Reminders
 <img align="right" width="300" src="docs/images/feature_reminder.png" alt="The Note tab showing a reminder set for 5:55 PM">
 
-Open the gear and click **Reminder**. Pick a date and time, or press **10 min**, **1 hour**, **3 hours** or **Tomorrow 9:00**. When the time comes, **Windows shows a notification and clicking it opens the note**. A reminder that came due while StickyPad was closed fires the next time you start it. A small dot on the gear shows that a note has a reminder.
+Open the sliders button (*This note*) and click **Reminder**. Pick a date and time, or press **10 min**, **1 hour**, **3 hours** or **Tomorrow 9:00**. When the time comes, **Windows shows a notification and clicking it opens the note**. A reminder that came due while StickyPad was closed fires the next time you start it. A small dot on the gear shows that a note has a reminder.
 
 A small bar also appears when a note **mentions a date** ("tomorrow at 5pm", "αύριο στις 17:30", "15/11 10:00", "in 2 hours") and offers to set the reminder for it. It works without the AI, in Greek and English, and can be switched off in Settings.
 
 ### Version history
 <img align="right" width="300" src="docs/images/feature_history.png" alt="The version history list with Restore buttons">
 
-StickyPad quietly keeps **up to 30 older copies of each note** while you edit: at least one every 5 minutes, and always one right before a sudden big deletion (for example Ctrl+A then Delete). Open the gear and click **Earlier versions**, see each copy with its time, word count and a preview, and press **Restore** (it asks once more to be sure). Restoring keeps today's version in the list as well, so you can always go back. Locked notes keep no copies, so nothing readable is left behind.
+StickyPad quietly keeps **up to 30 older copies of each note** while you edit: at least one every 5 minutes, and always one right before a sudden big deletion (for example Ctrl+A then Delete). Open the sliders button (*This note*) and click **Earlier versions**, see each copy with its time, word count and a preview, and press **Restore** (it asks once more to be sure). Restoring keeps today's version in the list as well, so you can always go back. Locked notes keep no copies, so nothing readable is left behind.
 
 ### Export and import
-- **Copy or export > Export…** (in the gear panel) saves the note as a **Markdown (.md)** or **text (.txt)** file. Checklist items become `- [x] done` and `- [ ] to do`.
+- **Copy or export > Export…** (in the note panel) saves the note as a **Markdown (.md)** or **text (.txt)** file. Checklist items become `- [x] done` and `- [ ] to do`.
 - **Settings > Data & backup > Export all notes** writes one file per note, in folders that match your note folders.
 - **Import from other apps** reads **Google Keep** (the `.json` files from Google Takeout) and **Windows Sticky Notes**.
 - **Import notes** turns `.md` and `.txt` files into notes. A first line `# Title` becomes the note's topic and lines like `- [ ] item` become checklist items.
@@ -75,7 +75,7 @@ Give a note a password (4+ characters) and its text is stored **encrypted (AES-2
 ### AI helper (off by default)
 <img align="right" width="300" src="docs/images/feature_chat_all.png" alt="The AI chat answering a question from all notes, with a Looked at line">
 
-Open the gear: the **AI** part is one list and a **Run** button (the model and connection options are folded under *Model and connection*, and open by themselves when something needs fixing):
+Open the sliders button (*This note*): the **AI** part is one list and a **Run** button (the model and connection options are folded under *Model and connection*, and open by themselves when something needs fixing):
 
 | In the list | What it does |
 |---|---|
@@ -133,7 +133,7 @@ A theme colours **the whole app**: the Home window, Settings, the AI chat, the n
 Download **StickyPad-Setup-x.y.z.exe** from the [Releases](../../releases) page and run it. Windows SmartScreen may warn because the app is not code-signed; choose "More info", then "Run anyway".
 
 ### Local AI in two minutes
-1. Open a note, click the gear, choose the **AI** tab, set *Use* to **Ollama**
+1. Open a note, click the sliders button (*This note*), go to the **AI** part, set *Use* to **Ollama**
 2. If you see "Ollama is not installed", press **Download and install Ollama**
 3. Choose a model from the list (for Greek try *Gemma 4 E4B* on a PC with 16 GB of RAM, *Qwen3 8B*, or *Gemma 3 4B* on 8 GB) and wait for the download
 4. Select text (or put the cursor in a paragraph) and press **Edit live** (Ctrl+Shift+E) or **Translate**

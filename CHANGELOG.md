@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.14.18
+- **No more two gears.** The button in a note's title bar is now a *sliders* icon named "This note" (colours, transparency, reminder, folder, lock, AI). The gear inside the panel is gone: **All settings…** is now a link at the bottom of the panel, next to *Chat about this note* and *Move to trash*. A gear no longer means two different things.
+- **The update buttons are colourful.** *Download* and *Restart to update* (in the bar and in *Settings > About*) use the same pink, purple and cyan as the neon progress bar instead of yellow, with dark text that stays easy to read.
+- Not tried on a real Windows PC yet.
+
 ## 1.14.17
 - **You decide when to download an update.** When a new version is found, StickyPad shows **Download** (in the bar at the bottom of a note or the Home window, and in *Settings > About*). Nothing is downloaded until you press it. The neon progress bar shows the download, and when it is done you press **Restart to update**. (Before, the download started by itself.)
 - Not tried on a real Windows PC yet.

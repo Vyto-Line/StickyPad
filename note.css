@@ -275,7 +275,7 @@ body.rolled #findbar{display:none}
 .prow[open]>summary::after{transform:rotate(45deg)}
 .pbody{display:flex;flex-direction:column;gap:8px;padding:8px 8px 10px 32px}
 .airun{gap:6px}.airun .field{flex:1;min-width:0}
-.pfoot{display:flex;justify-content:space-between;gap:6px;margin-top:4px;padding-top:6px;border-top:1px solid var(--line)}
+.pfoot{display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px 6px;margin-top:4px;padding-top:6px;border-top:1px solid var(--line)}
 .pfoot .linkbtn{width:auto;flex:none;padding:6px 8px}
 .pfoot .linkbtn.danger{color:#b42318;opacity:1}body.dark .pfoot .linkbtn.danger{color:#ff9b8f}
 @media (prefers-reduced-motion:reduce){.prow>summary::after{transition:none}}

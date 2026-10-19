@@ -10,7 +10,7 @@
       'background:rgba(14,12,26,.95);color:#fff;font:12.5px "Segoe UI",system-ui,sans-serif;box-shadow:0 4px 18px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.08)}' +
     '#updbar[hidden]{display:none}#updbar .ub-t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
     '#updbar button{flex:none;border:0;border-radius:8px;font:inherit;cursor:pointer;padding:4px 10px}' +
-    '#updbar .ub-go,#updbar .ub-dl{background:#ffd54a;color:#1c1a12;font-weight:600}#updbar .ub-go:hover,#updbar .ub-dl:hover{background:#ffe07a}#updbar .ub-go[hidden],#updbar .ub-dl[hidden]{display:none}' +
+    '#updbar .ub-go,#updbar .ub-dl{background:linear-gradient(100deg,#ff2bd6,#a855ff 50%,#00e5ff);color:#0b0b14;font-weight:700;box-shadow:0 0 10px rgba(168,85,255,.55)}#updbar .ub-go:hover,#updbar .ub-dl:hover{filter:brightness(1.12);box-shadow:0 0 14px rgba(0,229,255,.7)}#updbar .ub-go:disabled,#updbar .ub-dl:disabled{opacity:.6;cursor:default}#updbar .ub-go[hidden],#updbar .ub-dl[hidden]{display:none}' +
     '#updbar .ub-x{background:transparent;color:#fff;opacity:.7;padding:4px 7px}#updbar .ub-x:hover{opacity:1}' +
     '#updbar button:focus-visible{outline:2px solid #00e5ff;outline-offset:1px}' +
     // the neon progress bar

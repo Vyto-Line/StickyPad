@@ -104,7 +104,7 @@ with sync_playwright() as p:
     pg.evaluate("document.querySelector('#aiEdit').click()"); pg.wait_for_timeout(600); ok(text(pg)=='Once upon a time.','continue writes into an empty note: %r'%text(pg))
     # keyboard shortcut + settings button
     pg=page('note.html'); pg.evaluate("__S.editOut='X y'"); pg.focus('#ed'); pg.keyboard.press('Control+Shift+E'); pg.wait_for_timeout(400); ok(text(pg)=='X y','Ctrl+Shift+E starts live edit')
-    pg.click('#cfg'); pg.click('#tabSettings'); ok(['openSettings',None] in pg.evaluate('__S.calls'),'gear button in the popover opens Settings')
+    pg.click('#cfg'); pg.click('#allSet'); ok(['openSettings',None] in pg.evaluate('__S.calls'),'All settings… in the panel footer opens Settings')
     pg.keyboard.press('Control+,'); pg.wait_for_timeout(100)
     ok(sum(1 for c in pg.evaluate('__S.calls') if c[0]=='openSettings')>=1,'Ctrl+, shortcut wired')
     pg.screenshot(path=os.path.join(OUT,'note_edit.png'))

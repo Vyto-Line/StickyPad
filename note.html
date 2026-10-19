@@ -15,13 +15,13 @@
   <button id="pin" class="ib" title="Keep on top" aria-label="Keep on top" aria-pressed="false"><svg class="i" viewBox="0 0 24 24"><path d="M12 16.5V22M8 3h8l-1 7 3 3.2v1.8H6v-1.8L9 10 8 3z"/></svg></button>
   <button id="allTop" class="ib" hidden title="All notes (Ctrl+Alt+A)" aria-label="All notes"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/></svg></button>
   <button id="lock" class="ib" title="Lock now" aria-label="Lock note now" hidden><svg class="i" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9.5" rx="2.2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></button>
-  <button id="cfg" class="ib" title="Note settings" aria-label="Note settings" aria-expanded="false"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+  <button id="cfg" class="ib" title="This note: colours, reminder, lock, AI" aria-label="This note" aria-expanded="false"><svg class="i" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg></button>
   <button id="roll" class="ib" title="Roll up" aria-label="Roll up"><svg class="i" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg></button>
   <button id="close" class="ib" title="Close (reopen from the tray icon)" aria-label="Close"><svg class="i" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg></button>
 </header>
 
 <section id="panel" hidden aria-label="Note settings">
-  <div class="ph"><span>Look</span><button id="tabSettings" class="tabgear" title="All settings (Ctrl+,)" aria-label="Open all settings"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button></div>
+  <div class="ph"><span>Look</span></div>
   <div class="swatches" id="swatches" role="group" aria-label="Note colour">
     <label class="sw custom" id="customSw" title="Custom colour"><input id="color" type="color" aria-label="Custom colour"></label>
   </div>
@@ -100,7 +100,7 @@
     <p id="aiMsg" class="hint"></p>
     <p class="hint">The text of the note you ask about is sent to the provider you pick. Ollama keeps it on this PC; the Claude API sends it to Anthropic.</p>
     </details>
-  <div class="pfoot"><button id="aiChat" class="linkbtn" title="Open the AI chat with this note as context">Chat about this note</button><button id="del" class="linkbtn danger" title="Move this note to the trash">Move to trash</button></div>
+  <div class="pfoot"><button id="allSet" class="linkbtn" title="Settings for the whole app (Ctrl+,)">All settings…</button><button id="aiChat" class="linkbtn" title="Open the AI chat with this note as context">Chat about this note</button><button id="del" class="linkbtn danger" title="Move this note to the trash">Move to trash</button></div>
 </section>
 
 <div id="findbar" hidden role="search">

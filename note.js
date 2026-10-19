@@ -911,4 +911,4 @@ document.addEventListener('keydown', e => { if (KEY(e, 'n_new')) { e.preventDefa
 document.addEventListener('keydown', e => { if (KEY(e, 'n_edit')) { e.preventDefault(); liveEdit(); } });
 document.addEventListener('keydown', e => { if (KEY(e, 'n_settings')) { e.preventDefault(); openAllSettings(); } });
 function openAllSettings(section) { $('#panel').hidden = true; $('#cfg').setAttribute('aria-expanded', 'false'); api.openSettings(section); }
-$('#tabSettings').onclick = () => openAllSettings();
+$('#allSet').onclick = () => openAllSettings();

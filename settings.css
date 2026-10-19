@@ -113,3 +113,7 @@ h2{font-size:17px;margin-bottom:9px}
 .ol-bar i{display:block;height:100%;background:var(--accent);border-radius:4px;transition:width .2s}
 .ol-bar.indet i{animation:olslide 1.1s ease-in-out infinite alternate}
 @keyframes olslide{from{margin-left:0}to{margin-left:60%}}
+/* the update buttons match the neon update bar */
+#updDownload,#updInstall{background:linear-gradient(100deg,#ff2bd6,#a855ff 50%,#00e5ff);color:#0b0b14;font-weight:700;border:0;box-shadow:0 0 10px rgba(168,85,255,.45)}
+#updDownload:hover,#updInstall:hover{filter:brightness(1.1)}
+#updDownload:disabled{opacity:.6}
