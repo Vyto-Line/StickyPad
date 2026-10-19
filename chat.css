@@ -68,7 +68,10 @@ textarea{padding:6px 10px;border-radius:10px}
 
 /* the note used as context: a chip inside the message box */
 .composer{flex-wrap:wrap}
-.ctxrow{flex-basis:100%;display:flex}
+.ctxrow{flex-basis:100%;display:flex;flex-wrap:wrap;gap:6px}
+.ctxchip[hidden]{display:none}
+button.ctxchip{border:0;cursor:pointer;font-family:inherit;padding:4px 11px}
+button.ctxchip:focus-visible{outline:2px solid var(--accent)}
 .ctxchip{display:inline-flex;align-items:center;gap:4px;max-width:100%;padding:2px 4px 2px 9px;border-radius:999px;background:color-mix(in srgb,var(--accent) 14%,var(--card));color:var(--fg);font-size:12px;font-weight:600}
 .ctxchip select{border:0;background:transparent;font-weight:600;font-size:12px;padding:3px 4px;max-width:260px;cursor:pointer;color:inherit}
 .ctxchip select:focus-visible{outline:2px solid var(--accent);border-radius:999px}

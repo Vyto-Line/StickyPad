@@ -86,7 +86,7 @@ Open the gear: the **AI** part is one list and a **Run** button (the model and c
 | **Translate Greek ⇄ English** | **Greek → English**, anything else → Greek, right in the note. Works on the selected text, or the paragraph with the cursor. |
 | **Polish / shorter / friendlier / fix it right in the note / continue writing** | The model rewrites the selected text **right in the note as it types** (Ctrl+Shift+E does it too). **Stop** cancels, **Undo** brings the original back. |
 
-**Chat about this note** (bottom of the panel) opens the AI chat with the note, or **all your notes** (pick *★ All my notes*).
+**Chat about this note** (bottom of the panel) opens the AI chat with the note, or **all your notes** (pick *★ All my notes*). In the chat, the **🧠 model chip** under the messages switches between your installed models without leaving the chat.
 
 - Works with **Ollama on your PC (free, private)** or the **Claude API (online)**.
 - A built-in **model list** offers current models from 1.4 GB to 9 GB (**Gemma 4**, **Qwen3**, Gemma 3, Llama 3.2), each with a note on how good its Greek is, and downloads them with a progress bar. A model that does not work well for you can be removed again with **Delete model…** to free the disk space. If Ollama itself is missing, one button downloads and installs it.

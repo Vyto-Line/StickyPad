@@ -107,7 +107,7 @@ api.onChatEvent(m => {
 function send() {
   if (busy) { api.chatStop(curId); return; }
   const text = input.value.trim(); if (!text) return;
-  if (provider === 'off') { addMsg('ai', 'The AI is switched off. Open a note, press ⋯ → AI tab, and set up Ollama or the Claude API first.').b.classList.add('error'); return; }
+  if (provider === 'off') { addMsg('ai', 'The AI is switched off. Open Settings > AI and set up Ollama or the Claude API first.').b.classList.add('error'); return; }
   input.value = ''; autosize();
   messages.push({ role: 'user', content: text }); addMsg('user', text); persist();
   generate();
@@ -135,10 +135,34 @@ $('#ctx').onchange = e => { noteId = e.target.value || null; persist(); };
 api.onChatAttach(async id => { await loadNotes(id); persist(); input.focus(); });
 
 const SUGGEST = ['Help me plan my day', 'Give me three ideas for a weekend trip', 'Explain something simply: how does a VPN work?'];
+// The model chip: the models you have installed (Ollama) or the usual Claude models; the choice is the same one as in Settings > AI.
+const CLAUDE_MODELS = ['claude-haiku-5-5', 'claude-sonnet-5-5', 'claude-opus-5-5'];
+const MORE = '__more';
+async function drawModel(st) {
+  const sel = $('#mdl'), off = st.provider === 'off';
+  $('#aiOff').hidden = !off; $('#mdlchip').hidden = off;
+  if (off) return;
+  let names = [];
+  if (st.provider === 'ollama') { try { names = ((await api.ollamaStatus()).models || []).map(m => m.name); } catch {} }
+  else names = CLAUDE_MODELS.slice();
+  const cur = st.model || '';
+  if (cur && !names.includes(cur)) names.unshift(cur);
+  sel.textContent = '';
+  const add = (v, t) => { const o = document.createElement('option'); o.value = v; o.textContent = t; sel.appendChild(o); };
+  if (!names.length) add('', st.provider === 'ollama' ? 'No model installed' : 'Default model');
+  names.forEach(n => add(n, n));
+  add(MORE, st.provider === 'ollama' ? 'Get more models…' : 'Other model…');
+  sel.value = names.includes(cur) ? cur : (names[0] || '');
+}
+$('#mdl').onchange = async e => {
+  if (e.target.value === MORE || e.target.value === '') { api.home('settings', 'ai'); setStatus(await api.chatLoad()); return; }
+  await api.aiSet({ model: e.target.value }); setStatus(await api.chatLoad());
+};
+$('#aiOff').onclick = () => api.home('settings', 'ai');
 function setStatus(st) {
-  provider = st.provider;
-  $('#status').textContent = provider === 'off' ? 'AI is off. Set it up in a note: ⋯ → AI' : (provider === 'ollama' ? 'Ollama' : 'Claude') + (st.model ? ' · ' + st.model : '');
-  $('#emptyText').textContent = provider === 'off' ? 'The AI is off. Open a note, press ⋯ → AI, and choose Ollama or the Claude API.' : 'Ask me anything. Pick a note with 📎 below and I will use it as context.';
+  provider = st.provider; drawModel(st);
+  $('#status').textContent = provider === 'off' ? 'AI is off. Set it up in Settings > AI' : (provider === 'ollama' ? 'Ollama' : 'Claude') + (st.model ? ' · ' + st.model : '');
+  $('#emptyText').textContent = provider === 'off' ? 'The AI is off. Open Settings > AI and choose Ollama or the Claude API.' : 'Ask me anything. Pick a note with 📎 below and I will use it as context.';
 }
 (async () => {
   const st = await api.chatLoad();

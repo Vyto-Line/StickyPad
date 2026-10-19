@@ -23,7 +23,9 @@
   </div>
 </main>
 <footer class="composer">
-  <div class="ctxrow"><label class="ctxchip" title="The note the AI uses as context"><span aria-hidden="true">📎</span><select id="ctx" aria-label="Note the AI uses as context"><option value="">No note</option></select></label></div>
+  <div class="ctxrow"><label class="ctxchip" title="The note the AI uses as context"><span aria-hidden="true">📎</span><select id="ctx" aria-label="Note the AI uses as context"><option value="">No note</option></select></label>
+    <label class="ctxchip" id="mdlchip" title="The AI model that answers"><span aria-hidden="true">🧠</span><select id="mdl" aria-label="AI model"></select></label>
+    <button id="aiOff" class="ctxchip" type="button" hidden>✨ The AI is off: set it up in Settings</button></div>
   <textarea id="input" rows="1" placeholder="Ask anything…" title="Enter sends, Shift+Enter adds a new line" aria-label="Message"></textarea>
   <button id="send" class="send">Send</button>
 </footer>

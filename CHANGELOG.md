@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.14.15
+- **Pick the AI model right in the chat.** *Ask the AI* has a model chip (🧠) in the message box: choose any model you have installed (or a Claude model) and the next answer uses it. *Get more models…* opens *Settings > AI*. When the AI is off, the chip becomes a button that takes you to *Settings > AI*, and the hints now say Settings instead of the old note menu.
+- Not tried on a real Windows PC yet.
+
 ## 1.14.14
 - **The startup animation now shows on PCs where it stayed invisible.** It used a see-through window, which many PCs do not draw when Low memory mode (the default) is on. It is now a normal dark card that works everywhere. If it cannot appear within 4 seconds, StickyPad just opens instead of waiting.
 - **"Restart to update" is safer.** StickyPad now tidies up before it closes for an update (tray icon, shortcuts, timers), answers the button first, ignores a second launch while it is closing, and the new version waits for the old one to finish instead of giving up. Any error in the main program is written to `crash.log` (in `%APPDATA%\StickyPad`) instead of showing a Windows error box.
