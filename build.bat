@@ -30,7 +30,7 @@ if errorlevel 1 (
 )
 
 echo.
-echo Done! Your installer is in the "dist" folder ("StickyPad Setup ....exe").
+echo Done! Your installer is in the "dist" folder ("StickyPad-Setup-....exe").
 echo Run it once to install StickyPad like any other program.
 echo.
 echo The build tools and temporary files take up about 1 GB. The installer is all you need to keep.

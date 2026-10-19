@@ -1,12 +1,12 @@
 {
   "name": "stickypad",
   "productName": "StickyPad",
-  "version": "1.11.0",
+  "version": "1.12.0",
   "description": "Colourful sticky notes for Windows with a local AI helper (Ollama), Greek support and optional sync through any synced folder",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "dist": "electron-builder --win",
+    "dist": "electron-builder --win --publish never",
     "test": "node tests/run.js"
   },
   "devDependencies": {
@@ -20,6 +20,7 @@
       "main.js",
       "preload.js",
       "ai.js",
+      "updater.js",
       "themes.js",
       "backup.js",
       "note.html",
@@ -65,9 +66,17 @@
     "nsis": {
       "oneClick": true,
       "perMachine": false,
-      "differentialPackage": false,
-      "deleteAppDataOnUninstall": false
-    }
+      "deleteAppDataOnUninstall": false,
+      "artifactName": "StickyPad-Setup-${version}.${ext}"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "Vyto-Line",
+        "repo": "StickyPad",
+        "releaseType": "release"
+      }
+    ]
   },
   "license": "MIT",
   "repository": {
@@ -84,5 +93,8 @@
     "windows",
     "notes"
   ],
-  "author": "Vyto-Line"
+  "author": "Vyto-Line",
+  "dependencies": {
+    "electron-updater": "^6.3.9"
+  }
 }

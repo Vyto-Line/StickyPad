@@ -13,10 +13,11 @@ Each note is its own small window. Everything is stored on your PC; nothing is s
   - Pick a model from a list; recommended ones download with a progress bar. If Ollama is missing, one button downloads and installs it
   - Long notes are handled in chunks, Greek has dedicated rules (accents, spelling, no translation)
 - **Settings** window with every option, plus a gear on each note
+- **Updates itself** from this repo's Releases (switch in Settings > About)
 - Daily automatic backups, movable data folder (use the same notes on every PC), SQLite export for other apps
 
 ## Install
-Download **StickyPad Setup x.y.z.exe** from the [Releases](../../releases) page and run it. Windows SmartScreen may warn because the app is not code-signed; choose "More info", then "Run anyway".
+Download **StickyPad-Setup-x.y.z.exe** from the [Releases](../../releases) page and run it. Windows SmartScreen may warn because the app is not code-signed; choose "More info", then "Run anyway".
 
 ### Build it yourself
 Needs [Node.js LTS](https://nodejs.org). If you double-click `build.bat` or `start-dev.bat` and Node.js is missing, they download a private copy for you (checked against nodejs.org's checksum, no admin rights, kept in a `.node` folder).
@@ -30,7 +31,7 @@ On Windows you can double-click `build.bat` or `start-dev.bat` instead. `build.b
 ### Local AI in two minutes
 1. Open a note, click the gear, choose the **AI** tab, set *Use* to **Ollama**
 2. If you see "Ollama is not installed", press **Download and install Ollama**
-3. Choose a model from the list (for Greek try *Gemma 3 4B* or *Qwen 2.5 7B*) and wait for the download
+3. Choose a model from the list (for Greek try *Gemma 3 4B*, *Qwen 2.5 7B* or *Gemma 3 12B*; ten models from 0.8 GB to 8 GB are offered) and wait for the download
 4. Select text (or put the cursor in a paragraph) and press **Edit live** (Ctrl+Shift+E)
 
 ## Shortcuts

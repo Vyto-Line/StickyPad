@@ -1,7 +1,12 @@
 # Changelog
 
-## Unreleased
-- **Tauri 2 preview** (`src-tauri/`, built by the *Tauri build (preview)* workflow): notes storage, note windows and pictures are ported; the rest follows step by step. See docs/ARCHITECTURE.md.
+## 1.12.0
+- **Auto-update**: when StickyPad starts (and every 6 hours while it runs) it looks for a newer version on this GitHub repo's Releases, downloads it in the background and asks whether to restart now or install when you quit. Settings > About has a switch and a "Check now" button. Only works in the installed app.
+- **Select all + Delete fixed**: Ctrl+A followed by Delete, Backspace, Ctrl+X or typing now replaces the *whole* note, including checklist items and pictures, even when a picture was selected or the focus was outside the text. Ctrl+A works from anywhere in the note window.
+- **Big notes made safer**: a checklist item damaged by a rough multi-item delete is repaired instead of stopping the note from saving; undo history is capped by size (a multi-megabyte note no longer eats memory); the "is the note empty" check no longer builds a giant string on every key.
+- **More recommended models**: Gemma 3 (1B, 4B, 12B), Qwen 2.5 (3B, 7B), Phi-4 mini and Mistral 7B join the Llama models, 10 in total, from 0.8 GB to 8 GB.
+- Reasoning models' `<think>` text is never shown.
+
 
 ## 1.11.0
 - `build.bat` and `start-dev.bat` download Node.js automatically if it is not installed (`get-node.bat` / `get-node.ps1`).

@@ -1,12 +1,12 @@
 (() => {
-  const L = { ollama: [], ai: [] };
+  const L = { ollama: [], ai: [], update: [] };
   const REC = [{name:'llama3.2:1b',label:'Llama 3.2 · 1B',size:'1.3 GB',note:'Fastest'},{name:'llama3.2:3b',label:'Llama 3.2 · 3B',size:'2.0 GB',note:'Recommended'},{name:'llama3.1:8b',label:'Llama 3.1 · 8B',size:'4.9 GB',note:'Best'}];
   const S = window.__S = { calls: [], editMode: 'ok', stop: false,
     ai: { provider: 'ollama', model: 'llama3.2', url: 'http://localhost:11434', hasKey: false, defaultModel: 'claude-haiku-5-5' },
     ol: { running: true, installed: true, canInstall: true, local: true, models: [{ name: 'llama3.2:latest', size: 2e9 }], recommended: REC, pulling: [], installing: false },
     note: { id: 'n1', title: '', blocks: window.__BLOCKS || [{ t: 'text', v: 'helo wrold this is a tset' }], color: '#FFF2A8', font: 'Segoe UI', size: 15, locked: false, unlocked: false, pinned: false, group: null } };
   const emit = (k, m) => L[k].forEach(f => f(m));
-  window.__emit = emit;
+  window.__emit = emit; window.__emitUpdate = m => L.update.forEach(f => f(m));
   const over = {
     get: async () => JSON.parse(JSON.stringify(S.note)),
     aiGet: async () => ({ ...S.ai }),
@@ -42,6 +42,8 @@
     chatNotes: async () => [],
     aiRun: async () => ({ ok: true, text: 'ok' }),
     settingsGet: async () => ({ version: '1.10.0', packaged: true, prefs: {}, theme: 'classic', trashCount: 0, backupCount: 0, dataPath: 'C:/x', snapDistance: 20, trashDays: 30, groups: [], shortcuts: true, defaultSize: 'm' }),
+    updateCheck: async () => { S.calls.push(['updateCheck']); return S.updateResult || { state: 'none', checkedAt: Date.now() }; }, updateInstall: async () => { S.calls.push(['updateInstall']); },
+    onUpdateEvent: cb => L.update.push(cb),
     onOllamaEvent: cb => L.ollama.push(cb), onAiEvent: cb => L.ai.push(cb),
   };
   window.api = new Proxy(over, { get: (t, k) => k in t ? t[k] : (String(k).startsWith('on') ? () => {} : async () => null) });

@@ -116,7 +116,26 @@ function todoToText(t) {
   return tn;
 }
 function focusTodo(t) { const r = document.createRange(); r.setStart(t.querySelector('.tx'), 0); placeCaret(r); }
-const mark = () => ed.classList.toggle('empty', !ed.textContent.trim() && !ed.querySelector('img, .todo'));
+// true as soon as the note holds any visible text, a picture or a checklist item (stops at the first one, so it is cheap even for huge notes)
+function hasStuff() {
+  for (const c of ed.childNodes) {
+    if (c.nodeType === 3) { if (/\S/.test(c.nodeValue)) return true; }
+    else if (c.nodeType === 1 && (c.nodeName === 'IMG' || (c.classList && c.classList.contains('todo')) || /\S/.test(c.textContent))) return true;
+  }
+  return false;
+}
+const mark = () => ed.classList.toggle('empty', !hasStuff());
+// A checklist item that lost its text span (a rough multi-item delete can do that) is turned back into a plain line, so nothing breaks or gets lost.
+function repairTodos() {
+  const bad = ed.querySelectorAll('.todo:not(:has(> .tx))');
+  bad.forEach(t => {
+    const txt = t.textContent.replace(/×/g, '');
+    const frag = document.createDocumentFragment();
+    if (txt.trim()) { frag.append(document.createTextNode(txt), document.createElement('br')); }
+    t.replaceWith(frag);
+  });
+  return bad.length;
+}
 function render(blocks) {
   ed.textContent = '';
   blocks.forEach(b => {
@@ -134,7 +153,11 @@ function serialize() {
       if (c.nodeType === 3) buf += c.nodeValue;
       else if (c.nodeName === 'BR') buf += '\n';
       else if (c.nodeName === 'IMG') { flush(); if (c.dataset.id) blocks.push({ t: 'img', id: c.dataset.id }); }
-      else if (c.classList && c.classList.contains('todo')) { flush(); blocks.push({ t: 'check', v: c.querySelector('.tx').textContent, done: c.querySelector('input').checked }); }
+      else if (c.classList && c.classList.contains('todo')) {
+        flush(); const tx = c.querySelector('.tx'), box = c.querySelector('input');
+        if (tx) blocks.push({ t: 'check', v: tx.textContent, done: !!(box && box.checked) });
+        else { const w = c.textContent.replace(/×/g, ''); if (w.trim()) blocks.push({ t: 'text', v: w }); }   // damaged item: keep its words
+      }
       else if (c.nodeType === 1) { if (buf && !buf.endsWith('\n')) buf += '\n'; walk(c); if (buf && !buf.endsWith('\n')) buf += '\n'; }
     }
   };
@@ -148,12 +171,15 @@ const saveNow = () => { clearTimeout(timer); timer = null; if (bodyLocked()) ret
 const queue = () => { clearTimeout(timer); timer = setTimeout(saveNow, 200); };
 
 /* ---------- undo / redo (covers typing and pictures) ---------- */
-let cur = '[]', undoS = [], redoS = [], hTimer = null;
+let cur = '[]', undoS = [], redoS = [], hTimer = null, undoChars = 0;
+const UNDO_BUDGET = 20e6;   // total characters kept for undo: a very long note must not eat all the memory
+function pushUndo(s) { undoS.push(s); undoChars += s.length; while ((undoS.length > 100 || undoChars > UNDO_BUDGET) && undoS.length > 1) undoChars -= undoS.shift().length; }
+function popUndo() { const s = undoS.pop(); undoChars -= s.length; return s; }
 const snap = () => JSON.stringify(serialize());
 function commitNow() {
   clearTimeout(hTimer); hTimer = null;
   const s = snap(); if (s === cur) return;
-  undoS.push(cur); if (undoS.length > 100) undoS.shift();
+  pushUndo(cur);
   redoS.length = 0; cur = s;
 }
 const schedule = () => { clearTimeout(hTimer); hTimer = setTimeout(commitNow, 400); };
@@ -163,8 +189,8 @@ function restore(s) {
   const r = document.createRange(); r.selectNodeContents(ed); r.collapse(false); placeCaret(r);
   saveNow();
 }
-function undo() { commitNow(); if (!undoS.length) return; redoS.push(cur); restore(undoS.pop()); }
-function redo() { commitNow(); if (!redoS.length) return; undoS.push(cur); restore(redoS.pop()); }
+function undo() { commitNow(); if (!undoS.length) return; redoS.push(cur); restore(popUndo()); }
+function redo() { commitNow(); if (!redoS.length) return; pushUndo(cur); restore(redoS.pop()); }
 
 function caretRange() {
   const sel = getSelection();
@@ -208,13 +234,36 @@ const clearSel = () => ed.querySelectorAll('img.sel').forEach(i => i.classList.r
 // the settings popover closes as soon as you go back to typing
 ed.addEventListener('focus', () => { const p = $('#panel'); if (!p.hidden) { p.hidden = true; $('#cfg').setAttribute('aria-expanded', 'false'); } });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && edit) { api.aiEditStop(edit.id); return; } if (e.key === 'Escape' && !aiBox.hidden) { aiToken++; aiBusy = false; aiClose(); return; } if (e.key === 'Escape' && !$('#panel').hidden) { $('#panel').hidden = true; $('#cfg').setAttribute('aria-expanded', 'false'); } });
-ed.addEventListener('input', () => { mark(); queue(); schedule(); });
+ed.addEventListener('input', () => { repairTodos(); mark(); queue(); schedule(); });
 ed.addEventListener('beforeinput', e => {
   if (e.inputType === 'historyUndo') { e.preventDefault(); undo(); }
   else if (e.inputType === 'historyRedo') { e.preventDefault(); redo(); }
+  else if (allSelected()) {
+    if (e.inputType.startsWith('delete')) { e.preventDefault(); commitNow(); clearNote(); commitNow(); }   // cut and every kind of delete
+    else if (e.inputType.startsWith('insert') && e.inputType !== 'insertCompositionText') { commitNow(); clearNote(); }   // typing or pasting over everything: start from an empty note
+  }
 });
 ed.addEventListener('blur', () => { if (timer) saveNow(); });
+/* ---------- select all, then delete or type: replaces the WHOLE note, whatever is in it ---------- */
+function selectAllNote() { clearSel(); const r = document.createRange(); r.selectNodeContents(ed); const s = getSelection(); s.removeAllRanges(); s.addRange(r); }
+function allSelected() {
+  const s = getSelection(); if (!s.rangeCount || s.isCollapsed || !ed.contains(s.anchorNode)) return false;
+  const r = s.getRangeAt(0), n = ed.childNodes.length;
+  if (r.startContainer === ed && r.startOffset === 0 && r.endContainer === ed && r.endOffset === n) return true;
+  // dragged or shift-selected from the very start to the very end
+  const first = ed.firstChild, last = ed.lastChild; if (!first) return false;
+  const atStart = (r.startContainer === ed && r.startOffset === 0) || (r.startOffset === 0 && (r.startContainer === first || first.contains(r.startContainer)) && (first.nodeType === 3 || r.startContainer === first));
+  const atEnd = (r.endContainer === ed && r.endOffset === n) || (last.nodeType === 3 && r.endContainer === last && r.endOffset === last.nodeValue.length);
+  return atStart && atEnd;
+}
+function clearNote() {   // empties the note completely and leaves a clean caret
+  ed.replaceChildren();
+  const r = document.createRange(); r.selectNodeContents(ed); r.collapse(true); placeCaret(r);
+  mark(); queue();
+}
 ed.addEventListener('keydown', e => {
+  if (e.ctrlKey && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'a') { e.preventDefault(); selectAllNote(); return; }
+  if ((e.key === 'Delete' || e.key === 'Backspace') && !e.ctrlKey && !e.altKey && allSelected()) { e.preventDefault(); clearNote(); commitNow(); return; }
   if (e.ctrlKey && !e.altKey) {
     const k = e.key.toLowerCase();
     if (k === 'z' && !e.shiftKey) { e.preventDefault(); undo(); return; }
@@ -280,7 +329,7 @@ ed.addEventListener('drop', e => {
 async function reload() {
   note = await api.get();
   render(note.blocks && note.blocks.length ? note.blocks : (note.text && !note.locked ? [{ t: 'text', v: note.text }] : []));
-  apply(); undoS = []; redoS = []; cur = snap();
+  apply(); undoS = []; redoS = []; undoChars = 0; cur = snap();
 }
 api.onReload(() => { if (!timer && !edit && document.activeElement !== $('#topic')) reload(); });   // a note changed on another PC
 (async () => {
@@ -604,6 +653,12 @@ document.addEventListener('keydown', e => {
     const k = e.key.toLowerCase();
     if (k === 'z' && !e.shiftKey) { e.preventDefault(); undo(); return; }
     if (k === 'y' || (k === 'z' && e.shiftKey)) { e.preventDefault(); redo(); return; }
+  }
+});
+document.addEventListener('keydown', e => {   // Ctrl+A anywhere outside a text field selects the whole note
+  if (e.ctrlKey && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'a' && !bodyLocked()) {
+    const a = document.activeElement, tag = a && a.tagName;
+    if (a !== ed && !(a && a.closest && a.closest('#ed')) && tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT') { e.preventDefault(); ed.focus(); selectAllNote(); }
   }
 });
 document.addEventListener('keydown', e => { if (e.ctrlKey && e.key.toLowerCase() === 'n') { e.preventDefault(); api.newNote(); } });

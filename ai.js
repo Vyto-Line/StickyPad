@@ -71,6 +71,9 @@ const lead = t => (t.match(/^\s*/) || [''])[0], trail = t => (t.match(/\s*$/) ||
 // Greek takes about one token per 1.6 characters, English one per 4: leave enough room that long notes are never cut off.
 const ctxFor = (chars, predict = 0) => Math.min(16384, Math.max(4096, Math.ceil(chars / 1.6) + predict + 512));
 
+// some reasoning models put their thinking in <think> tags: never show it
+const stripThink = t => String(t).replace(/<think>[\s\S]*?<\/think>/gi, '').replace(/^\s+/, '');
+
 const fail = msg => { const e = new Error(msg); e.friendly = true; return e; };
 
 function httpMessage(provider, status, data, cfg) {
@@ -113,8 +116,8 @@ async function callModel(cfg, system, user, { json = false, predict = 0 } = {}, 
       throw fail('Ollama said: ' + m);
     }
     const out = r.data && r.data.message && r.data.message.content;
-    if (!out) throw fail('Ollama returned an empty answer.');
-    return String(out);
+    if (!out || !stripThink(out).trim()) throw fail('Ollama returned an empty answer.');
+    return stripThink(out);
   }
   if (provider === 'claude') {
     if (!cfg.key) throw fail('Add your Anthropic API key in the AI tab first.');
@@ -295,7 +298,7 @@ const editSystem = (mode, text = '') => 'You edit text inside a sticky note. ' +
   ' Reply in the same language as the text (English or Greek; keep Greek accents). Keep line breaks. ' +
   'Output ONLY the resulting text: no quotes, no code fences, no introduction, no explanation.';
 function cleanEdit(t) {
-  t = String(t).replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/, '');
+  t = stripThink(t).replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/, '');
   return t;
 }
 async function editStream(cfg, mode, text, onChunk, signal, fetchImpl = fetch) {

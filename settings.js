@@ -27,7 +27,7 @@ function fill() {
   $('#emptyTrash').disabled = !S.trashCount;
   $('#backupInfo').textContent = (S.lastBackup ? 'Last backup: ' + new Date(S.lastBackup).toLocaleString() : 'No backup yet') + ` · ${S.backupCount} kept`;
   $('#dataPath').textContent = S.dataPath; $('#resetData').hidden = !S.dataCustom;
-  $('#aboutVer').textContent = 'Version ' + S.version;
+  $('#aboutVer').textContent = 'Version ' + S.version; showUpdate(S.update);
   $('#aboutNotes').textContent = `${S.notesCount} note${S.notesCount === 1 ? '' : 's'}, ${S.groups.length} folder${S.groups.length === 1 ? '' : 's'}`;
   drawThemes(); drawFolders();
 }
@@ -74,6 +74,18 @@ arm($('#emptyTrash'), 'Empty trash', 'Sure? Cannot undo', async () => { const r 
 $('#backupNow').onclick = async () => { const b = $('#backupNow'); b.disabled = true; const r = await api.settingsAction('backupNow'); b.disabled = false; if (r.ok) { S = r.info; fill(); b.textContent = 'Done ✓'; setTimeout(() => b.textContent = 'Back up now', 1800); } else $('#backupInfo').textContent = r.error || 'Backup failed.'; };
 $('#openBackups').onclick = () => api.settingsAction('openBackups');
 $('#openData').onclick = () => api.settingsAction('openData');
+/* ---------- updates ---------- */
+function showUpdate(u) {
+  if (!u) return;
+  const t = { idle: 'Not checked yet.', checking: 'Checking GitHub…', none: 'You have the latest version ✓', unsupported: u.error || 'Updates work in the installed app.',
+    downloading: `Downloading version ${u.version || ''}${u.pct != null ? ' (' + u.pct + '%)' : ''}…`, ready: `Version ${u.version || ''} is ready: restart to install it.`, error: u.error || 'The update check failed.' }[u.state] || '';
+  $('#updMsg').textContent = t + (u.state === 'none' && u.checkedAt ? '  ·  ' + new Date(u.checkedAt).toLocaleTimeString() : '');
+  $('#updCheck').disabled = u.state === 'checking' || u.state === 'downloading' || u.state === 'ready';
+  $('#updInstall').hidden = u.state !== 'ready';
+}
+$('#updCheck').onclick = async () => showUpdate(await api.updateCheck());
+$('#updInstall').onclick = () => api.updateInstall();
+api.onUpdateEvent(showUpdate);
 async function dataMove(name) { const r = await api.settingsAction(name); if (!r.ok && !r.cancelled) $('#dataMsg').textContent = r.error || 'Could not change the folder.'; }
 $('#chooseData').onclick = () => dataMove('chooseDataFolder');
 $('#resetData').onclick = () => dataMove('resetDataFolder');

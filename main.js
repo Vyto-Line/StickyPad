@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, screen, globalShor
 const ai = require('./ai');
 const ollama = require('./ollama');
 const datadir = require('./datadir');
+const updaterLib = require('./updater');
 const backup = require('./backup');
 const THEMES = require('./themes');
 const path = require('path');
@@ -18,7 +19,7 @@ let file, saveTimer, allTimer, firstRun = false, DATA = null, dirty = false, las
 const dataDir = () => DATA || app.getPath('userData');
 const DEFAULT_SETTINGS = {
   hideTaskbar: true, snap: true, launch: 'notes', splash: true, name: '', lang: 'en', theme: 'classic',
-  snapDistance: 10, defaultSize: 16, trashDays: 30, shortcuts: true, chatHistory: true, autoBackup: true, lastBackup: 0,
+  snapDistance: 10, defaultSize: 16, trashDays: 30, shortcuts: true, chatHistory: true, autoBackup: true, lastBackup: 0, autoUpdate: true,
   ai: { provider: 'off', model: '', url: 'http://localhost:11434', keyEnc: '' }
 };
 let notes = {}, trash = [], groups = [], settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
@@ -722,6 +723,26 @@ ipcMain.handle('chat:send', async (e, p) => {
   return true;
 });
 
+/* ---------- updates: look at GitHub Releases and install a newer version ---------- */
+let updater = null;
+function initUpdater() {
+  let au = null;
+  if (app.isPackaged) { try { au = require('electron-updater').autoUpdater; } catch { /* module missing: updates stay off */ } }
+  updater = updaterLib.createUpdater({
+    autoUpdater: au, supported: app.isPackaged,
+    send: m => BrowserWindow.getAllWindows().forEach(w => { if (!w.isDestroyed()) w.webContents.send('update:event', m); }),
+    onReady: version => {
+      dialog.showMessageBox({ type: 'info', buttons: ['Restart now', 'Later'], defaultId: 0, cancelId: 1, title: 'StickyPad update',
+        message: `StickyPad ${version || ''} is ready to install.`, detail: 'Your notes are saved. Restart now to finish updating, or choose Later: it installs when you quit.' })
+        .then(r => { if (r.response === 0) { flush(); updater.install(); } }).catch(() => {});
+    }
+  });
+  updater.schedule({ enabled: () => settings.autoUpdate !== false });
+}
+ipcMain.handle('update:check', () => updater ? updater.check() : null);
+ipcMain.handle('update:state', () => updater ? updater.get() : null);
+ipcMain.handle('update:install', () => { flush(); if (updater) updater.install(); });
+
 /* ---------- global shortcuts ---------- */
 function unregisterShortcuts() { try { globalShortcut.unregisterAll(); } catch {} }
 function registerShortcuts() {
@@ -759,6 +780,7 @@ function allSettings() {
     hideTaskbar: !!settings.hideTaskbar, snap: !!settings.snap, snapDistance: settings.snapDistance, defaultSize: settings.defaultSize,
     trashDays: settings.trashDays, trashCount: trash.length, shortcuts: !!settings.shortcuts, chatHistory: !!settings.chatHistory,
     autoBackup: !!settings.autoBackup, lastBackup: settings.lastBackup || 0, backupCount: backup.list(app.getPath('userData')).length,
+    autoUpdate: settings.autoUpdate !== false, update: updater ? updater.get() : null,
     theme: settings.theme, prefs: prefs(), groups, notesCount: Object.keys(notes).length
   };
 }
@@ -776,6 +798,7 @@ ipcMain.handle('settings:set', (e, p) => {
     if ('shortcuts' in p) { settings.shortcuts = !!p.shortcuts; if (settings.shortcuts) registerShortcuts(); else unregisterShortcuts(); }
     if ('chatHistory' in p) { settings.chatHistory = !!p.chatHistory; if (!settings.chatHistory) clearChat(); }
     if ('autoBackup' in p) settings.autoBackup = !!p.autoBackup;
+    if ('autoUpdate' in p) settings.autoUpdate = !!p.autoUpdate;
     if (typeof p.theme === 'string') settings.theme = THEMES.byId(p.theme).id;
     if (p.prefs) setPrefs(p.prefs);
     save(); refreshTray();
@@ -825,6 +848,7 @@ app.whenReady().then(async () => {
   openStartup();
   save();
   ai.warmup(aiCfg());   // load the local model in the background so the first answer is quick
+  initUpdater();
 });
 // With a tray icon the app keeps running when every note window is closed; reopen them from the tray.
 app.on('window-all-closed', () => { flush(); if (!tray) app.quit(); });
