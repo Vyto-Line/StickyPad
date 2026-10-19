@@ -119,6 +119,10 @@ const H = require('./fake-electron');
   assert.strictEqual((await h['whatsnew:get']({})).off, true, 'the window shows the choice');
   await h['whatsnew:close']({}, { off: false }); assert.strictEqual((await h['settings:get']({})).whatsNew, true, 'the checkbox in the window changes the setting');
   const wo = await h['settings:action']({}, 'openWhatsNew'); assert.ok(wo && wo.ok, 'the button in Settings opens it: ' + JSON.stringify(wo));
+  // a crash in the main process is written to crash.log instead of a Windows error box
+  process.emit('uncaughtException', new Error('boom test'));
+  const cl = path.join(electron.app.getPath('userData'), 'crash.log'); assert.ok(fs.existsSync(cl) && /boom test/.test(fs.readFileSync(cl, 'utf8')), 'crash.log written');
+  assert.strictEqual(await h['update:install']({}), true, 'restart-and-update answers before it quits');
   console.log('main harness ok');
   process.exit(0);
 })().catch(e => { console.error('HARNESS FAIL', e); process.exit(1); });

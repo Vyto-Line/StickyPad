@@ -22,7 +22,28 @@ const placement = require('./placement');
 const changelog = require('./changelog');
 
 // A second launch must stop immediately (otherwise it would open duplicate notes).
-if (!app.requestSingleInstanceLock()) process.exit(0);
+// Right after an update the installer starts the new copy while the old one may still be closing: wait for it (up to 15 s)
+// instead of giving up, or the app would vanish after "Restart to update". Any other second launch stops at once.
+function takeLock() {
+  if (app.requestSingleInstanceLock()) return true;
+  if (!process.argv.includes('--updated')) return false;
+  const sleep = ms => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+  for (let i = 0; i < 60; i++) { sleep(250); if (app.requestSingleInstanceLock()) return true; }
+  return false;
+}
+if (!takeLock()) process.exit(0);
+let quitting = false, remTimer = null;
+// Anything that goes wrong in the main process is written to crash.log (Windows would show a "JavaScript error" box otherwise);
+// while the app is closing for an update it is only logged.
+function crashLog(kind, err) {
+  try {
+    const f = path.join(app.getPath('userData'), 'crash.log');
+    let old = ''; try { old = fs.readFileSync(f, 'utf8').slice(-6000); } catch {}
+    fs.writeFileSync(f, old + new Date().toISOString() + '  v' + app.getVersion() + '  ' + kind + '  ' + String((err && (err.stack || err.message)) || err).slice(0, 1500) + '\n');
+  } catch {}
+}
+process.on('uncaughtException', err => { crashLog('uncaughtException' + (quitting ? ' (closing)' : ''), err); });
+process.on('unhandledRejection', err => { crashLog('unhandledRejection', err); });
 app.setAppUserModelId('com.stickypad.app');   // Windows shows this app as "StickyPad" on notifications (matches build.appId)
 
 // Memory-saving start-up options (they must be set before the app is ready). See Settings > General > Low memory mode.
@@ -1042,7 +1063,15 @@ ipcMain.handle('whatsnew:close', (e, o) => {
   if (whatsWin && !whatsWin.isDestroyed()) whatsWin.close();
 });
 ipcMain.handle('update:state', () => updater ? updater.get() : null);
-ipcMain.handle('update:install', () => { flush(); if (updater) updater.install(); });
+ipcMain.handle('update:install', () => {
+  flush(); quitting = true;
+  // let the answer go back to the window first, then close everything and hand over to the installer
+  setTimeout(() => {
+    try { if (updater) updater.install(); } catch (err) { crashLog('install', err); quitting = false; }
+  }, 50);
+  setTimeout(() => { quitting = false; }, 15000);   // still running after 15 s means the install did not start: behave normally again
+  return true;
+});
 
 /* ---------- reminders ---------- */
 const shownNotes = new Set();   // keeps notification objects alive until they are clicked or closed
@@ -1213,7 +1242,7 @@ ipcMain.handle('settings:action', (e, name, arg) => {
 });
 
 /* ---------- lifecycle ---------- */
-app.on('second-instance', () => { if (settings.launch === 'all') openAll(); else showAll(); });
+app.on('second-instance', () => { if (quitting) return; if (settings.launch === 'all') openAll(); else showAll(); });
 app.whenReady().then(async () => {
   DATA = datadir.resolve(app.getPath('userData'));
   file = path.join(DATA, 'notes.json');
@@ -1231,9 +1260,16 @@ app.whenReady().then(async () => {
   maybeWhatsNew();
   save();
   initUpdater();
-  checkReminders(); setInterval(checkReminders, 15000);   // also fires reminders that came due while the app was closed
+  checkReminders(); remTimer = setInterval(checkReminders, 15000);   // also fires reminders that came due while the app was closed
 });
 // With a tray icon the app keeps running when every note window is closed; reopen them from the tray.
 app.on('window-all-closed', () => { flush(); if (!tray) app.quit(); });
-app.on('before-quit', flush);
+app.on('before-quit', () => {   // leave nothing behind that could keep the process alive or throw while Windows replaces the files
+  quitting = true; flush();
+  try { clearInterval(remTimer); } catch {}
+  try { if (file) fs.unwatchFile(file); } catch {}
+  try { globalShortcut.unregisterAll(); } catch {}
+  try { if (tray && !tray.isDestroyed()) tray.destroy(); } catch {}
+  tray = null;
+});
 app.on('will-quit', () => globalShortcut.unregisterAll());
