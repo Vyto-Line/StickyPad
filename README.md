@@ -10,6 +10,7 @@ Each note is its own small window on your desktop. Everything is stored on your 
 - **Private**: no account, no cloud. Lock a note with a password, or keep the AI on your own PC with [Ollama](https://ollama.com).
 - **Greek-friendly**: the AI has dedicated Greek rules (accents, spelling), and search ignores Greek accents.
 - **Updates itself** from this repository's Releases.
+- **Easy on memory**: Low memory mode (on by default) and an AI model that only stays loaded while you use it. *Settings > About > Measure* shows what StickyPad uses.
 
 [Download the latest installer](../../releases/latest) · [What's new](CHANGELOG.md) · [Report a problem](../../issues)
 

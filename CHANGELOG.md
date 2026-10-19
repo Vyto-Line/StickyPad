@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.14.0
+- **Much lower memory use.** New *Low memory mode* (Settings > General, on by default, applies after a restart): StickyPad no longer starts the separate graphics-card process, trims background services Chromium does not need for sticky notes, and tunes the JavaScript engine for size.
+- **The AI model is no longer loaded at start.** It used to be preloaded and kept in memory for 30 minutes, which could take several GB. Now it loads when you open the AI tab or chat, stays for 5 minutes by default, and *Settings > AI > Keep the model in memory* lets you choose Unload right away, 5 minutes or 30 minutes.
+- **Pictures are read from files** instead of being copied into the page as huge text, which saves memory in notes with many images.
+- **Memory meter**: Settings > About > *Measure* shows how much memory StickyPad uses right now, split into notes, main process, graphics and other. Press it with Low memory mode on and off to see the difference on your PC.
+- Smaller things: the notes file is written in a compact form, notes open one after another at start instead of all at once, and the undo history of very large notes is capped by size.
+
 ## 1.13.2
 - **Update log**: Settings > About has two new buttons. *Open update log* shows a small text file that records what each update check did and, if it failed, the exact reason. *Releases page* opens the GitHub releases so you can download the newest installer yourself. This makes it easy to find out why an update does not arrive.
 

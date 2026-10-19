@@ -34,6 +34,16 @@ const H = require('./fake-electron');
   const ex2 = await h['note:export'](e); assert.strictEqual(ex2.ok, false);
   const ul = await h['settings:action']({}, 'openUpdateLog'); assert.ok(ul.ok && fs.existsSync(path.join(tmp, 'userData', 'update.log')), 'update log can be opened');
   const orl = await h['settings:action']({}, 'openReleases'); assert.ok(orl.ok && H.dialogCalls.some(c => c[0] === 'external' && /Vyto-Line\/StickyPad\/releases/.test(c[1])));
+  // memory: the meter adds up private memory per process type; low memory mode is applied at start and can be switched
+  const mem = await h['settings:action']({}, 'memory'); assert.ok(mem.ok && mem.total === 60 + 50 + 40 + 10 && mem.main === 60 && mem.notes === 90 && mem.gpu === 0 && mem.other === 10 && mem.processes === 5, JSON.stringify(mem));
+  assert.strictEqual(electron.__nogpu, true, 'GPU process is off in low memory mode'); assert.ok(electron.__switches.some(s => s[0] === 'js-flags'));
+  let st = await h['settings:get']({}); assert.strictEqual(st.lowMemory, true); assert.strictEqual(st.lowMemoryActive, true);
+  st = await h['settings:set']({}, { lowMemory: false }); assert.strictEqual(st.lowMemory, false); assert.strictEqual(st.lowMemoryActive, true, 'the running session keeps what it started with');
+  assert.strictEqual(JSON.parse(fs.readFileSync(path.join(tmp, 'userData', 'launch.json'), 'utf8')).lowMemory, false);
+  st = await h['settings:set']({}, { aiKeep: '30m' }); assert.strictEqual(st.aiKeep, '30m'); st = await h['settings:set']({}, { aiKeep: 'forever' }); assert.strictEqual(st.aiKeep, '30m', 'unknown values are ignored');
+  // pictures are given out as file addresses, not as big text
+  const nn = await h['note:get'](e); assert.ok(/^file:\/\/\/.*\/images\/$/.test(nn.imgBase.replace(/\\/g, '/')), nn.imgBase);
+  fs.mkdirSync(path.join(tmp, 'userData', 'images'), { recursive: true }); fs.writeFileSync(path.join(tmp, 'userData', 'images', 'aaaaaa.png'), Buffer.from([137, 80, 78, 71]));
   console.log('main harness ok');
   process.exit(0);
 })().catch(e => { console.error('HARNESS FAIL', e); process.exit(1); });

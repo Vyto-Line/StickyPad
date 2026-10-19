@@ -11,9 +11,19 @@ const THEMES = require('./themes');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
+const { pathToFileURL } = require('url');
+const launchcfg = require('./launchcfg');
 
 // A second launch must stop immediately (otherwise it would open duplicate notes).
 if (!app.requestSingleInstanceLock()) process.exit(0);
+
+// Memory-saving start-up options (they must be set before the app is ready). See Settings > General > Low memory mode.
+const LAUNCH = launchcfg.read(app.getPath('userData'));
+{
+  const plan = launchcfg.plan(LAUNCH);
+  if (plan.disableGpu) app.disableHardwareAcceleration();
+  plan.switches.forEach(([k, v]) => { if (v === undefined) app.commandLine.appendSwitch(k); else app.commandLine.appendSwitch(k, v); });
+}
 
 const DAY = 864e5, MAX_BLOCKS = 50000, MAX_TEXT = 5000000;   // generous limits: a long note must never lose its last lines
 const MIN_W = 260, MIN_H = 180, ROLL_H = 40, SNAP = 10, GAP = 4;
@@ -23,7 +33,7 @@ const dataDir = () => DATA || app.getPath('userData');
 const DEFAULT_SETTINGS = {
   hideTaskbar: true, snap: true, launch: 'notes', splash: true, name: '', lang: 'en', theme: 'classic',
   snapDistance: 10, defaultSize: 16, trashDays: 30, shortcuts: true, chatHistory: true, autoBackup: true, lastBackup: 0, autoUpdate: true,
-  ai: { provider: 'off', model: '', url: 'http://localhost:11434', keyEnc: '' }
+  ai: { provider: 'off', model: '', url: 'http://localhost:11434', keyEnc: '', keepAlive: '5m' }
 };
 let notes = {}, trash = [], groups = [], settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
 let allWin = null, tray = null, splashWin = null, memKey = null, chatWin = null, chatState = null;
@@ -85,13 +95,13 @@ function relock(n) {
 
 /* ---------- picture files (kept outside notes.json so it stays small) ---------- */
 const imgDir = () => path.join(dataDir(), 'images');
+// Pictures are shown straight from their files: nothing big is read into memory, sent between processes or kept as text.
 function readImg(id) {
   if (!IMG_ID.test(id)) return null;
-  try {
-    const ext = id.split('.').pop().replace('jpg', 'jpeg');
-    return `data:image/${ext};base64,` + fs.readFileSync(path.join(imgDir(), id)).toString('base64');
-  } catch { return null; }
+  const f = path.join(imgDir(), id);
+  return fs.existsSync(f) ? pathToFileURL(f).href : null;
 }
+const imgBase = () => pathToFileURL(imgDir() + path.sep).href;
 const dropImages = n => imgIds(n).forEach(id => { if (IMG_ID.test(id)) try { fs.unlinkSync(path.join(imgDir(), id)); } catch {} });
 function sweepImages() {   // delete picture files no note or trash item uses any more
   const used = new Set();
@@ -103,7 +113,7 @@ function sweepImages() {   // delete picture files no note or trash item uses an
 /* ---------- storage ---------- */
 function serialize() {
   const ns = {}; for (const k of Object.keys(notes)) ns[k] = packNote(notes[k]);
-  return JSON.stringify({ version: 2, notes: ns, trash: trash.map(packNote), groups, settings }, null, 2);
+  return JSON.stringify({ version: 2, notes: ns, trash: trash.map(packNote), groups, settings });   // compact: a big note is not padded with indentation
 }
 function load() {
   firstRun = !fs.existsSync(file);
@@ -309,7 +319,8 @@ function showSplash() {
 }
 function openStartup() {
   const mode = settings.launch, any = Object.keys(notes).length > 0;
-  if (mode !== 'all' || !any) Object.values(notes).forEach(openNote);
+  // opened one after another (not all in the same instant) so start-up stays smooth and memory does not spike
+  if (mode !== 'all' || !any) Object.values(notes).forEach((n, i) => setTimeout(() => { if (notes[n.id]) openNote(n); }, i * 60));
   if (mode === 'all' || mode === 'both') openAll();
 }
 
@@ -364,7 +375,7 @@ ipcMain.handle('note:get', e => {
   const n = notes[idOf(e)]; if (!n) return null;
   const { lock, ...rest } = n;
   const bs = canEditBody(n) ? blocksOf(n).map(b => b.t === 'img' ? { t: 'img', id: b.id, src: readImg(b.id) } : b).filter(b => b.t !== 'img' || b.src) : [];
-  return { ...rest, blocks: bs, locked: !!lock, unlocked: sessions.has(n.id) };
+  return { ...rest, blocks: bs, locked: !!lock, unlocked: sessions.has(n.id), imgBase: imgBase() };
 });
 
 /* ---------- export and import (Markdown / plain text files) ---------- */
@@ -613,7 +624,7 @@ function getKey() {
   if (settings.ai.keyEnc && safeStorage.isEncryptionAvailable()) { try { return safeStorage.decryptString(Buffer.from(settings.ai.keyEnc, 'base64')); } catch {} }
   return '';
 }
-const aiCfg = () => ({ provider: settings.ai.provider, model: settings.ai.model, url: settings.ai.url, key: getKey() });
+const aiCfg = () => ({ provider: settings.ai.provider, model: settings.ai.model, url: settings.ai.url, key: getKey(), keepAlive: settings.ai.keepAlive || '5m' });
 ipcMain.handle('ai:get', () => ({ provider: settings.ai.provider, model: settings.ai.model, url: settings.ai.url, hasKey: !!getKey(),
   secure: safeStorage.isEncryptionAvailable(), defaultModel: ai.DEFAULT_CLAUDE_MODEL }));
 ipcMain.handle('ai:set', (e, p) => {
@@ -623,7 +634,7 @@ ipcMain.handle('ai:set', (e, p) => {
   if (typeof p.url === 'string' && p.url.trim()) settings.ai.url = p.url.trim().slice(0, 200);
   if (typeof p.key === 'string' && p.key.trim()) setKey(p.key.trim());
   if (p.clearKey) { settings.ai.keyEnc = ''; memKey = null; }
-  save(); ai.warmup(aiCfg()); return true;
+  save(); return true;   // (the model is loaded into memory only when you actually use the AI, see ai:warmup)
 });
 ipcMain.handle('ai:run', async (e, task, payload) => {
   try {
@@ -761,6 +772,7 @@ function chatSystem(noteId) {
   return sys;
 }
 function openChat(noteId) {
+  ai.warmup(aiCfg());   // the chat is about to be used: load the local model now
   if (chatWin && !chatWin.isDestroyed()) {
     chatWin.show(); chatWin.focus(); chatWin.webContents.focus();
     if (noteId) chatWin.webContents.send('chat:attach', noteId);
@@ -904,6 +916,17 @@ function openSettings(section) {
   settingsWin.setMinimumSize(700, 480);
   settingsWin.on('closed', () => { settingsWin = null; });
 }
+// How much memory StickyPad uses right now (private memory per process, like Task Manager's "Memory" column), in MB.
+function memoryUse() {
+  const mb = k => Math.round(k / 1024), out = { total: 0, main: 0, notes: 0, gpu: 0, other: 0, processes: 0, windows: BrowserWindow.getAllWindows().length };
+  for (const m of app.getAppMetrics()) {
+    const k = (m.memory && (m.memory.privateBytes || m.memory.workingSetSize)) || 0, t = String(m.type);
+    out.processes++; out.total += k;
+    if (t === 'Browser') out.main += k; else if (t === 'Tab') out.notes += k; else if (t === 'GPU') out.gpu += k; else out.other += k;
+  }
+  for (const k of ['total', 'main', 'notes', 'gpu', 'other']) out[k] = mb(out[k]);
+  return out;
+}
 function allSettings() {
   return {
     version: app.getVersion(), packaged: app.isPackaged, startup: startupOn(), dataPath: dataDir(), dataCustom: dataDir() !== app.getPath('userData'),
@@ -911,7 +934,8 @@ function allSettings() {
     trashDays: settings.trashDays, trashCount: trash.length, shortcuts: !!settings.shortcuts, chatHistory: !!settings.chatHistory,
     autoBackup: !!settings.autoBackup, lastBackup: settings.lastBackup || 0, backupCount: backup.list(app.getPath('userData')).length,
     autoUpdate: settings.autoUpdate !== false, update: updater ? updater.get() : null,
-    theme: settings.theme, prefs: prefs(), groups, notesCount: Object.keys(notes).length
+    theme: settings.theme, prefs: prefs(), groups, notesCount: Object.keys(notes).length,
+    lowMemory: launchcfg.read(app.getPath('userData')).lowMemory, lowMemoryActive: LAUNCH.lowMemory, aiKeep: settings.ai.keepAlive || '5m'
   };
 }
 const clampInt = (v, lo, hi) => Math.min(hi, Math.max(lo, Math.round(Number(v))));
@@ -929,6 +953,8 @@ ipcMain.handle('settings:set', (e, p) => {
     if ('chatHistory' in p) { settings.chatHistory = !!p.chatHistory; if (!settings.chatHistory) clearChat(); }
     if ('autoBackup' in p) settings.autoBackup = !!p.autoBackup;
     if ('autoUpdate' in p) settings.autoUpdate = !!p.autoUpdate;
+    if ('lowMemory' in p) { try { launchcfg.write(app.getPath('userData'), { lowMemory: !!p.lowMemory }); } catch {} }   // used at the next start
+    if (typeof p.aiKeep === 'string' && ['0', '5m', '30m'].includes(p.aiKeep)) settings.ai.keepAlive = p.aiKeep;
     if (typeof p.theme === 'string') settings.theme = THEMES.byId(p.theme).id;
     if (p.prefs) setPrefs(p.prefs);
     save(); refreshTray();
@@ -940,6 +966,8 @@ ipcMain.handle('settings:action', (e, name) => {
     if (name === 'backupNow') { doBackup(); return { ok: true, info: allSettings() }; }
     if (name === 'exportAll') return exportAll(settingsWin);
     if (name === 'importNotes') return importNotes(settingsWin);
+    if (name === 'memory') return { ok: true, ...memoryUse() };
+    if (name === 'restartApp') { flush(); app.relaunch(); setTimeout(() => app.exit(0), 200); return { ok: true }; }
     if (name === 'openUpdateLog') {
       const f = updateLogFile(); if (!fs.existsSync(f)) fs.writeFileSync(f, 'No update check has run yet. Press "Check now" in Settings > About, then open this file again.\n');
       shell.openPath(f); return { ok: true };
@@ -984,7 +1012,6 @@ app.whenReady().then(async () => {
   if (settings.splash) await showSplash();
   openStartup();
   save();
-  ai.warmup(aiCfg());   // load the local model in the background so the first answer is quick
   initUpdater();
   checkReminders(); setInterval(checkReminders, 15000);   // also fires reminders that came due while the app was closed
 });

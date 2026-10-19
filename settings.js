@@ -28,6 +28,8 @@ function fill() {
   $('#backupInfo').textContent = (S.lastBackup ? 'Last backup: ' + new Date(S.lastBackup).toLocaleString() : 'No backup yet') + ` · ${S.backupCount} kept`;
   $('#dataPath').textContent = S.dataPath; $('#resetData').hidden = !S.dataCustom;
   $('#aboutVer').textContent = 'Version ' + S.version; showUpdate(S.update);
+  $('#lowMemory').checked = !!S.lowMemory; $('#lowMemRestart').hidden = !!S.lowMemory === !!S.lowMemoryActive;
+  if (S.aiKeep) $('#aiKeep').value = S.aiKeep;
   $('#aboutNotes').textContent = `${S.notesCount} note${S.notesCount === 1 ? '' : 's'}, ${S.groups.length} folder${S.groups.length === 1 ? '' : 's'}`;
   drawThemes(); drawFolders();
 }
@@ -95,6 +97,13 @@ function showUpdate(u) {
 }
 $('#updCheck').onclick = async () => showUpdate(await api.updateCheck());
 $('#updInstall').onclick = () => api.updateInstall();
+$('#memBtn').onclick = async () => {
+  const b = $('#memBtn'), m = $('#memInfo'); b.disabled = true;
+  const r = await api.settingsAction('memory'); b.disabled = false;
+  if (r && r.ok) m.textContent = `StickyPad uses ${r.total} MB in ${r.processes} processes: notes and windows ${r.notes} MB, main ${r.main} MB, graphics ${r.gpu} MB, other ${r.other} MB (${r.windows} window${r.windows === 1 ? '' : 's'} open).`;
+};
+$('#aiKeep').onchange = () => save({ aiKeep: $('#aiKeep').value });
+$('#lowMemRestart').onclick = () => api.settingsAction('restartApp');
 $('#updLog').onclick = () => api.settingsAction('openUpdateLog');
 $('#updPage').onclick = () => api.settingsAction('openReleases');
 api.onUpdateEvent(showUpdate);

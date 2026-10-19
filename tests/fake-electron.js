@@ -8,15 +8,16 @@ class FakeWin {
   getBounds() { return this._b; } isDestroyed() { return false; } isMinimized() { return false; }
   once() {} on() {} loadFile() {} show() {} focus() {} close() {} restore() {} flashFrame() {} setAlwaysOnTop() {} setMinimumSize() {} setMaximumSize() {} setBounds() {} setPosition() {} setSkipTaskbar() {} getPosition() { return [0, 0]; } getSize() { return [300, 320]; }
 }
+FakeWin.getAllWindows = () => wins.slice();
 const dialogCalls = [];
 const electron = {
-  app: { getPath: n => path.join(tmp, n), requestSingleInstanceLock: () => true, whenReady: () => new Promise(() => {}), on() {}, quit() {}, exit() {}, relaunch() {}, isPackaged: false, getVersion: () => '9.9.9', setLoginItemSettings() {}, getLoginItemSettings: () => ({}), setAppUserModelId() {}, getName: () => 'x' },
+  app: { commandLine: { appendSwitch: (k, v) => { electron.__switches.push([k, v]); } }, disableHardwareAcceleration: () => { electron.__nogpu = true; }, getAppMetrics: () => [{ type: 'Browser', memory: { privateBytes: 61440 } }, { type: 'Tab', memory: { privateBytes: 51200 } }, { type: 'Tab', memory: { privateBytes: 40960 } }, { type: 'GPU', memory: { workingSetSize: 0 } }, { type: 'Utility', memory: { privateBytes: 10240 } }], getPath: n => path.join(tmp, n), requestSingleInstanceLock: () => true, whenReady: () => new Promise(() => {}), on() {}, quit() {}, exit() {}, relaunch() {}, isPackaged: false, getVersion: () => '9.9.9', setLoginItemSettings() {}, getLoginItemSettings: () => ({}), setAppUserModelId() {}, getName: () => 'x' },
   BrowserWindow: FakeWin, ipcMain: { handle: (n, f) => { handlers[n] = f; }, on() {} },
   Tray: noop, Menu: noop, nativeImage: { createFromPath: () => ({ isEmpty: () => true, resize: () => noop }) , createEmpty: () => noop },
   screen: { getPrimaryDisplay: () => ({ workArea: { x: 0, y: 0, width: 1920, height: 1080 } }), getAllDisplays: () => [], getDisplayMatching: () => ({ workArea: { x: 0, y: 0, width: 1920, height: 1080 } }) },
   globalShortcut: { register() {}, unregisterAll() {} }, clipboard: noop, safeStorage: { isEncryptionAvailable: () => false }, shell: { openPath: p => { dialogCalls.push(['open', p]); }, openExternal: u => { dialogCalls.push(['external', u]); } },
   dialog: { showSaveDialog: async o => { dialogCalls.push(['save', o]); return { canceled: false, filePath: electron.__save }; }, showOpenDialogSync: o => { dialogCalls.push(['open', o]); return electron.__open; }, showMessageBox: async () => ({ response: 1 }), showMessageBoxSync: () => 0 },
-  Notification: class { static isSupported() { return true; } constructor(o) { electron.__notes.push(o); } on() {} show() {} }, __notes: [],
+  Notification: class { static isSupported() { return true; } constructor(o) { electron.__notes.push(o); } on() {} show() {} }, __notes: [], __switches: [],
 };
 const orig = Module._load;
 Module._load = function (req, ...r) { if (req === 'electron') return electron; if (req === 'electron-updater') return { autoUpdater: noop }; return orig.call(this, req, ...r); };

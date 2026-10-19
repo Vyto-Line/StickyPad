@@ -50,7 +50,8 @@ const DEFAULT_OLLAMA_URL = 'http://localhost:11434';
 const MAX_CHARS = 12000;   // longest piece the live edit accepts at once
 const MAX_TOTAL = 400000, CHUNK = 3500, PIECE = 1200, BATCH = 3000;   // long notes are processed in chunks
 
-const KEEP_ALIVE = '30m';   // keeps the model in memory between requests, so the next answer starts instantly
+// How long Ollama keeps the model in memory after a request (it uses gigabytes). '5m' by default; '0' unloads right after the answer.
+const keepOf = cfg => { const k = cfg && cfg.keepAlive; return k === '0' || k === 0 ? 0 : (k === '30m' || k === '5m') ? k : '5m'; };
 const ollamaOpts = (temperature, predict, chars = 0) => ({ temperature, num_ctx: ctxFor(chars, predict), ...(predict ? { num_predict: predict } : {}) });
 
 // Splits text into pieces of at most `max` characters, on line breaks first and then sentence ends, so joining the pieces gives back the exact text.
@@ -107,7 +108,7 @@ async function callModel(cfg, system, user, { json = false, predict = 0 } = {}, 
     if (!cfg.model) throw fail('Enter the name of an Ollama model first (for example llama3.2).');
     let r;
     try { r = await post(base + '/api/chat', { 'content-type': 'application/json' },
-      { model: cfg.model, stream: false, keep_alive: KEEP_ALIVE, ...(json ? { format: 'json' } : {}), options: ollamaOpts(0.2, predict, system.length + user.length),
+      { model: cfg.model, stream: false, keep_alive: keepOf(cfg), ...(json ? { format: 'json' } : {}), options: ollamaOpts(0.2, predict, system.length + user.length),
         messages: [{ role: 'system', content: system }, { role: 'user', content: user }] }, fetchImpl, 120000); }
     catch (e) { if (e.message === '__unreachable__') throw fail(`Could not reach Ollama at ${base}. Is it running?`); throw e; }
     if (!r.res.ok) {
@@ -237,7 +238,7 @@ async function chatStream(cfg, system, messages, onChunk, signal, fetchImpl = fe
       if (!/^https?:\/\//i.test(base)) throw fail('The Ollama address must start with http:// (for example http://localhost:11434).');
       if (!cfg.model) throw fail('Enter the name of an Ollama model first (for example llama3.2).');
       url = base + '/api/chat'; headers = { 'content-type': 'application/json' };
-      body = { model: cfg.model, stream: true, keep_alive: KEEP_ALIVE, options: ollamaOpts(opts.temperature == null ? 0.5 : opts.temperature, opts.predict, system.length + messages.reduce((a, m) => a + m.content.length, 0)), messages: [{ role: 'system', content: system }, ...messages] };
+      body = { model: cfg.model, stream: true, keep_alive: keepOf(cfg), options: ollamaOpts(opts.temperature == null ? 0.5 : opts.temperature, opts.predict, system.length + messages.reduce((a, m) => a + m.content.length, 0)), messages: [{ role: 'system', content: system }, ...messages] };
     } else if (cfg.provider === 'claude') {
       if (!cfg.key) throw fail('Add your Anthropic API key in the AI tab first.');
       url = 'https://api.anthropic.com/v1/messages';
@@ -323,10 +324,10 @@ async function editStream(cfg, mode, text, onChunk, signal, fetchImpl = fetch) {
 
 // Loads the Ollama model into memory in the background so the first real request is fast.
 async function warmup(cfg, fetchImpl = fetch) {
-  if (cfg.provider !== 'ollama' || !cfg.model) return false;
+  if (cfg.provider !== 'ollama' || !cfg.model || keepOf(cfg) === 0) return false;
   const base = String(cfg.url || DEFAULT_OLLAMA_URL).trim().replace(/\/+$/, '');
   if (!/^https?:\/\//i.test(base)) return false;
-  try { const r = await fetchImpl(base + '/api/generate', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ model: cfg.model, keep_alive: KEEP_ALIVE }), signal: AbortSignal.timeout(60000) }); return r.ok; }
+  try { const r = await fetchImpl(base + '/api/generate', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ model: cfg.model, keep_alive: keepOf(cfg) }), signal: AbortSignal.timeout(60000) }); return r.ok; }
   catch { return false; }
 }
 
@@ -335,4 +336,4 @@ async function ping(cfg, fetchImpl = fetch) {
   return r.trim().slice(0, 40);
 }
 
-module.exports = { translateTarget, splitPieces, isGreek, greekShare, ctxFor, GREEK_RULES, editStream, editSystem, EDIT_MODES, warmup, summarize, fixGrammar, toChecklist, parseChecklist, chatStream, SYS_CHAT, ping, parseItems, callModel, DEFAULT_CLAUDE_MODEL, DEFAULT_OLLAMA_URL };
+module.exports = { keepOf, translateTarget, splitPieces, isGreek, greekShare, ctxFor, GREEK_RULES, editStream, editSystem, EDIT_MODES, warmup, summarize, fixGrammar, toChecklist, parseChecklist, chatStream, SYS_CHAT, ping, parseItems, callModel, DEFAULT_CLAUDE_MODEL, DEFAULT_OLLAMA_URL };

@@ -172,7 +172,7 @@ const queue = () => { clearTimeout(timer); timer = setTimeout(saveNow, 200); };
 
 /* ---------- undo / redo (covers typing and pictures) ---------- */
 let cur = '[]', undoS = [], redoS = [], hTimer = null, undoChars = 0;
-const UNDO_BUDGET = 20e6;   // total characters kept for undo: a very long note must not eat all the memory
+const UNDO_BUDGET = 8e6;   // total characters kept for undo: a very long note must not eat all the memory
 function pushUndo(s) { undoS.push(s); undoChars += s.length; while ((undoS.length > 100 || undoChars > UNDO_BUDGET) && undoS.length > 1) undoChars -= undoS.shift().length; }
 function popUndo() { const s = undoS.pop(); undoChars -= s.length; return s; }
 const snap = () => JSON.stringify(serialize());
@@ -219,7 +219,7 @@ async function shrink(file) {
 }
 async function addFiles(files) {
   for (const f of files) {
-    try { const url = await shrink(f), id = await api.saveImage(url); if (id) { insertImg(id, url); commitNow(); } } catch (e) {}
+    try { const url = await shrink(f), id = await api.saveImage(url); if (id) { insertImg(id, note && note.imgBase ? note.imgBase + id : url); commitNow(); } } catch (e) {}   // shown from its file, not from a big text copy in memory
   }
   mark(); saveNow();
 }
@@ -782,13 +782,18 @@ $('#rmLockBtn').onclick = async () => {
   if (await api.removeLock($('#rmpw').value)) { $('#rmpw').value = ''; lockMsg('Lock removed.'); await reload(); } else lockMsg('Wrong password.');
 };
 $('#trashBtn').onclick = () => api.openTrash();
+let lastWarm = 0;
+function warmModel() {   // opening the AI tab means you are about to use it: load the local model now (never at start-up)
+  if (Date.now() - lastWarm < 240000) return; lastWarm = Date.now();
+  try { api.aiWarmup(); } catch (e) {}
+}
 function showTab(t) {
   if (!['style', 'note', 'app', 'ai'].includes(t)) t = 'style';
   ['style', 'note', 'app', 'ai'].forEach(k => { $('#pg-' + k).hidden = k !== t; });
   document.querySelectorAll('.tabs button[data-tab]').forEach(b => { const on = b.dataset.tab === t; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
   try { localStorage.setItem('sp.tab', t); } catch (e) {}
   $('#panel').scrollTop = 0;
-  if (t === 'ai') aiLoad();
+  if (t === 'ai') { aiLoad(); warmModel(); }
 }
 document.querySelectorAll('.tabs button[data-tab]').forEach(b => { b.onclick = () => showTab(b.dataset.tab); });
 $('#cfg').onclick = () => {
