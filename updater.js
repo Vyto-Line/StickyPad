@@ -24,7 +24,8 @@ async function findRelease({ owner, repo, fetchImpl, allowPrerelease = true }) {
   return { tag: ok[0].tag_name, url: `https://github.com/${owner}/${repo}/releases/download/${encodeURIComponent(ok[0].tag_name)}` };
 }
 
-function createUpdater({ autoUpdater, send = () => {}, onReady = () => {}, supported = true, repo = null, fetchImpl = null }) {
+function createUpdater({ autoUpdater, send = () => {}, onReady = () => {}, supported = true, repo = null, fetchImpl = null, log = () => {} }) {
+  const say = (...a) => { try { log(a.join(' ')); } catch { /* logging must never break an update */ } };
   const state = { state: supported && autoUpdater ? 'idle' : 'unsupported', version: null, pct: null, error: '', checkedAt: 0 };
   const set = patch => { Object.assign(state, patch); try { send({ ...state }); } catch { /* window closed */ } };
   const get = () => ({ ...state });
@@ -39,12 +40,12 @@ function createUpdater({ autoUpdater, send = () => {}, onReady = () => {}, suppo
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;   // if you pick "Later", it installs when you quit
   autoUpdater.allowPrerelease = true;        // releases marked "pre-release" count too
-  autoUpdater.on('checking-for-update', () => set({ state: 'checking', error: '', pct: null }));
-  autoUpdater.on('update-available', info => set({ state: 'downloading', version: info && info.version, pct: 0 }));
-  autoUpdater.on('update-not-available', () => set({ state: 'none', version: null, pct: null, checkedAt: Date.now() }));
+  autoUpdater.on('checking-for-update', () => { say('checking'); set({ state: 'checking', error: '', pct: null }); });
+  autoUpdater.on('update-available', info => { say('update available:', info && info.version); set({ state: 'downloading', version: info && info.version, pct: 0 }); });
+  autoUpdater.on('update-not-available', () => { say('no newer version'); set({ state: 'none', version: null, pct: null, checkedAt: Date.now() }); });
   autoUpdater.on('download-progress', p => set({ state: 'downloading', pct: Math.round((p && p.percent) || 0) }));
-  autoUpdater.on('update-downloaded', info => { set({ state: 'ready', version: (info && info.version) || state.version, pct: 100, checkedAt: Date.now() }); onReady(state.version); });
-  autoUpdater.on('error', err => set({ state: 'error', error: friendly(err), pct: null, checkedAt: Date.now() }));
+  autoUpdater.on('update-downloaded', info => { say('downloaded:', info && info.version); set({ state: 'ready', version: (info && info.version) || state.version, pct: 100, checkedAt: Date.now() }); onReady(state.version); });
+  autoUpdater.on('error', err => { say('ERROR:', String((err && (err.stack || err.message)) || err).slice(0, 1500)); set({ state: 'error', error: friendly(err), pct: null, checkedAt: Date.now() }); });
 
   async function check() {
     if (state.state === 'checking' || state.state === 'downloading' || state.state === 'ready') return get();
@@ -52,11 +53,12 @@ function createUpdater({ autoUpdater, send = () => {}, onReady = () => {}, suppo
     try {
       if (repo && fetchImpl && typeof autoUpdater.setFeedURL === 'function') {
         const rel = await findRelease({ owner: repo.owner, repo: repo.repo, fetchImpl });
+        say('newest release with an installer:', rel.tag, '->', rel.url);
         autoUpdater.setFeedURL({ provider: 'generic', url: rel.url });
       }
       await autoUpdater.checkForUpdates();
     }
-    catch (e) { set({ state: 'error', error: friendly(e), checkedAt: Date.now() }); }
+    catch (e) { say('ERROR:', String((e && (e.stack || e.message)) || e).slice(0, 1500)); set({ state: 'error', error: friendly(e), checkedAt: Date.now() }); }
     return get();
   }
   const install = () => { if (state.state === 'ready') autoUpdater.quitAndInstall(true, true); };

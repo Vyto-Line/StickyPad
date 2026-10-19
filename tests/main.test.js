@@ -32,6 +32,8 @@ const H = require('./fake-electron');
   await h['note:lock'](e, 'secret1'); assert.deepStrictEqual((await h['hist:list'](e)).items, []);
   assert.ok(!fs.existsSync(path.join(tmp, 'userData', 'history', n0.id + '.json')), 'history file removed on lock');
   const ex2 = await h['note:export'](e); assert.strictEqual(ex2.ok, false);
+  const ul = await h['settings:action']({}, 'openUpdateLog'); assert.ok(ul.ok && fs.existsSync(path.join(tmp, 'userData', 'update.log')), 'update log can be opened');
+  const orl = await h['settings:action']({}, 'openReleases'); assert.ok(orl.ok && H.dialogCalls.some(c => c[0] === 'external' && /Vyto-Line\/StickyPad\/releases/.test(c[1])));
   console.log('main harness ok');
   process.exit(0);
 })().catch(e => { console.error('HARNESS FAIL', e); process.exit(1); });

@@ -95,6 +95,8 @@ function showUpdate(u) {
 }
 $('#updCheck').onclick = async () => showUpdate(await api.updateCheck());
 $('#updInstall').onclick = () => api.updateInstall();
+$('#updLog').onclick = () => api.settingsAction('openUpdateLog');
+$('#updPage').onclick = () => api.settingsAction('openReleases');
 api.onUpdateEvent(showUpdate);
 async function dataMove(name) { const r = await api.settingsAction(name); if (!r.ok && !r.cancelled) $('#dataMsg').textContent = r.error || 'Could not change the folder.'; }
 $('#chooseData').onclick = () => dataMove('chooseDataFolder');

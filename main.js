@@ -814,7 +814,7 @@ function initUpdater() {
   if (app.isPackaged) { try { au = require('electron-updater').autoUpdater; } catch { /* module missing: updates stay off */ } }
   updater = updaterLib.createUpdater({
     autoUpdater: au, supported: app.isPackaged, repo: { owner: 'Vyto-Line', repo: 'StickyPad' },
-    fetchImpl: (u, o) => (net && net.fetch ? net.fetch(u, o) : fetch(u, o)),
+    fetchImpl: (u, o) => (net && net.fetch ? net.fetch(u, o) : fetch(u, o)), log: updateLog,
     send: m => BrowserWindow.getAllWindows().forEach(w => { if (!w.isDestroyed()) w.webContents.send('update:event', m); }),
     onReady: version => {
       dialog.showMessageBox({ type: 'info', buttons: ['Restart now', 'Later'], defaultId: 0, cancelId: 1, title: 'StickyPad update',
@@ -823,6 +823,17 @@ function initUpdater() {
     }
   });
   updater.schedule({ enabled: () => settings.autoUpdate !== false });
+}
+// A small text file that records what the update check did, so a failure can be understood afterwards (Settings > About > Open update log).
+const updateLogFile = () => path.join(app.getPath('userData'), 'update.log');
+function updateLog(line) {
+  try {
+    const f = updateLogFile(); let old = '';
+    try { old = fs.readFileSync(f, 'utf8'); } catch {}
+    if (old.length > 150000) old = old.slice(-100000);
+    const head = old ? '' : `StickyPad ${app.getVersion()} on ${process.platform} ${process.arch}\n`;
+    fs.writeFileSync(f, old + head + new Date().toISOString() + '  v' + app.getVersion() + '  ' + line + '\n');
+  } catch {}
 }
 ipcMain.handle('update:check', () => updater ? updater.check() : null);
 ipcMain.handle('update:state', () => updater ? updater.get() : null);
@@ -929,6 +940,11 @@ ipcMain.handle('settings:action', (e, name) => {
     if (name === 'backupNow') { doBackup(); return { ok: true, info: allSettings() }; }
     if (name === 'exportAll') return exportAll(settingsWin);
     if (name === 'importNotes') return importNotes(settingsWin);
+    if (name === 'openUpdateLog') {
+      const f = updateLogFile(); if (!fs.existsSync(f)) fs.writeFileSync(f, 'No update check has run yet. Press "Check now" in Settings > About, then open this file again.\n');
+      shell.openPath(f); return { ok: true };
+    }
+    if (name === 'openReleases') { shell.openExternal('https://github.com/Vyto-Line/StickyPad/releases'); return { ok: true }; }
     if (name === 'openData') { shell.openPath(dataDir()); return { ok: true }; }
     if (name === 'chooseDataFolder' || name === 'resetDataFolder') {
       const def = app.getPath('userData'); let target = def;

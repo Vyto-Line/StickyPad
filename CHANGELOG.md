@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.13.2
+- **Update log**: Settings > About has two new buttons. *Open update log* shows a small text file that records what each update check did and, if it failed, the exact reason. *Releases page* opens the GitHub releases so you can download the newest installer yourself. This makes it easy to find out why an update does not arrive.
+
 ## 1.13.1
 - **Auto-update is more reliable**: StickyPad now asks GitHub directly for the newest release that really has its installer files (`latest.yml`) and updates from that one. Before, an empty release (for example one created with a tag without the `v`) or a stale releases feed could make it answer "No downloadable update was found" even though a newer version existed. The message now also says to wait a few minutes after publishing, and shows the technical detail.
 

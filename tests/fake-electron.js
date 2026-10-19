@@ -14,7 +14,7 @@ const electron = {
   BrowserWindow: FakeWin, ipcMain: { handle: (n, f) => { handlers[n] = f; }, on() {} },
   Tray: noop, Menu: noop, nativeImage: { createFromPath: () => ({ isEmpty: () => true, resize: () => noop }) , createEmpty: () => noop },
   screen: { getPrimaryDisplay: () => ({ workArea: { x: 0, y: 0, width: 1920, height: 1080 } }), getAllDisplays: () => [], getDisplayMatching: () => ({ workArea: { x: 0, y: 0, width: 1920, height: 1080 } }) },
-  globalShortcut: { register() {}, unregisterAll() {} }, clipboard: noop, safeStorage: { isEncryptionAvailable: () => false }, shell: { openPath: p => { dialogCalls.push(['open', p]); } },
+  globalShortcut: { register() {}, unregisterAll() {} }, clipboard: noop, safeStorage: { isEncryptionAvailable: () => false }, shell: { openPath: p => { dialogCalls.push(['open', p]); }, openExternal: u => { dialogCalls.push(['external', u]); } },
   dialog: { showSaveDialog: async o => { dialogCalls.push(['save', o]); return { canceled: false, filePath: electron.__save }; }, showOpenDialogSync: o => { dialogCalls.push(['open', o]); return electron.__open; }, showMessageBox: async () => ({ response: 1 }), showMessageBoxSync: () => 0 },
   Notification: class { static isSupported() { return true; } constructor(o) { electron.__notes.push(o); } on() {} show() {} }, __notes: [],
 };

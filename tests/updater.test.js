@@ -49,5 +49,13 @@ const { createUpdater, friendly } = require('../updater.js'), assert = require('
   assert.strictEqual(r.state, 'none'); assert.deepStrictEqual(feeds, [{ provider: 'generic', url: 'https://github.com/o/r/releases/download/v1.13.0' }]);
   au = mk(() => { throw new Error('should not be reached'); }); au.setFeedURL = () => {};
   u = createUpdater({ autoUpdater: au, repo: { owner: 'o', repo: 'r' }, fetchImpl: api([]) }); r = await u.check(); assert.strictEqual(r.state, 'error'); assert(/installer/.test(r.error));
+  // ---- the log records what happened (and a failing logger never breaks a check) ----
+  const lines = []; au = mk(a => { a.emit('checking-for-update'); a.emit('update-available', { version: '2.0.0' }); a.emit('update-downloaded', { version: '2.0.0' }); }); au.setFeedURL = () => {};
+  u = createUpdater({ autoUpdater: au, repo: { owner: 'o', repo: 'r' }, fetchImpl: api([rel('v2.0.0', '2026-10-19T10:54:00Z')]), log: l => lines.push(l) }); await u.check();
+  assert(lines.some(l => /newest release with an installer: v2\.0\.0/.test(l)) && lines.some(l => /update available: 2\.0\.0/.test(l)) && lines.some(l => /downloaded: 2\.0\.0/.test(l)), lines.join(' | '));
+  lines.length = 0; au = mk(() => { throw new Error('boom detail'); }); au.setFeedURL = () => {};
+  u = createUpdater({ autoUpdater: au, repo: { owner: 'o', repo: 'r' }, fetchImpl: api([rel('v2.0.0', '2026-10-19T10:54:00Z')]), log: l => lines.push(l) }); await u.check();
+  assert(lines.some(l => /ERROR:.*boom detail/.test(l)));
+  u = createUpdater({ autoUpdater: mk(a => a.emit('update-not-available')), log: () => { throw new Error('disk full'); } }); assert.strictEqual((await u.check()).state, 'none');
   console.log('updater ok');
 })().catch(e => { console.error(e); process.exit(1); });
