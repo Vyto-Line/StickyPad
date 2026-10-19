@@ -1,6 +1,6 @@
 // A long note must keep every line when it is saved (it used to be cut after 400 blocks).
 const fs = require('fs'), path = require('path'), assert = require('assert');
-const src = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8');
+const src = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8').replace(/\r\n/g, '\n');   // Windows checkouts use CRLF
 const pick = re => { const m = src.match(re); assert(m, 'not found in main.js: ' + re); return m[0]; };
 const code = pick(/const DAY[^\n]*\n/) + 'const IMG_ID=/^[A-Za-z0-9_.-]+$/;' + pick(/const textOf[^\n]*\n/) + pick(/function sanitizeBlocks[\s\S]*?\n}\n/) + ';module.exports={sanitizeBlocks,textOf}';
 const m = { exports: {} }; new Function('module', code)(m);
