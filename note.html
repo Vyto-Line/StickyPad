@@ -24,7 +24,6 @@
   <div class="tabs" role="tablist" aria-label="Settings">
     <button class="on" role="tab" data-tab="style">Style</button>
     <button role="tab" data-tab="note">Note</button>
-    <button role="tab" data-tab="app">App</button>
     <button role="tab" data-tab="ai">AI</button>
     <button id="tabSettings" class="tabgear" title="Open all settings (Ctrl+,)" aria-label="Open all settings"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
   </div>
@@ -78,19 +77,6 @@
     <button id="del" class="btn danger" title="Move this note to the trash">Move note to trash</button>
   </div>
 
-  <div class="page" id="pg-app" hidden>
-    <div class="tools">
-      <button id="newBtn" class="tool" title="New note (Ctrl+N)"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New</button>
-      <button id="allBtn" class="tool" title="All notes"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/></svg>All</button>
-      <button id="tidyBtn" class="tool" title="Arrange open notes in rows"><svg class="i" viewBox="0 0 24 24"><rect x="3.5" y="4" width="7.5" height="6.5" rx="1.5"/><rect x="13" y="4" width="7.5" height="6.5" rx="1.5"/><rect x="3.5" y="13.5" width="17" height="6.5" rx="1.5"/></svg>Tidy</button>
-      <button id="trashBtn" class="tool" title="Open trash"><svg class="i" viewBox="0 0 24 24"><path d="M5 7h14M9.5 7V4.5h5V7M7 7l.9 12.5h8.2L17 7"/></svg>Trash<span id="trashCount" class="badge"></span></button>
-    </div>
-    <label class="opt"><span>Snap to edges and notes</span><input id="snapCk" class="toggle" type="checkbox"></label>
-    <label class="opt"><span>Hide from taskbar</span><input id="hideTb" class="toggle" type="checkbox"></label>
-    <label class="opt"><span>Start with Windows</span><input id="startup" class="toggle" type="checkbox"></label>
-    <p id="startupNote" class="hint" hidden>Available once StickyPad is installed (npm run dist).</p>
-  </div>
-
   <div class="page" id="pg-ai" hidden>
     <div class="aibtns">
       <button id="aiSum" class="btn primary">✨ Summarize</button>
@@ -105,7 +91,7 @@
       <button id="aiEdit" class="btn primary" title="Edits the selected text, or the paragraph with the cursor, live (Ctrl+Shift+E)">✎ Edit live</button>
     </div>
     <p id="aiHint" class="hint"></p>
-    <div class="sect">Setup</div>
+    <details id="aiSetup" class="setup"><summary>Model and connection</summary>
     <label class="row"><span>Use</span><select id="aiProv" class="field" aria-label="AI provider">
       <option value="off">Off</option><option value="ollama">Ollama (on this PC, free)</option><option value="claude">Claude API (online)</option></select></label>
     <div class="row top"><span>Model</span><div class="mcol"><select id="aiModelSel" class="field" aria-label="Model" hidden></select><input id="aiModel" class="field" autocomplete="off" spellcheck="false" aria-label="Model name"></div></div>
@@ -114,8 +100,8 @@
     <div class="line"><button id="aiSave" class="btn">Save</button><button id="aiTest" class="btn">Test</button><button id="aiClear" class="btn" hidden>Forget key</button></div>
     <p id="aiMsg" class="hint"></p>
     <p class="hint">The text of the note you ask about is sent to the provider you pick. Ollama keeps it on this PC; the Claude API sends it to Anthropic.</p>
+    </details>
   </div>
-  <div class="panelfoot"><button id="openSettings" class="linkbtn"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>All settings…</button></div>
 </section>
 
 <div id="findbar" hidden role="search">

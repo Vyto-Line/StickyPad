@@ -42,7 +42,7 @@ const DEFAULT_SETTINGS = {
   ai: { provider: 'off', model: '', url: 'http://localhost:11434', keyEnc: '', keepAlive: '5m' }
 };
 let notes = {}, trash = [], groups = [], settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
-let allWin = null, tray = null, splashWin = null, memKey = null, chatWin = null, chatState = null;
+let allWin = null, settingsWin = null, tray = null, splashWin = null, memKey = null, chatWin = null, chatState = null;
 const chatJobs = new Map();
 const wins = new Map();       // noteId -> BrowserWindow
 const byContents = new Map(); // webContents.id -> noteId
@@ -294,15 +294,36 @@ function utilWindow(ref, title, htmlFile, w, h, query) {
   win.on('focus', () => { if (!win.isDestroyed()) win.webContents.focus(); });   // makes sure text boxes receive typing
   return win;
 }
-function openAll(tab) {
-  if (allWin && !allWin.isDestroyed()) {
-    allWin.show(); allWin.focus(); allWin.webContents.focus();
-    if (tab) allWin.webContents.send('all:tab', tab);
-    return;
-  }
-  allWin = utilWindow(null, 'StickyPad – All notes', 'all.html', 540, 640, tab ? { tab } : undefined);
-  allWin.on('closed', () => { allWin = null; });
+/* One "Home" window holds All notes, Trash, the AI chat and Settings, switched from a sidebar (home.js). It is one window that loads one page at a time. */
+const HOME_PAGES = { notes: 'all.html', trash: 'all.html', chat: 'chat.html', settings: 'settings.html' };
+let homeWin = null, homePage = '';
+function syncHome() {   // allWin / chatWin / settingsWin point at the Home window only while their page is the one showing
+  const ok = !!homeWin && !homeWin.isDestroyed();
+  allWin = ok && homePage === 'all.html' ? homeWin : null;
+  chatWin = ok && homePage === 'chat.html' ? homeWin : null;
+  settingsWin = ok && homePage === 'settings.html' ? homeWin : null;
 }
+function openHome(section, arg) {
+  if (!HOME_PAGES[section]) section = 'notes';
+  const file = HOME_PAGES[section];
+  const query = section === 'trash' ? { tab: 'trash' } : section === 'settings' && arg ? { section: String(arg) } : section === 'chat' && arg ? { note: String(arg) } : undefined;
+  if (homeWin && !homeWin.isDestroyed()) {
+    homeWin.show(); homeWin.focus();
+    if (homePage === file) {   // already showing that page: just tell it what to show
+      const wc = homeWin.webContents;
+      if (file === 'all.html') wc.send('all:tab', section); else if (section === 'chat' && arg) wc.send('chat:attach', arg); else if (section === 'settings' && arg) wc.send('settings:section', arg);
+      wc.focus(); return;
+    }
+    if (homePage === 'chat.html') { chatJobs.forEach(a => a.abort()); chatJobs.clear(); }
+    homePage = file; syncHome(); homeWin.loadFile(file, query ? { query } : undefined); return;
+  }
+  homePage = file;
+  homeWin = utilWindow(null, 'StickyPad', file, 980, 680, query);
+  homeWin.setMinimumSize(800, 520);
+  syncHome();
+  homeWin.on('closed', () => { chatJobs.forEach(a => a.abort()); chatJobs.clear(); homeWin = null; homePage = ''; syncHome(); });
+}
+function openAll(tab) { openHome(tab === 'trash' ? 'trash' : 'notes'); }
 const openTrash = () => openAll('trash');
 const pingAll = () => {
   clearTimeout(allTimer);
@@ -908,25 +929,11 @@ function chatSystem(noteId, question, sources) {
 }
 function openChat(noteId) {
   ai.warmup(aiCfg());   // the chat is about to be used: load the local model now
-  if (chatWin && !chatWin.isDestroyed()) {
-    chatWin.show(); chatWin.focus(); chatWin.webContents.focus();
-    if (noteId) chatWin.webContents.send('chat:attach', noteId);
-    return;
-  }
-  const wa = screen.getPrimaryDisplay().workArea, W = 400;
-  chatWin = new BrowserWindow({
-    x: wa.x + wa.width - W, y: wa.y, width: W, height: wa.height, minWidth: 340, minHeight: 420, frame: false, show: false,
-    title: 'StickyPad – AI chat', icon: iconPath, backgroundColor: '#161b27',
-    webPreferences: { preload, contextIsolation: true, nodeIntegration: false }
-  });
-  chatWin.setMenu(null);
-  chatWin.loadFile('chat.html', noteId ? { query: { note: noteId } } : undefined);
-  chatWin.once('ready-to-show', () => { chatWin.show(); chatWin.focus(); chatWin.webContents.focus(); });
-  chatWin.on('focus', () => { if (!chatWin.isDestroyed()) chatWin.webContents.focus(); });
-  chatWin.on('closed', () => { chatJobs.forEach(a => a.abort()); chatJobs.clear(); chatWin = null; });
+  openHome('chat', noteId);
 }
 ipcMain.handle('chat:open', (e, noteId) => openChat(typeof noteId === 'string' ? noteId : undefined));
-ipcMain.handle('chat:close', () => { if (chatWin && !chatWin.isDestroyed()) chatWin.close(); });
+ipcMain.handle('chat:close', () => { openHome('notes'); });
+ipcMain.handle('home:go', (e, section, arg) => { if (section === 'chat') return openChat(typeof arg === 'string' ? arg : undefined); openHome(String(section), typeof arg === 'string' ? arg : undefined); });
 ipcMain.handle('chat:load', () => {
   const c = loadChat();
   return { messages: cleanChat(c.messages, 100), noteId: notes[c.noteId] && !notes[c.noteId].lock ? c.noteId : null,
@@ -1061,17 +1068,7 @@ function purgeTrash() {
 }
 
 /* ---------- the Settings window ---------- */
-let settingsWin = null;
-function openSettings(section) {
-  if (settingsWin && !settingsWin.isDestroyed()) {
-    settingsWin.show(); settingsWin.focus(); settingsWin.webContents.focus();
-    if (section) settingsWin.webContents.send('settings:section', section);
-    return;
-  }
-  settingsWin = utilWindow(null, 'StickyPad – Settings', 'settings.html', 860, 640, section ? { section } : undefined);
-  settingsWin.setMinimumSize(700, 480);
-  settingsWin.on('closed', () => { settingsWin = null; });
-}
+function openSettings(section) { openHome('settings', typeof section === 'string' ? section : undefined); }
 // How much memory StickyPad uses right now (private memory per process, like Task Manager's "Memory" column), in MB.
 function memoryUse() {
   const mb = k => Math.round(k / 1024), out = { total: 0, main: 0, notes: 0, gpu: 0, other: 0, processes: 0, windows: BrowserWindow.getAllWindows().length };

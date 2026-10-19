@@ -67,13 +67,13 @@ with sync_playwright() as p:
     NOTES['links'] = dict(title='Weekend', color='#CDEFFF', font='Segoe UI', size=15,
       blocks=[T('Tickets: https://www.aegeanair.com/booking\nHotel contact: reservations@seaview.gr\nDentist tomorrow at 5pm\nCall Nick'), ])
     pg = page(b, 'links'); goto(pg, 'note.html'); pg.wait_for_timeout(1000); shot(pg, 'feature_links'); pg.close()
-    pg = page(b, 'links', extra="window.__S.updateNow={state:'ready',version:'1.14.9'}"); goto(pg, 'note.html'); pg.wait_for_timeout(1000); shot(pg, 'feature_update'); pg.close()
+    pg = page(b, 'links', extra="window.__S.updateNow={state:'ready',version:'1.14.10'}"); goto(pg, 'note.html'); pg.wait_for_timeout(1000); shot(pg, 'feature_update'); pg.close()
     # shortcuts you can change
-    pg = page(b, None, 860, 700); goto(pg, 'settings.html'); pg.click('[data-cat=shortcuts]'); pg.wait_for_timeout(300)
+    pg = page(b, None, 1030, 700); goto(pg, 'settings.html'); pg.click('[data-cat=shortcuts]'); pg.wait_for_timeout(300)
     pg.click('[data-key=g_clip]'); pg.keyboard.press('Control+Alt+Shift+V'); pg.wait_for_timeout(300); shot(pg, 'feature_shortcuts'); pg.close()
     # chat across all notes
     chatj = "window.api.chatLoad=async()=>({messages:[{role:'user',content:'What did I write about the dentist?'},{role:'assistant',content:'In your note **Weekend** you wrote: *Dentist tomorrow at 5pm*. Nothing else mentions it.'}],noteId:'*',provider:'ollama',model:'gemma3:4b'});window.api.chatNotes=async()=>[{id:'n1',title:'Weekend'},{id:'n2',title:'Groceries'}];"
-    pg = page(b, None, 420, 600, extra=chatj); goto(pg, 'chat.html'); pg.wait_for_timeout(300)
+    pg = page(b, None, 900, 600, extra=chatj); goto(pg, 'chat.html'); pg.wait_for_timeout(300)
     pg.evaluate("(()=>{const s=document.createElement('div');s.className='src';s.textContent='Looked at: Weekend · Groceries';const m=document.querySelectorAll('.msg');m[m.length-1].appendChild(s)})()"); shot(pg, 'feature_chat_all'); pg.close()
     # all notes
     allj = '''window.api.allList = async () => ({ emoji: '☀️', greeting: 'Good morning', notes: [
@@ -84,10 +84,10 @@ with sync_playwright() as p:
       {id:'e',title:'Passwords hint',text:'Locked note',color:'#D9F2C2',group:null,updated:Date.now()-2*864e5,open:false,locked:true},
       {id:'f',title:'Reading list',text:'Dune, The Left Hand of Darkness',color:'#E6D5FF',group:'g1',updated:Date.now()-5*864e5,open:false}],
       groups: [{id:'g1',name:'Home',collapsed:false},{id:'g2',name:'Work',collapsed:false}], trash: [], prefs: {} });'''
-    pg = page(b, None, 420, 600, extra=allj); goto(pg, 'all.html'); shot(pg, 'feature_all'); pg.close()
+    pg = page(b, None, 900, 560, extra=allj); goto(pg, 'all.html'); shot(pg, 'feature_all'); pg.close()
     # settings window
-    setj = "const o=window.api.settingsGet; window.api.settingsGet=async()=>({...(await o()),version:'1.14.8',notesCount:6,groups:[{id:'g1',name:'Home'},{id:'g2',name:'Work'}],autoBackup:true,backupCount:7,lastBackup:Date.now()-3600e3,dataPath:'C:/Users/you/OneDrive/StickyPad',dataCustom:true,autoUpdate:true,shortcuts:true,snap:true});"
-    pg = page(b, None, 860, 640, extra=setj); goto(pg, 'settings.html'); pg.click('[data-cat=data]'); pg.wait_for_timeout(300); shot(pg, 'feature_settings_data'); pg.click('[data-cat=about]'); pg.wait_for_timeout(300); shot(pg, 'feature_settings_about'); pg.close()
+    setj = "const o=window.api.settingsGet; window.api.settingsGet=async()=>({...(await o()),version:'1.14.9',notesCount:6,groups:[{id:'g1',name:'Home'},{id:'g2',name:'Work'}],autoBackup:true,backupCount:7,lastBackup:Date.now()-3600e3,dataPath:'C:/Users/you/OneDrive/StickyPad',dataCustom:true,autoUpdate:true,shortcuts:true,snap:true});"
+    pg = page(b, None, 1030, 640, extra=setj); goto(pg, 'settings.html'); pg.click('[data-cat=data]'); pg.wait_for_timeout(300); shot(pg, 'feature_settings_data'); pg.click('[data-cat=about]'); pg.wait_for_timeout(300); shot(pg, 'feature_settings_about'); pg.close()
     b.close()
 
 # --- the hero picture: three notes on a desktop-like background ---

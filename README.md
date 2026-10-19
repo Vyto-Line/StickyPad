@@ -34,7 +34,7 @@ The icons in the header, from the left: add a checklist item, pin, all notes, se
 ### Settings panel on the right
 <img align="right" width="300" src="docs/images/feature_ai.png" alt="A note with the settings panel docked on its right side">
 
-The gear opens a panel **beside your text instead of on top of it**, so you can keep reading the note while you change its colour, set a reminder or run the AI. A narrow note grows to make room while the panel is open and returns to its size when you close it. The tabs are **Style**, **Note**, **App** and **AI**; *All settings…* opens the full settings window.
+The gear opens a panel **beside your text instead of on top of it**, so you can keep reading the note while you change its colour, set a reminder or run the AI. A narrow note grows to make room while the panel is open and returns to its size when you close it. The tabs are **Style**, **Note** and **AI**; the small gear next to them (or Ctrl+,) opens the full Settings. Everything about *the app* (start with Windows, snapping, shortcuts, backups) lives in Settings only, so each thing has one place.
 
 <br clear="right">
 
@@ -64,10 +64,10 @@ StickyPad quietly keeps **up to 30 older copies of each note** while you edit: a
 
 Pictures are not included in exported files.
 
-### All notes
+### Home: notes, trash, AI chat and settings in one window
 <img align="right" width="300" src="docs/images/feature_all.png" alt="The All notes window with folders and coloured cards">
 
-Ctrl+Alt+A opens the **All notes** window: every note as a card, grouped by folder, with search, *Open all* per folder, a **Trash** tab, a button for the AI chat and one for settings. Closed notes are greyed out; click one to open it.
+Ctrl+Alt+A (or the tray icon) opens the **Home** window. A sidebar switches between **Notes** (every note as a card, grouped by folder, with search, *Open all* per folder and *Tidy up*), **Trash**, **Ask the AI** (the chat) and **Settings**. It is always the same one window, so nothing gets lost behind others. Closed notes are greyed out; click one to open it.
 
 ### Lock
 Give a note a password (4+ characters) and its text is stored **encrypted (AES-256-GCM)**. It shows a lock screen until you enter the password. A forgotten password cannot be recovered. Pictures stay on disk unencrypted, but are hidden in the app.
@@ -75,7 +75,7 @@ Give a note a password (4+ characters) and its text is stored **encrypted (AES-2
 ### AI helper (off by default)
 <img align="right" width="300" src="docs/images/feature_chat_all.png" alt="The AI chat answering a question from all notes, with a Looked at line">
 
-Open the gear, tab **AI**:
+Open the gear, tab **AI** (the model and connection options are folded under *Model and connection*, and open by themselves when something needs fixing):
 
 | Button | What it does |
 |---|---|

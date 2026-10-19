@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.14.9
+- **A simpler layout: one Home window.** All notes, Trash, the AI chat and Settings are now pages of a single window, switched from a sidebar (Notes, Trash, Ask the AI, Settings). Ctrl+Alt+A, Ctrl+Alt+C, Ctrl+Alt+S, the tray menu and the buttons in a note all open that same window on the right page, so there are no more separate windows to lose track of. The chat is no longer a docked side window.
+- **The note's settings panel lost its duplicates.** The *App* tab is gone (start with Windows, snapping and hiding from the taskbar are in Settings, and New / Tidy / Trash are in the Home window). The AI tab keeps the AI buttons and folds the provider and model options under *Model and connection*, which opens by itself when the AI is off or the model is missing.
+- Not tried on a real Windows PC yet: please check the window switching (especially opening the chat from a note) and tell me what feels wrong.
+
 ## 1.14.8
 - **You can delete a downloaded AI model.** In the AI tab (and Settings > AI), pick an installed model and press **Delete model…**; it asks once more, then removes it from your PC and frees its disk space. Handy when a model answers badly or is too slow. If it was the model in use, none is selected afterwards, so choose another one.
 

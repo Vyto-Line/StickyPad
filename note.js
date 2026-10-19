@@ -569,18 +569,8 @@ async function refreshInfo() {
   const none = document.createElement('option'); none.value = ''; none.textContent = '— No folder —'; g.appendChild(none);
   i.groups.forEach(x => { const o = document.createElement('option'); o.value = x.id; o.textContent = x.name; g.appendChild(o); });
   g.value = note.group || '';
-  $('#snapCk').checked = i.snap;
-  $('#startup').checked = i.startup; $('#startup').disabled = !i.packaged; $('#startupNote').hidden = i.packaged;
-  $('#hideTb').checked = i.hideTaskbar;
-  $('#trashCount').textContent = i.trash || '';
 }
-$('#startup').onchange = async e => { e.target.checked = await api.setStartup(e.target.checked); };
-$('#hideTb').onchange = async e => { e.target.checked = await api.setHideTaskbar(e.target.checked); };
-$('#allBtn').onclick = () => api.openAll();
-$('#newBtn').onclick = () => api.newNote();
-$('#tidyBtn').onclick = () => api.tidy();
 $('#grp').onchange = e => { note.group = e.target.value || null; api.grpMove(note.id, note.group); };
-$('#snapCk').onchange = async e => { e.target.checked = await api.setSnap(e.target.checked); };
 $('#chk').onclick = () => { addTodo(); ed.focus(); };
 $('#topic').addEventListener('input', e => { note.title = e.target.value; api.update({ title: note.title }); });
 $('#topic').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); ed.focus(); } });
@@ -786,7 +776,8 @@ ed.addEventListener('input', () => { if (!editBar.hidden && !edit) editBarHide()
 function updateAiButtons() {
   const off = !aiCfgState || aiCfgState.provider === 'off', locked = bodyLocked();
   $('#aiTitle').disabled = $('#aiSum').disabled = $('#aiFix').disabled = $('#aiList').disabled = $('#aiEdit').disabled = $('#aiTr').disabled = off || locked; $('#aiChat').disabled = locked;
-  $('#aiHint').textContent = locked ? 'Unlock this note first.' : off ? 'Turn the AI on below to use these.' : 'Works on the text of this note. Select text to translate or edit just that part.';
+  if (off) $('#aiSetup').open = true;
+  $('#aiHint').textContent = locked ? 'Unlock this note first.' : off ? 'Turn the AI on below (Model and connection) to use these.' : 'Works on the text of this note. Select text to translate or edit just that part.';
   if (!locked && !off) modelCheck();
 }
 // Tells you right away when the chosen Ollama model has not been downloaded, instead of failing on the first request.
@@ -798,8 +789,8 @@ async function modelCheck() {
     const st = await api.ollamaStatus(c.url);
     if (!aiCfgState || aiCfgState.provider !== 'ollama' || bodyLocked()) return;
     const has = n => st && st.models && st.models.some(m => m.name === n || m.name === n + ':latest');
-    if (st && !st.running) $('#aiHint').textContent = 'Ollama is not running. Open the Setup section below and press Start.';
-    else if (st && st.running && !has(aiCfgState.model)) $('#aiHint').textContent = 'The model "' + aiCfgState.model + '" is not installed yet. Pick it in Setup below and press Download.';
+    if (st && !st.running) { $('#aiHint').textContent = 'Ollama is not running. Press Start under Model and connection below.'; $('#aiSetup').open = true; }
+    else if (st && st.running && !has(aiCfgState.model)) { $('#aiHint').textContent = 'The model "' + aiCfgState.model + '" is not installed yet. Pick it under Model and connection below and press Download.'; $('#aiSetup').open = true; }
   } catch (e) {} finally { modelCheckBusy = false; }
 }
 function aiFields() {
@@ -836,7 +827,6 @@ $('#aiTest').onclick = async () => {
 };
 $('#aiClear').onclick = async () => { await api.aiSet({ clearKey: true }); await aiLoad(); $('#aiMsg').textContent = 'Key removed.'; };
 $('#allTop').onclick = () => api.openAll();
-$('#openSettings').onclick = () => { $('#panel').hidden = true; $('#cfg').setAttribute('aria-expanded', 'false'); api.openSettings(); };
 
 /* ---------- lock ---------- */
 const lockMsg = t => { $('#lockmsg').textContent = t; };
@@ -860,15 +850,14 @@ $('#pw').addEventListener('keydown', e => { if (e.key === 'Enter') $('#unlockBtn
 $('#rmLockBtn').onclick = async () => {
   if (await api.removeLock($('#rmpw').value)) { $('#rmpw').value = ''; lockMsg('Lock removed.'); await reload(); } else lockMsg('Wrong password.');
 };
-$('#trashBtn').onclick = () => api.openTrash();
 let lastWarm = 0;
 function warmModel() {   // opening the AI tab means you are about to use it: load the local model now (never at start-up)
   if (Date.now() - lastWarm < 240000) return; lastWarm = Date.now();
   try { api.aiWarmup(); } catch (e) {}
 }
 function showTab(t) {
-  if (!['style', 'note', 'app', 'ai'].includes(t)) t = 'style';
-  ['style', 'note', 'app', 'ai'].forEach(k => { $('#pg-' + k).hidden = k !== t; });
+  if (!['style', 'note', 'ai'].includes(t)) t = 'style';
+  ['style', 'note', 'ai'].forEach(k => { $('#pg-' + k).hidden = k !== t; });
   document.querySelectorAll('.tabs button[data-tab]').forEach(b => { const on = b.dataset.tab === t; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
   try { localStorage.setItem('sp.tab', t); } catch (e) {}
   $('#panel').scrollTop = 0;

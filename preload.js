@@ -16,7 +16,7 @@ contextBridge.exposeInMainWorld('api', {
   themeSet: call('theme:set'), themeApplyAll: call('theme:applyAll'),
   onReload: cb => ipcRenderer.on('note:reload', () => cb()),
   onStyle: cb => ipcRenderer.on('note:style', (e, st) => cb(st)),
-  openChat: call('chat:open'), chatClose: call('chat:close'), chatLoad: call('chat:load'), chatSave: call('chat:save'),
+  home: call('home:go'), openChat: call('chat:open'), chatClose: call('chat:close'), chatLoad: call('chat:load'), chatSave: call('chat:save'),
   chatNotes: call('chat:notes'), chatSend: call('chat:send'), chatStop: call('chat:stop'), chatSaveAsNote: call('chat:saveAsNote'),
   onChatEvent: cb => ipcRenderer.on('chat:event', (e, m) => cb(m)),
   onChatAttach: cb => ipcRenderer.on('chat:attach', (e, id) => cb(id)),
