@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.14.14
+- **The startup animation now shows on PCs where it stayed invisible.** It used a see-through window, which many PCs do not draw when Low memory mode (the default) is on. It is now a normal dark card that works everywhere. If it cannot appear within 4 seconds, StickyPad just opens instead of waiting.
+- Not tried on a real Windows PC yet.
+
 ## 1.14.13
 - **"What's new" after an update.** The first time StickyPad starts after an update, a window lists what changed since your old version (you can switch it off there or in *Settings > About*, and open it any time with *Show what's new*). A new install does not show it.
 - **The startup animation no longer flashes and vanishes** on a slow start: its 2.7 seconds now count from the moment it appears, and it starts only once the window is visible.

@@ -1,9 +1,9 @@
 *{box-sizing:border-box}
 body:not(.go) *{animation-play-state:paused!important}
-html,body{margin:0;height:100%;background:transparent;overflow:hidden}
+html,body{margin:0;height:100%;background:#161b29;overflow:hidden}
 body{display:grid;place-items:center;font-family:"Segoe UI Variable Display","Segoe UI",system-ui,sans-serif}
-.card{position:relative;width:340px;height:220px;border-radius:26px;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  background:linear-gradient(155deg,#242c42,#161b29);box-shadow:0 14px 40px rgba(0,0,0,.45),inset 0 0 0 1px rgba(255,255,255,.07);
+.card{position:relative;width:100%;height:100%;border-radius:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:linear-gradient(155deg,#242c42,#161b29);box-shadow:inset 0 0 0 1px rgba(255,255,255,.1);
   color:#f3f5fb;overflow:hidden;animation:cardIn .35s ease-out both,cardOut .45s ease-in 2.2s forwards}
 .glow{position:absolute;top:18px;width:170px;height:130px;border-radius:50%;background:radial-gradient(closest-side,rgba(255,214,92,.38),transparent);
   opacity:0;animation:glow 1.2s ease-out .35s forwards}

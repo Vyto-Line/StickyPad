@@ -362,20 +362,22 @@ function showSplash() {
     try {
       const g = greetingParts();
       splashWin = new BrowserWindow({
-        width: 380, height: 260, frame: false, transparent: true, resizable: false, movable: false, alwaysOnTop: true,
-        skipTaskbar: true, show: false, hasShadow: false, focusable: false, icon: iconPath,
+        // Not transparent: transparent windows do not draw on many PCs when the GPU is off (Low memory mode, the default),
+        // and then the splash never showed. A plain window with a dark card that fills it works everywhere.
+        width: 340, height: 220, frame: false, transparent: false, backgroundColor: '#161b29', resizable: false, movable: false, alwaysOnTop: true,
+        skipTaskbar: true, show: false, hasShadow: true, focusable: false, icon: iconPath,
         webPreferences: { contextIsolation: true, nodeIntegration: false }
       });
       splashWin.setMenu(null);
       splashWin.loadFile('splash.html', { query: { g: g.text, e: g.emoji } });
       // The 2.7 s of animation are counted from the moment the window is really shown (on a slow start, loading can take
       // seconds and used to eat the whole time, so the splash flashed and vanished). A stuck splash can never block the app:
-      // 9 s if it never appears, 5 s at most once it is on screen.
+      // 4 s if it never appears (the app must not wait for nothing), 5 s at most once it is on screen.
       splashWin.once('ready-to-show', () => { if (done) return; splashWin.showInactive(); setTimeout(finish, 2700); setTimeout(finish, 5000); });
       splashWin.on('closed', finish);
       splashWin.webContents.on('did-fail-load', () => finish());
       splashWin.webContents.on('render-process-gone', () => finish());
-      setTimeout(finish, 9000);
+      setTimeout(() => { if (!splashWin || splashWin.isDestroyed() || !splashWin.isVisible()) finish(); }, 4000);
     } catch { finish(); }
   });
 }
