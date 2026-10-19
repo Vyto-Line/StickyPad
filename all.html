@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'">
+<title>StickyPad – All notes</title>
+<link rel="stylesheet" href="all.css">
+</head>
+<body>
+<header>
+  <div class="top">
+    <div class="hello"><h1 id="greet">Hello</h1><span id="count" class="count"></span></div>
+    <div class="topbtns">
+    <button id="chatBtn" class="iconbtn" title="AI chat (Ctrl+Alt+C)" aria-label="AI chat"><svg class="i" viewBox="0 0 24 24"><path d="M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-7.5L7 20.5V17H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/></svg></button>
+<button id="gear" class="iconbtn" title="Settings (Ctrl+Alt+S)" aria-label="Settings"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+    </div>
+  </div>
+  <div class="tabs2" role="tablist">
+    <button id="tabNotes" class="on" role="tab">Notes</button>
+    <button id="tabTrash" role="tab">Trash<span id="trashN" class="pill"></span></button>
+  </div>
+  <div id="notesBar">
+    <div class="bar">
+      <div class="search"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><input id="q" type="text" placeholder="Search notes" aria-label="Search notes" autocomplete="off" spellcheck="false"></div>
+      <button id="new" class="btn primary">＋ Note</button>
+    </div>
+    <div class="links">
+      <button id="showFolder" class="link">＋ New folder</button>
+      <button id="tidy" class="link" title="Arrange open notes in rows, folder by folder">Tidy up notes</button>
+    </div>
+    <div class="bar" id="folderRow" hidden>
+      <input id="fname" class="field" type="text" maxlength="40" placeholder="Folder name" aria-label="New folder name" autocomplete="off" spellcheck="false">
+      <button id="newFolder" class="btn primary">Add</button>
+      <button id="cancelFolder" class="btn">Cancel</button>
+    </div>
+  </div>
+  <div id="trashBar" class="bar" hidden>
+    <span class="muted">Deleted notes are kept for 30 days, then removed for good.</span>
+    <button id="emptyBtn" class="btn danger">Empty trash</button>
+  </div>
+</header>
+<main>
+  <div id="sections"></div>
+  <div id="trashList" hidden></div>
+  <p id="empty" class="empty" hidden></p>
+</main>
+<script src="all.js"></script>
+</body>
+</html>

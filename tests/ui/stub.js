@@ -1,0 +1,48 @@
+(() => {
+  const L = { ollama: [], ai: [] };
+  const REC = [{name:'llama3.2:1b',label:'Llama 3.2 · 1B',size:'1.3 GB',note:'Fastest'},{name:'llama3.2:3b',label:'Llama 3.2 · 3B',size:'2.0 GB',note:'Recommended'},{name:'llama3.1:8b',label:'Llama 3.1 · 8B',size:'4.9 GB',note:'Best'}];
+  const S = window.__S = { calls: [], editMode: 'ok', stop: false,
+    ai: { provider: 'ollama', model: 'llama3.2', url: 'http://localhost:11434', hasKey: false, defaultModel: 'claude-haiku-5-5' },
+    ol: { running: true, installed: true, canInstall: true, local: true, models: [{ name: 'llama3.2:latest', size: 2e9 }], recommended: REC, pulling: [], installing: false },
+    note: { id: 'n1', title: '', blocks: window.__BLOCKS || [{ t: 'text', v: 'helo wrold this is a tset' }], color: '#FFF2A8', font: 'Segoe UI', size: 15, locked: false, unlocked: false, pinned: false, group: null } };
+  const emit = (k, m) => L[k].forEach(f => f(m));
+  window.__emit = emit;
+  const over = {
+    get: async () => JSON.parse(JSON.stringify(S.note)),
+    aiGet: async () => ({ ...S.ai }),
+    aiSet: async p => { S.calls.push(['aiSet', p]); Object.assign(S.ai, p.provider ? { provider: p.provider } : {}, p.model != null ? { model: p.model } : {}, p.url ? { url: p.url } : {}); return true; },
+    ollamaStatus: async () => JSON.parse(JSON.stringify(S.ol)),
+    ollamaStart: async () => { S.calls.push(['start']); await new Promise(r => setTimeout(r, 50)); S.ol.running = true; return { ok: true }; },
+    ollamaPull: async (name) => {
+      S.calls.push(['pull', name]);
+      for (const p of [10, 55, 100]) { await new Promise(r => setTimeout(r, 60)); emit('ollama', { type: 'pull', name, state: 'progress', status: 'pulling', pct: p }); }
+      if (S.pullFail) { emit('ollama', { type: 'pull', name, state: 'error', error: 'disk full' }); return { ok: false, error: 'disk full' }; }
+      S.ol.models.push({ name, size: 1.3e9 }); emit('ollama', { type: 'pull', name, state: 'done' }); return { ok: true };
+    },
+    ollamaInstall: async () => {
+      S.calls.push(['install']);
+      for (const [s, p] of [['Downloading Ollama…', 30], ['Downloading Ollama…', 90], ['Installing Ollama…', null], ['Starting Ollama…', null]]) { await new Promise(r => setTimeout(r, 60)); emit('ollama', { type: 'install', state: 'progress', status: s, pct: p }); }
+      S.ol.installed = true; S.ol.running = true; emit('ollama', { type: 'install', state: 'done' }); return { ok: true };
+    },
+    ollamaCancel: async w => { S.calls.push(['cancel', w]); },
+    aiEdit: async ({ id, mode, text }) => {
+      S.calls.push(['edit', mode, text]);
+      if (S.editMode === 'error') { emit('ai', { id, type: 'error', error: 'Ollama is not running' }); return true; }
+      const out = S.editOut || 'Hello world, this is a test.'; const parts = out.match(/\S+\s*/g);
+      S.stop = false;
+      for (const p of parts) { await new Promise(r => setTimeout(r, S.editDelay || 40)); if (S.stop) { emit('ai', { id, type: 'done', stopped: true }); return true; } emit('ai', { id, type: 'chunk', text: p }); }
+      emit('ai', { id, type: 'done', text: out }); return true;
+    },
+    aiEditStop: async () => { S.stop = true; },
+    openSettings: async s => { S.calls.push(['openSettings', s]); },
+    update: async p => { S.calls.push(['update', p]); S.lastUpdate = p; },
+    info: async () => ({ groups: [], theme: 'classic', snap: true, hideTaskbar: false, startup: false, packaged: true, trashCount: 0 }),
+    allList: async () => ({ emoji: '☀️', greeting: 'Good morning', notes: [{ id: 'n1', title: 'Shopping', text: 'milk, eggs', color: '#FFF2A8', group: null, updated: Date.now(), open: true }], groups: [], trash: [], prefs: {} }),
+    chatLoad: async () => ({ messages: [], noteId: null, notes: [], ai: { provider: 'ollama' } }),
+    chatNotes: async () => [],
+    aiRun: async () => ({ ok: true, text: 'ok' }),
+    settingsGet: async () => ({ version: '1.10.0', packaged: true, prefs: {}, theme: 'classic', trashCount: 0, backupCount: 0, dataPath: 'C:/x', snapDistance: 20, trashDays: 30, groups: [], shortcuts: true, defaultSize: 'm' }),
+    onOllamaEvent: cb => L.ollama.push(cb), onAiEvent: cb => L.ai.push(cb),
+  };
+  window.api = new Proxy(over, { get: (t, k) => k in t ? t[k] : (String(k).startsWith('on') ? () => {} : async () => null) });
+})();

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src data:">
+<title>StickyPad</title>
+<link rel="stylesheet" href="note.css">
+</head>
+<body>
+<header>
+  <span class="grip" title="Drag to move"></span>
+  <input id="topic" maxlength="60" placeholder="Topic" aria-label="Topic" spellcheck="false">
+  <span class="dragfill" title="Drag to move"></span>
+  <button id="chk" class="ib" title="Add checklist item (Ctrl+Shift+C)" aria-label="Add checklist item"><svg class="i" viewBox="0 0 24 24"><path d="M4 6l1.6 1.6L8.4 4.8M4 12.5l1.6 1.6 2.8-2.8M4 19l1.6 1.6L8.4 17.8M12 6.5h8M12 13h8M12 19.5h8"/></svg></button>
+  <button id="pin" class="ib" title="Keep on top" aria-label="Keep on top" aria-pressed="false"><svg class="i" viewBox="0 0 24 24"><path d="M12 16.5V22M8 3h8l-1 7 3 3.2v1.8H6v-1.8L9 10 8 3z"/></svg></button>
+  <button id="allTop" class="ib" title="All notes (Ctrl+Alt+A)" aria-label="All notes"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/></svg></button>
+  <button id="lock" class="ib" title="Lock now" aria-label="Lock note now" hidden><svg class="i" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9.5" rx="2.2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></button>
+  <button id="cfg" class="ib" title="Note settings" aria-label="Note settings" aria-expanded="false"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+  <button id="roll" class="ib" title="Roll up" aria-label="Roll up"><svg class="i" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg></button>
+  <button id="close" class="ib" title="Close (reopen from the tray icon)" aria-label="Close"><svg class="i" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg></button>
+</header>
+
+<section id="panel" hidden>
+  <div class="tabs" role="tablist" aria-label="Settings">
+    <button class="on" role="tab" data-tab="style">Style</button>
+    <button role="tab" data-tab="note">Note</button>
+    <button role="tab" data-tab="app">App</button>
+    <button role="tab" data-tab="ai">AI</button>
+    <button id="tabSettings" class="tabgear" title="Open all settings (Ctrl+,)" aria-label="Open all settings"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+  </div>
+
+  <div class="page" id="pg-style">
+    <div class="swatches" id="swatches" role="group" aria-label="Note colour">
+      <label class="sw custom" id="customSw" title="Custom colour"><input id="color" type="color" aria-label="Custom colour"></label>
+    </div>
+    <div class="line">
+      <input id="font" class="field" list="fonts" spellcheck="false" placeholder="Font" aria-label="Font" style="flex:1.2">
+      <span class="sz"><input id="size" type="range" min="10" max="48" aria-label="Font size"><b id="sizeLabel"></b></span>
+    </div>
+    <div class="sect">Theme</div>
+    <div class="themes" id="themes" role="group" aria-label="Colour theme"></div>
+    <div class="seg" role="group" aria-label="Apply theme to">
+      <button id="scopeThis" class="on">This note</button><button id="scopeAll">All notes</button>
+    </div>
+    <datalist id="fonts">
+      <option>Segoe UI</option><option>Calibri</option><option>Arial</option><option>Verdana</option>
+      <option>Georgia</option><option>Times New Roman</option><option>Consolas</option><option>Courier New</option>
+      <option>Comic Sans MS</option><option>Segoe Print</option><option>Ink Free</option><option>Trebuchet MS</option>
+    </datalist>
+  </div>
+
+  <div class="page" id="pg-note" hidden>
+    <label class="row"><span>Folder</span><select id="grp" class="field" aria-label="Folder"></select></label>
+    <div class="line" id="chkTools" hidden>
+      <button id="clearDone" class="btn" hidden>Remove ticked</button>
+      <button id="toText" class="btn" title="Turn every checklist item back into a normal line of text">Make plain text</button>
+    </div>
+    <div class="sect">Lock</div>
+    <div id="lockNew">
+      <div class="line"><input id="lockpw" class="field" type="password" placeholder="Password (4+ characters)" autocomplete="off" aria-label="New password" style="flex:1"><button id="lockBtn" class="btn primary">Lock</button></div>
+      <p class="hint">A forgotten password cannot be recovered. Pictures stay on disk unencrypted (hidden in the app).</p>
+    </div>
+    <div id="lockOld" hidden>
+      <div class="line"><button id="relockBtn" class="btn primary">Lock now</button></div>
+      <div class="line" style="margin-top:6px"><input id="rmpw" class="field" type="password" placeholder="Password to remove lock" autocomplete="off" aria-label="Password" style="flex:1"><button id="rmLockBtn" class="btn">Remove</button></div>
+    </div>
+    <p id="lockmsg" class="hint"></p>
+    <button id="del" class="btn danger" title="Move this note to the trash">Move note to trash</button>
+  </div>
+
+  <div class="page" id="pg-app" hidden>
+    <div class="tools">
+      <button id="newBtn" class="tool" title="New note (Ctrl+N)"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New</button>
+      <button id="allBtn" class="tool" title="All notes"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/></svg>All</button>
+      <button id="tidyBtn" class="tool" title="Arrange open notes in rows"><svg class="i" viewBox="0 0 24 24"><rect x="3.5" y="4" width="7.5" height="6.5" rx="1.5"/><rect x="13" y="4" width="7.5" height="6.5" rx="1.5"/><rect x="3.5" y="13.5" width="17" height="6.5" rx="1.5"/></svg>Tidy</button>
+      <button id="trashBtn" class="tool" title="Open trash"><svg class="i" viewBox="0 0 24 24"><path d="M5 7h14M9.5 7V4.5h5V7M7 7l.9 12.5h8.2L17 7"/></svg>Trash<span id="trashCount" class="badge"></span></button>
+    </div>
+    <label class="opt"><span>Snap to edges and notes</span><input id="snapCk" class="toggle" type="checkbox"></label>
+    <label class="opt"><span>Hide from taskbar</span><input id="hideTb" class="toggle" type="checkbox"></label>
+    <label class="opt"><span>Start with Windows</span><input id="startup" class="toggle" type="checkbox"></label>
+    <p id="startupNote" class="hint" hidden>Available once StickyPad is installed (npm run dist).</p>
+  </div>
+
+  <div class="page" id="pg-ai" hidden>
+    <div class="aibtns">
+      <button id="aiSum" class="btn primary">✨ Summarize</button>
+      <button id="aiFix" class="btn primary">✨ Fix grammar</button>
+      <button id="aiList" class="btn primary" title="Turn this note into a clean checklist">✨ To checklist</button>
+      <button id="aiChat" class="btn" title="Open the AI chat with this note as context">💬 Chat about it</button>
+    </div>
+    <div class="line editline">
+      <select id="editMode" class="field" aria-label="How to edit"><option value="fix">Fix spelling and grammar</option><option value="polish">Polish the writing</option><option value="shorten">Make it shorter</option><option value="friendly">Make it friendlier</option><option value="continue">Continue writing</option></select>
+      <button id="aiEdit" class="btn primary" title="Edits the selected text, or the paragraph with the cursor, live (Ctrl+Shift+E)">✎ Edit live</button>
+    </div>
+    <p id="aiHint" class="hint"></p>
+    <div class="sect">Setup</div>
+    <label class="row"><span>Use</span><select id="aiProv" class="field" aria-label="AI provider">
+      <option value="off">Off</option><option value="ollama">Ollama (on this PC, free)</option><option value="claude">Claude API (online)</option></select></label>
+    <div class="row top"><span>Model</span><div class="mcol"><select id="aiModelSel" class="field" aria-label="Model" hidden></select><input id="aiModel" class="field" autocomplete="off" spellcheck="false" aria-label="Model name"></div></div>
+    <div id="aiOl" class="ol" hidden></div>
+    <label class="row"><span id="aiCredLbl">Address</span><input id="aiCred" class="field" autocomplete="off" spellcheck="false" aria-label="Address or key"></label>
+    <div class="line"><button id="aiSave" class="btn">Save</button><button id="aiTest" class="btn">Test</button><button id="aiClear" class="btn" hidden>Forget key</button></div>
+    <p id="aiMsg" class="hint"></p>
+    <p class="hint">The text of the note you ask about is sent to the provider you pick. Ollama keeps it on this PC; the Claude API sends it to Anthropic.</p>
+  </div>
+  <div class="panelfoot"><button id="openSettings" class="linkbtn"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>All settings…</button></div>
+</section>
+
+<div id="editbar" hidden role="status"><span class="spin"></span><b id="editMsg">Editing…</b><span class="grow"></span><button id="editStop" class="btn">Stop</button><button id="editUndo" class="btn" hidden>Undo</button><button id="editKeep" class="btn primary" hidden>Keep</button></div>
+
+<div id="aibox" hidden role="dialog" aria-label="AI result">
+  <div class="aihead"><b id="aiTitle"></b></div>
+  <div id="aiBody" class="aibody"></div>
+  <div class="line aiacts" id="aiActs"></div>
+</div>
+
+<div id="lockscreen" hidden>
+  <svg class="lockico" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9.5" rx="2.2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+  <p class="big">This note is locked</p>
+  <input id="pw" class="field" type="password" placeholder="Password" autocomplete="off" aria-label="Password">
+  <button id="unlockBtn" class="btn primary">Unlock</button>
+  <p id="pwmsg" class="hint"></p>
+</div>
+
+<div id="ed" contenteditable="true" spellcheck="true" role="textbox" aria-multiline="true" data-ph="Type here… paste or drop pictures"></div>
+<script src="themes.js"></script>
+<script src="ollamaui.js"></script>
+<script src="note.js"></script>
+</body>
+</html>

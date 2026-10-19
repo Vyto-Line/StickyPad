@@ -1,0 +1,28 @@
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:transparent;overflow:hidden}
+body{display:grid;place-items:center;font-family:"Segoe UI Variable Display","Segoe UI",system-ui,sans-serif}
+.card{position:relative;width:340px;height:220px;border-radius:26px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:linear-gradient(155deg,#242c42,#161b29);box-shadow:0 14px 40px rgba(0,0,0,.45),inset 0 0 0 1px rgba(255,255,255,.07);
+  color:#f3f5fb;overflow:hidden;animation:cardIn .35s ease-out both,cardOut .45s ease-in 2.2s forwards}
+.glow{position:absolute;top:18px;width:170px;height:130px;border-radius:50%;background:radial-gradient(closest-side,rgba(255,214,92,.38),transparent);
+  opacity:0;animation:glow 1.2s ease-out .35s forwards}
+.note{position:relative;width:104px;height:104px;margin-top:-2px;filter:drop-shadow(0 8px 14px rgba(0,0,0,.4));
+  transform-origin:50% 60%;animation:drop .8s cubic-bezier(.2,.9,.3,1.25) .15s both}
+.fold{transform-box:fill-box;transform-origin:100% 100%;animation:fold .45s cubic-bezier(.3,1.3,.5,1) .7s both}
+.ln{fill:none;stroke:#A06F08;stroke-width:5;stroke-linecap:round;stroke-dasharray:60;stroke-dashoffset:60;animation:draw .4s ease-out forwards}
+.l1{animation-delay:.9s}.l2{animation-delay:1.1s}.l3{animation-delay:1.3s}
+.tick{fill:none;stroke:#2F9E55;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:60;stroke-dashoffset:60;animation:draw .45s ease-out 1.5s forwards}
+.name{margin:8px 0 0;font-size:25px;font-weight:700;letter-spacing:.02em;opacity:0;animation:rise .55s ease-out 1s forwards}
+.greet{margin:4px 0 0;font-size:14.5px;color:#aeb8d4;opacity:0;animation:rise .55s ease-out 1.45s forwards;min-height:1.3em}
+.spark{position:absolute;width:5px;height:5px;border-radius:50%;background:#FFD24D;opacity:0;animation:spark 1.6s ease-out forwards}
+.s1{left:70px;top:130px;animation-delay:.9s}.s2{right:76px;top:120px;animation-delay:1.1s;background:#9db2ff}
+.s3{left:104px;top:150px;animation-delay:1.3s;background:#FFE98A}.s4{right:100px;top:150px;animation-delay:1.5s}
+@keyframes cardIn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
+@keyframes cardOut{to{opacity:0;transform:scale(1.03)}}
+@keyframes drop{0%{opacity:0;transform:translateY(-80px) rotate(-16deg) scale(.7)}55%{opacity:1;transform:translateY(6px) rotate(-3deg) scale(1.05)}100%{opacity:1;transform:translateY(0) rotate(-3deg) scale(1)}}
+@keyframes fold{from{transform:scale(0)}to{transform:scale(1)}}
+@keyframes draw{to{stroke-dashoffset:0}}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes glow{to{opacity:1}}
+@keyframes spark{0%{opacity:0;transform:translateY(0) scale(.4)}25%{opacity:1}100%{opacity:0;transform:translateY(-46px) scale(1)}}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01s!important;animation-delay:0s!important}}

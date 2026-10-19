@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'">
+<title>StickyPad – Settings</title>
+<link rel="stylesheet" href="settings.css">
+</head>
+<body>
+<aside>
+  <div class="brand"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span>Settings</span></div>
+  <div class="search"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><input id="sq" type="text" placeholder="Search settings" aria-label="Search settings" autocomplete="off" spellcheck="false"></div>
+  <nav id="nav" aria-label="Settings categories">
+    <button data-cat="general" class="on"><span class="ic">⚙️</span>General</button>
+    <button data-cat="appearance"><span class="ic">🎨</span>Appearance</button>
+    <button data-cat="notes"><span class="ic">📝</span>Notes</button>
+    <button data-cat="shortcuts"><span class="ic">⌨️</span>Shortcuts</button>
+    <button data-cat="ai"><span class="ic">✨</span>AI</button>
+    <button data-cat="folders"><span class="ic">📁</span>Folders</button>
+    <button data-cat="data"><span class="ic">💾</span>Data &amp; backup</button>
+    <button data-cat="about"><span class="ic">ℹ️</span>About</button>
+  </nav>
+</aside>
+
+<main id="content">
+  <p id="noResults" class="none" hidden>No settings match your search.</p>
+
+  <section class="cat" id="cat-general" data-title="General">
+    <h2>General</h2>
+    <div class="row"><div class="lbl"><b>Start with Windows</b><span>Open StickyPad automatically when you sign in.</span><span id="startupNote" class="warn" hidden>Available in the installed app (build it with build.bat).</span></div><div class="ctl"><input id="startup" class="toggle" type="checkbox" data-set="startup"></div></div>
+    <div class="row"><div class="lbl"><b>When StickyPad starts</b><span>What opens on launch.</span></div><div class="ctl"><select id="launch" class="field" data-pref="launch"><option value="notes">Open my notes</option><option value="all">Open the All notes window only</option><option value="both">Open both</option></select></div></div>
+    <div class="row"><div class="lbl"><b>Startup animation</b><span>The short intro with the greeting (about 2.7 seconds).</span></div><div class="ctl"><input id="splash" class="toggle" type="checkbox" data-pref="splash"></div></div>
+    <div class="row"><div class="lbl"><b>Hide notes from the taskbar</b><span>Notes stay open but no longer take space on the taskbar. Use the tray icon to find them.</span></div><div class="ctl"><input id="hideTaskbar" class="toggle" type="checkbox" data-set="hideTaskbar"></div></div>
+    <div class="row"><div class="lbl"><b>Your name</b><span>Shown in the greeting at the top of All notes and in the startup animation.</span></div><div class="ctl"><input id="name" class="field" data-pref="name" maxlength="30" placeholder="Optional" autocomplete="off" spellcheck="false"></div></div>
+    <div class="row"><div class="lbl"><b>Greeting language</b><span>Good morning / Καλημέρα.</span></div><div class="ctl"><select id="lang" class="field" data-pref="lang"><option value="en">English</option><option value="el">Ελληνικά</option></select></div></div>
+  </section>
+
+  <section class="cat" id="cat-appearance" data-title="Appearance">
+    <h2>Appearance</h2>
+    <div class="row col"><div class="lbl"><b>Theme</b><span>Sets the colour palette and font for new notes. Existing notes keep their look unless you apply it below.</span></div><div class="ctl wide"><div id="themes" class="themegrid" role="group" aria-label="Theme"></div></div></div>
+    <div class="row"><div class="lbl"><b>Apply the theme to all notes</b><span>Restyles every note you have. Each keeps its colour slot (the pink one stays pink-ish).</span><span id="applyMsg" class="ok"></span></div><div class="ctl"><button id="applyAll" class="btn">Apply to all notes</button></div></div>
+    <div class="row"><div class="lbl"><b>Text size for new notes</b><span>The starting font size (you can still change it per note).</span></div><div class="ctl"><input id="defaultSize" class="range" type="range" min="10" max="48" data-range="defaultSize"><output id="defaultSizeOut"></output></div></div>
+  </section>
+
+  <section class="cat" id="cat-notes" data-title="Notes">
+    <h2>Notes</h2>
+    <div class="row"><div class="lbl"><b>Snap to edges and other notes</b><span>When you let go of a note it lines up with the screen edge or a nearby note.</span></div><div class="ctl"><input id="snap" class="toggle" type="checkbox" data-set="snap"></div></div>
+    <div class="row"><div class="lbl"><b>Snap distance</b><span>How close a note has to be before it snaps.</span></div><div class="ctl"><input id="snapDistance" class="range" type="range" min="4" max="40" data-range="snapDistance"><output id="snapDistanceOut"></output></div></div>
+    <div class="row"><div class="lbl"><b>Keep deleted notes for</b><span>After this many days deleted notes are removed for good.</span></div><div class="ctl"><select id="trashDays" class="field" data-num="trashDays"><option value="7">7 days</option><option value="14">14 days</option><option value="30">30 days</option><option value="60">60 days</option><option value="90">90 days</option></select></div></div>
+    <div class="row"><div class="lbl"><b>Empty the trash now</b><span id="trashInfo">Permanently deletes everything in the trash.</span></div><div class="ctl"><button id="emptyTrash" class="btn danger">Empty trash</button></div></div>
+  </section>
+
+  <section class="cat" id="cat-shortcuts" data-title="Shortcuts">
+    <h2>Shortcuts</h2>
+    <div class="row"><div class="lbl"><b>Global shortcuts</b><span>Work from anywhere in Windows. Turn them off if they clash with another program or your keyboard layout.</span></div><div class="ctl"><input id="shortcuts" class="toggle" type="checkbox" data-set="shortcuts"></div></div>
+    <div class="row"><div class="lbl"><b>Anywhere in Windows</b></div><div class="ctl keys"><span class="kv"><kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>N</kbd> New note</span><span class="kv"><kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>A</kbd> All notes</span><span class="kv"><kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>C</kbd> AI chat</span><span class="kv"><kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>S</kbd> Settings</span></div></div>
+    <div class="row"><div class="lbl"><b>Inside a note</b></div><div class="ctl keys"><span class="kv"><kbd>Ctrl</kbd><kbd>N</kbd> New note</span><span class="kv"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>C</kbd> Add checklist item</span><span class="kv"><kbd>Ctrl</kbd><kbd>Z</kbd> Undo</span><span class="kv"><kbd>Ctrl</kbd><kbd>Y</kbd> Redo</span><span class="kv"><kbd>Esc</kbd> Close a panel</span><span class="kv"><kbd>Enter</kbd> Next checklist item</span><span class="kv"><kbd>Backspace</kbd> Remove an empty item</span></div></div>
+  </section>
+
+  <section class="cat" id="cat-ai" data-title="AI">
+    <h2>AI</h2>
+    <div class="row"><div class="lbl"><b>AI provider</b><span>Used for Summarize, Fix grammar, To checklist and the chat.</span></div><div class="ctl"><select id="aiProv" class="field"><option value="off">Off</option><option value="ollama">Ollama (on this PC, free)</option><option value="claude">Claude API (online)</option></select></div></div>
+    <div class="row"><div class="lbl"><b>Model</b><span id="aiModelHint">Pick an installed model, or choose one to download it.</span></div><div class="ctl col"><select id="aiModelSel" class="field" aria-label="Model" hidden></select><input id="aiModel" class="field" autocomplete="off" spellcheck="false"></div></div>
+    <div class="row" id="aiOlRow"><div class="lbl"><b>Ollama</b><span>Install it and download models without leaving StickyPad.</span></div><div class="ctl col"><div id="aiOl" class="ol" hidden></div></div></div>
+    <div class="row"><div class="lbl"><b id="aiCredLbl">Address</b><span id="aiCredHint">Where Ollama is running.</span></div><div class="ctl"><input id="aiCred" class="field" autocomplete="off" spellcheck="false"></div></div>
+    <div class="row"><div class="lbl"><b>Connection</b><span id="aiMsg" class="status"></span></div><div class="ctl"><button id="aiSave" class="btn primary">Save</button><button id="aiTest" class="btn">Test</button><button id="aiClear" class="btn" hidden>Forget key</button></div></div>
+    <p class="note">The text you ask about is sent to the provider you choose. Ollama keeps it on this PC; the Claude API sends it to Anthropic.</p>
+    <div class="row"><div class="lbl"><b>Remember chat history</b><span>Keeps your AI chat between launches (stored as plain text on this PC).</span></div><div class="ctl"><input id="chatHistory" class="toggle" type="checkbox" data-set="chatHistory"></div></div>
+    <div class="row"><div class="lbl"><b>Clear chat history</b><span id="chatMsg" class="ok">Deletes the saved conversation.</span></div><div class="ctl"><button id="clearChat" class="btn danger">Clear chat</button></div></div>
+  </section>
+
+  <section class="cat" id="cat-folders" data-title="Folders">
+    <h2>Folders</h2>
+    <div class="row"><div class="lbl"><b>New folder</b><span>Folders group your notes in the All notes window.</span></div><div class="ctl"><input id="newFolder" class="field" maxlength="40" placeholder="Folder name" autocomplete="off" spellcheck="false"><button id="addFolder" class="btn primary">Add</button></div></div>
+    <div id="folderList"></div>
+  </section>
+
+  <section class="cat" id="cat-data" data-title="Data & backup">
+    <h2>Data &amp; backup</h2>
+    <div class="row"><div class="lbl"><b>Back up automatically</b><span>Saves a copy of your notes and pictures once a day (keeps the newest 7).</span></div><div class="ctl"><input id="autoBackup" class="toggle" type="checkbox" data-set="autoBackup"></div></div>
+    <div class="row"><div class="lbl"><b>Back up now</b><span id="backupInfo"></span></div><div class="ctl"><button id="backupNow" class="btn primary">Back up now</button></div></div>
+    <div class="row"><div class="lbl"><b>Open the backups folder</b><span>Each backup is a dated folder you can copy back into the data folder to restore.</span></div><div class="ctl"><button id="openBackups" class="btn">Open folder</button></div></div>
+    <div class="row"><div class="lbl"><b>Open the data folder</b><span id="dataPath" class="path"></span></div><div class="ctl"><button id="openData" class="btn">Open folder</button></div></div>
+    <div class="row"><div class="lbl"><b>Use your notes on every PC</b><span id="dataMsg" class="status">Move the data folder into a folder that OneDrive, Dropbox, Google Drive or Syncthing keeps in sync, and choose the same folder on your other PCs. Changes from another PC appear within a few seconds. If two PCs edit at the same moment, the other version is saved in the "conflicts" folder, never lost.</span></div><div class="ctl"><button id="chooseData" class="btn primary">Choose folder…</button><button id="resetData" class="btn" hidden>Use default</button></div></div>
+  </section>
+
+  <section class="cat" id="cat-about" data-title="About">
+    <h2>About</h2>
+    <div class="row"><div class="lbl"><b>StickyPad</b><span id="aboutVer"></span></div><div class="ctl"></div></div>
+    <div class="row"><div class="lbl"><b>Your notes</b><span id="aboutNotes"></span></div><div class="ctl"></div></div>
+    <p class="note">Your notes live on this PC. They only leave it if you use an online AI provider. Locked notes are encrypted; pictures are not.</p>
+  </section>
+</main>
+<script src="themes.js"></script>
+<script src="ollamaui.js"></script>
+<script src="settings.js"></script>
+</body>
+</html>

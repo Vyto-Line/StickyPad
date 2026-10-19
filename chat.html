@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'">
+<title>StickyPad – AI chat</title>
+<link rel="stylesheet" href="chat.css">
+</head>
+<body>
+<header>
+  <div class="ttl"><span class="logo" aria-hidden="true">✨</span><div><h1>AI chat</h1><span id="status" class="status"></span></div></div>
+  <div class="hbtns">
+    <button id="newChat" class="ghost" title="Start a new chat">New chat</button>
+    <button id="close" class="iconbtn" aria-label="Close" title="Close"><svg class="i" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg></button>
+  </div>
+</header>
+<div class="ctx"><label><span>Note context</span><select id="ctx" aria-label="Attach a note as context"><option value="">None</option></select></label></div>
+<main id="msgs" aria-live="polite">
+  <div id="empty" class="emptystate">
+    <div class="big">✨</div>
+    <p id="emptyText">Ask me anything. Pick a note above and I'll use it as context.</p>
+    <div id="chips" class="chips"></div>
+  </div>
+</main>
+<footer class="composer">
+  <textarea id="input" rows="1" placeholder="Ask anything…" title="Enter sends, Shift+Enter adds a new line" aria-label="Message"></textarea>
+  <button id="send" class="send">Send</button>
+</footer>
+<script src="chat.js"></script>
+</body>
+</html>

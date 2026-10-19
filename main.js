@@ -1,0 +1,832 @@
+const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, screen, globalShortcut, clipboard, safeStorage, shell, dialog } = require('electron');
+const ai = require('./ai');
+const ollama = require('./ollama');
+const datadir = require('./datadir');
+const backup = require('./backup');
+const THEMES = require('./themes');
+const path = require('path');
+const fs = require('fs');
+const crypto = require('crypto');
+
+// A second launch must stop immediately (otherwise it would open duplicate notes).
+if (!app.requestSingleInstanceLock()) process.exit(0);
+
+const DAY = 864e5, MAX_BLOCKS = 50000, MAX_TEXT = 5000000;   // generous limits: a long note must never lose its last lines
+const MIN_W = 260, MIN_H = 180, ROLL_H = 40, SNAP = 10, GAP = 4;
+const IMG_ID = /^[a-z0-9]{6,40}\.(png|jpe?g|webp|gif)$/;
+let file, saveTimer, allTimer, firstRun = false, DATA = null, dirty = false, lastMtime = 0;
+const dataDir = () => DATA || app.getPath('userData');
+const DEFAULT_SETTINGS = {
+  hideTaskbar: true, snap: true, launch: 'notes', splash: true, name: '', lang: 'en', theme: 'classic',
+  snapDistance: 10, defaultSize: 16, trashDays: 30, shortcuts: true, chatHistory: true, autoBackup: true, lastBackup: 0,
+  ai: { provider: 'off', model: '', url: 'http://localhost:11434', keyEnc: '' }
+};
+let notes = {}, trash = [], groups = [], settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
+let allWin = null, tray = null, splashWin = null, memKey = null, chatWin = null, chatState = null;
+const chatJobs = new Map();
+const wins = new Map();       // noteId -> BrowserWindow
+const byContents = new Map(); // webContents.id -> noteId
+const sessions = new Map();   // noteId -> { key } while a locked note is unlocked
+const preload = path.join(__dirname, 'preload.js');
+const iconPath = path.join(__dirname, 'icon.png');
+const rid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+
+const newNote = (over = {}) => ({
+  id: rid(), updated: Date.now(), title: '', group: null, rolled: false, text: '', blocks: [],
+  color: THEMES.byId(settings.theme).colors[0], font: THEMES.byId(settings.theme).font, size: settings.defaultSize || 16, pinned: false, bounds: { width: 300, height: 320 }, ...over
+});
+
+/* ---------- note content helpers ---------- */
+const blocksOf = n => Array.isArray(n.blocks) ? n.blocks : (n.text ? [{ t: 'text', v: String(n.text) }] : []);
+const imgIds = n => (n.lock && !sessions.has(n.id)) ? (n.lock.imgs || []) : blocksOf(n).filter(b => b.t === 'img').map(b => b.id);
+const hasContent = n => !!n.lock || String(n.title || '').trim() !== '' || String(n.text || '').trim() !== '' || imgIds(n).length > 0;
+const textOf = bs => bs.map(b => b.t === 'text' ? b.v : b.t === 'check' ? (b.done ? '☑ ' : '☐ ') + b.v : '').filter(s => s !== '').join('\n').slice(0, MAX_TEXT);
+function sanitizeBlocks(arr) {
+  const out = [];
+  for (const b of (Array.isArray(arr) ? arr : []).slice(0, MAX_BLOCKS)) {
+    if (!b) continue;
+    if (b.t === 'text' && typeof b.v === 'string' && b.v !== '') out.push({ t: 'text', v: b.v.slice(0, MAX_TEXT) });
+    else if (b.t === 'check' && typeof b.v === 'string' && b.v.trim() !== '') out.push({ t: 'check', v: b.v.slice(0, 20000), done: !!b.done });   // empty items are dropped
+    else if (b.t === 'img' && typeof b.id === 'string' && IMG_ID.test(b.id)) out.push({ t: 'img', id: b.id });
+  }
+  return out;
+}
+
+/* ---------- locking (AES-256-GCM, key from password via scrypt) ---------- */
+const deriveKey = (pw, saltB64) => crypto.scryptSync(String(pw), Buffer.from(saltB64, 'base64'), 32);
+function encryptBlob(obj, key, salt) {
+  const iv = crypto.randomBytes(12), c = crypto.createCipheriv('aes-256-gcm', key, iv);
+  const data = Buffer.concat([c.update(JSON.stringify(obj), 'utf8'), c.final()]);
+  return { salt, iv: iv.toString('base64'), tag: c.getAuthTag().toString('base64'), data: data.toString('base64') };
+}
+function decryptBlob(b, key) {
+  try {
+    const d = crypto.createDecipheriv('aes-256-gcm', key, Buffer.from(b.iv, 'base64'));
+    d.setAuthTag(Buffer.from(b.tag, 'base64'));
+    return JSON.parse(Buffer.concat([d.update(Buffer.from(b.data, 'base64')), d.final()]).toString('utf8'));
+  } catch { return null; }
+}
+// The form of a note that is written to disk: locked notes never contain their content in plain text.
+function packNote(n) {
+  if (!n.lock) return n;
+  const s = sessions.get(n.id);
+  if (!s) return { ...n, blocks: [], text: '' };
+  const bs = blocksOf(n);
+  const blob = { ...encryptBlob({ blocks: bs }, s.key, n.lock.salt), imgs: bs.filter(b => b.t === 'img').map(b => b.id) };
+  return { ...n, blocks: [], text: '', lock: blob };
+}
+function relock(n) {
+  if (n && n.lock && sessions.has(n.id)) { n.lock = packNote(n).lock; sessions.delete(n.id); n.blocks = []; n.text = ''; save(); }
+}
+
+/* ---------- picture files (kept outside notes.json so it stays small) ---------- */
+const imgDir = () => path.join(dataDir(), 'images');
+function readImg(id) {
+  if (!IMG_ID.test(id)) return null;
+  try {
+    const ext = id.split('.').pop().replace('jpg', 'jpeg');
+    return `data:image/${ext};base64,` + fs.readFileSync(path.join(imgDir(), id)).toString('base64');
+  } catch { return null; }
+}
+const dropImages = n => imgIds(n).forEach(id => { if (IMG_ID.test(id)) try { fs.unlinkSync(path.join(imgDir(), id)); } catch {} });
+function sweepImages() {   // delete picture files no note or trash item uses any more
+  const used = new Set();
+  Object.values(notes).concat(trash).forEach(n => imgIds(n).forEach(i => used.add(i)));
+  try { for (const f of fs.readdirSync(imgDir())) if (!used.has(f)) try { fs.unlinkSync(path.join(imgDir(), f)); } catch {} } catch {}
+}
+
+/* ---------- storage ---------- */
+function serialize() {
+  const ns = {}; for (const k of Object.keys(notes)) ns[k] = packNote(notes[k]);
+  return JSON.stringify({ version: 2, notes: ns, trash: trash.map(packNote), groups, settings }, null, 2);
+}
+function load() {
+  firstRun = !fs.existsSync(file);
+  try {
+    const d = JSON.parse(fs.readFileSync(file, 'utf8'));
+    if (d && d.version === 2) {
+      notes = d.notes || {}; trash = d.trash || []; groups = Array.isArray(d.groups) ? d.groups : [];
+      const ds = d.settings || {};
+      settings = { ...DEFAULT_SETTINGS, ...ds, ai: { ...DEFAULT_SETTINGS.ai, ...(ds.ai || {}) } };
+    } else { notes = d || {}; trash = []; }
+  } catch { notes = {}; trash = []; }
+  trash = trash.filter(t => t && Date.now() - t.deletedAt < settings.trashDays * DAY);
+  // Clean out empty checklist items that older versions saved (they used to show up as stray tick boxes).
+  Object.values(notes).concat(trash).forEach(n => {
+    if (!n.lock && Array.isArray(n.blocks)) { n.blocks = sanitizeBlocks(n.blocks); n.text = textOf(n.blocks); }
+  });
+  // Empty notes are never kept between launches (notes with a topic, text, pictures or a lock always are).
+  Object.keys(notes).forEach(k => { if (!hasContent(notes[k])) delete notes[k]; });
+  const gids = new Set(groups.map(g => g.id));
+  Object.values(notes).concat(trash).forEach(n => { if (n.group && !gids.has(n.group)) n.group = null; });
+}
+const flush = () => {
+  clearTimeout(saveTimer); if (!file) return;
+  try {
+    const m = datadir.mtimeOf(file);
+    // another PC (or program) changed the file since we last read or wrote it: keep its version in /conflicts before we replace it
+    if (lastMtime && m && m !== lastMtime) { try { datadir.keepConflict(dataDir(), fs.readFileSync(file, 'utf8')); } catch {} }
+    datadir.writeAtomic(file, serialize()); lastMtime = datadir.mtimeOf(file); dirty = false;
+  } catch {}
+};
+function save() { dirty = true; clearTimeout(saveTimer); saveTimer = setTimeout(flush, 300); pingAll(); }
+
+// Picks up changes made by another device through a synced data folder (OneDrive, Dropbox, Syncthing...).
+function reloadFromDisk() {
+  const mine = settings;                 // settings stay per-PC (shortcuts, AI key, startup...)
+  load(); settings = mine;
+  wins.forEach((w, id) => {
+    if (w.isDestroyed()) return;
+    if (notes[id]) w.webContents.send('note:reload'); else w.close();
+  });
+  pingAll(); refreshTray();
+}
+function watchData() {
+  fs.watchFile(file, { interval: 3000 }, () => {
+    const m = datadir.mtimeOf(file);
+    if (!m || m === lastMtime || dirty) return;   // our own write, or we have unsaved changes (those win; the other version is kept in /conflicts)
+    lastMtime = m; reloadFromDisk();
+  });
+}
+
+/* ---------- snapping and tidying ---------- */
+function pick(cur, cands) {
+  const S = settings.snapDistance || SNAP;
+  let best = cur, d = S + 1;
+  for (const c of cands) { const k = Math.abs(c - cur); if (k < d) { d = k; best = c; } }
+  return d <= S ? best : cur;
+}
+// Called once, after you let go of a note. Snaps to screen edges and to notes that are already close by.
+function snapPos(w, nb) {
+  const wa = screen.getDisplayMatching(nb).workArea, NEAR = 40;
+  const xc = [wa.x, wa.x + wa.width - nb.width], yc = [wa.y, wa.y + wa.height - nb.height];
+  for (const o of wins.values()) {
+    if (o === w || o.isDestroyed() || !o.isVisible()) continue;
+    const b = o.getBounds();
+    const nearY = nb.y < b.y + b.height + NEAR && nb.y + nb.height > b.y - NEAR;
+    const nearX = nb.x < b.x + b.width + NEAR && nb.x + nb.width > b.x - NEAR;
+    if (nearY) xc.push(b.x + b.width + GAP, b.x - nb.width - GAP, b.x, b.x + b.width - nb.width);
+    if (nearX) yc.push(b.y + b.height + GAP, b.y - nb.height - GAP, b.y, b.y + b.height - nb.height);
+  }
+  return { x: pick(nb.x, xc), y: pick(nb.y, yc) };
+}
+function tidy() {   // lay open notes out in rows, folder by folder
+  const wa = screen.getPrimaryDisplay().workArea, gap = 8;
+  const rank = n => { const i = groups.findIndex(g => g.id === n.group); return i < 0 ? 9999 : i; };
+  const list = Object.values(notes).filter(n => { const w = wins.get(n.id); return w && !w.isDestroyed(); })
+    .sort((a, b) => rank(a) - rank(b) || (a.id < b.id ? -1 : 1));
+  let x = wa.x + gap, y = wa.y + gap, rowH = 0, prev;
+  for (const n of list) {
+    const w = wins.get(n.id), b = w.getBounds();
+    if (prev !== undefined && (n.group || null) !== prev) { x = wa.x + gap; y += rowH + gap; rowH = 0; }
+    if (x > wa.x + gap && x + b.width > wa.x + wa.width - gap) { x = wa.x + gap; y += rowH + gap; rowH = 0; }
+    w.setBounds({ x, y, width: b.width, height: b.height });
+    x += b.width + gap; rowH = Math.max(rowH, b.height); prev = n.group || null;
+    if (w.isMinimized()) w.restore();
+  }
+}
+
+/* ---------- windows ---------- */
+function openNote(n) {
+  const existing = wins.get(n.id);
+  if (existing && !existing.isDestroyed()) { existing.show(); return existing; }
+  const b = { ...n.bounds }; if (n.rolled) b.height = ROLL_H;
+  const w = new BrowserWindow({
+    ...b, minWidth: MIN_W, minHeight: n.rolled ? ROLL_H : MIN_H, frame: false, show: false, icon: iconPath,
+    maximizable: false, fullscreenable: false, skipTaskbar: !!settings.hideTaskbar, backgroundColor: n.color,
+    webPreferences: { preload, contextIsolation: true, nodeIntegration: false }
+  });
+  if (n.rolled) w.setMaximumSize(10000, ROLL_H);
+  wins.set(n.id, w); byContents.set(w.webContents.id, n.id);
+  if (n.pinned) w.setAlwaysOnTop(true, 'screen-saver');
+  w.loadFile('note.html', { query: { id: n.id } });
+  w.once('ready-to-show', () => { w.show(); pingAll(); });
+  const keep = () => {
+    const m = notes[n.id]; if (!m || w.isDestroyed()) return;
+    const nb = w.getBounds();
+    m.bounds = m.rolled ? { ...m.bounds, x: nb.x, y: nb.y, width: nb.width } : nb;   // a rolled-up note remembers its full height
+    save();
+  };
+  w.on('move', keep); w.on('resize', keep);
+  w.on('moved', () => {   // fires once when you release the note, so nothing tugs at it while you drag
+    if (!settings.snap || w.isDestroyed()) return;
+    const nb = w.getBounds(), p = snapPos(w, nb);
+    if (p.x !== nb.x || p.y !== nb.y) w.setPosition(p.x, p.y);
+  });
+  w.on('focus', () => { if (!w.isDestroyed()) w.webContents.focus(); });
+  const cid = w.webContents.id;
+  w.on('closed', () => { wins.delete(n.id); byContents.delete(cid); relock(notes[n.id]); pingAll(); });
+  return w;
+}
+
+function makeNote(near, over) {
+  const k = Object.keys(notes).length % 8;
+  const b = near && !near.isDestroyed() ? near.getBounds() : { x: 80 + k * 28, y: 80 + k * 28, width: 300, height: 320 };
+  const n = newNote({ bounds: { x: near ? b.x + 32 : b.x, y: near ? b.y + 32 : b.y, width: b.width, height: b.height }, ...(over || {}) });
+  notes[n.id] = n; openNote(n); save(); return n;
+}
+
+function showAll() {   // brings every note to the front, reopening any that were closed
+  Object.values(notes).forEach(n => {
+    const w = wins.get(n.id);
+    if (w && !w.isDestroyed()) { if (w.isMinimized()) w.restore(); w.show(); } else openNote(n);
+  });
+  if (!Object.keys(notes).length) makeNote(null);
+}
+
+function utilWindow(ref, title, htmlFile, w, h, query) {
+  if (ref && !ref.isDestroyed()) { ref.show(); ref.focus(); ref.webContents.focus(); return ref; }
+  const win = new BrowserWindow({
+    width: w, height: h, minWidth: 320, minHeight: 300, title, autoHideMenuBar: true, icon: iconPath, show: false,
+    webPreferences: { preload, contextIsolation: true, nodeIntegration: false }
+  });
+  win.setMenu(null); win.loadFile(htmlFile, query ? { query } : undefined);
+  win.once('ready-to-show', () => { win.show(); win.focus(); win.webContents.focus(); });
+  win.on('focus', () => { if (!win.isDestroyed()) win.webContents.focus(); });   // makes sure text boxes receive typing
+  return win;
+}
+function openAll(tab) {
+  if (allWin && !allWin.isDestroyed()) {
+    allWin.show(); allWin.focus(); allWin.webContents.focus();
+    if (tab) allWin.webContents.send('all:tab', tab);
+    return;
+  }
+  allWin = utilWindow(null, 'StickyPad – All notes', 'all.html', 540, 640, tab ? { tab } : undefined);
+  allWin.on('closed', () => { allWin = null; });
+}
+const openTrash = () => openAll('trash');
+const pingAll = () => {
+  clearTimeout(allTimer);
+  allTimer = setTimeout(() => { if (allWin && !allWin.isDestroyed()) allWin.webContents.send('all:changed'); }, 150);
+};
+const pingTrash = () => { pingAll(); refreshTray(); };
+
+/* ---------- greeting, preferences and the startup splash ---------- */
+function greetingParts() {
+  const h = new Date().getHours(), el = settings.lang === 'el';
+  let g, e;
+  if (h >= 5 && h < 12) { g = el ? 'Καλημέρα' : 'Good morning'; e = '☀️'; }
+  else if (h >= 12 && h < 17) { g = el ? 'Καλό απόγευμα' : 'Good afternoon'; e = '🌤️'; }
+  else if (h >= 17 && h < 22) { g = el ? 'Καλησπέρα' : 'Good evening'; e = '🌆'; }
+  else { g = el ? 'Καληνύχτα' : 'Good night'; e = '🌙'; }
+  const n = String(settings.name || '').trim();
+  return { text: n ? `${g}, ${n}` : g, emoji: e };
+}
+const prefs = () => ({ name: settings.name, lang: settings.lang, launch: settings.launch, splash: settings.splash });
+function setPrefs(p) {
+  if (p) {
+    if (typeof p.name === 'string') settings.name = p.name.trim().slice(0, 30);
+    if (p.lang === 'en' || p.lang === 'el') settings.lang = p.lang;
+    if (['notes', 'all', 'both'].includes(p.launch)) settings.launch = p.launch;
+    if (typeof p.splash === 'boolean') settings.splash = p.splash;
+    save(); refreshTray();
+  }
+  return prefs();
+}
+function showSplash() {
+  return new Promise(resolve => {
+    let done = false;
+    const finish = () => { if (done) return; done = true; try { if (splashWin && !splashWin.isDestroyed()) splashWin.close(); } catch {} splashWin = null; resolve(); };
+    try {
+      const g = greetingParts();
+      splashWin = new BrowserWindow({
+        width: 380, height: 260, frame: false, transparent: true, resizable: false, movable: false, alwaysOnTop: true,
+        skipTaskbar: true, show: false, hasShadow: false, focusable: false, icon: iconPath,
+        webPreferences: { contextIsolation: true, nodeIntegration: false }
+      });
+      splashWin.setMenu(null);
+      splashWin.loadFile('splash.html', { query: { g: g.text, e: g.emoji } });
+      splashWin.once('ready-to-show', () => { splashWin.show(); setTimeout(finish, 2700); });
+      splashWin.on('closed', finish);
+      setTimeout(finish, 6000);   // never let a stuck splash block the app
+    } catch { finish(); }
+  });
+}
+function openStartup() {
+  const mode = settings.launch, any = Object.keys(notes).length > 0;
+  if (mode !== 'all' || !any) Object.values(notes).forEach(openNote);
+  if (mode === 'all' || mode === 'both') openAll();
+}
+
+/* ---------- settings ---------- */
+function setHide(v) {
+  settings.hideTaskbar = !!v;
+  wins.forEach(w => { if (!w.isDestroyed()) w.setSkipTaskbar(settings.hideTaskbar); });
+  save(); refreshTray(); return settings.hideTaskbar;
+}
+function setSnap(v) { settings.snap = !!v; save(); refreshTray(); return settings.snap; }
+const startupOn = () => app.isPackaged && app.getLoginItemSettings().openAtLogin;
+function setStartup(v) {
+  if (!app.isPackaged) return false;
+  app.setLoginItemSettings({ openAtLogin: !!v }); refreshTray(); return startupOn();
+}
+
+/* ---------- tray ---------- */
+function buildMenu() {
+  const launch = (label, v) => ({ label, type: 'radio', checked: settings.launch === v, click: () => setPrefs({ launch: v }) });
+  return Menu.buildFromTemplate([
+    { label: 'All notes…  (Ctrl+Alt+A)', click: () => openAll() },
+    { label: 'Settings…  (Ctrl+Alt+S)', click: () => openSettings() },
+    { label: 'AI chat…  (Ctrl+Alt+C)', click: () => openChat() },
+    { label: 'New note  (Ctrl+Alt+N)', click: () => makeNote(null) },
+    { label: 'Show all notes', click: showAll },
+    { label: 'Tidy up notes', click: tidy },
+    { label: `Trash (${trash.length})`, click: () => openAll('trash') },
+    { type: 'separator' },
+    { label: 'When StickyPad starts', submenu: [launch('Open my notes', 'notes'), launch('Open the All notes window', 'all'), launch('Open both', 'both')] },
+    { label: 'Startup animation', type: 'checkbox', checked: !!settings.splash, click: i => setPrefs({ splash: i.checked }) },
+    { label: 'Hide from taskbar', type: 'checkbox', checked: !!settings.hideTaskbar, click: i => setHide(i.checked) },
+    { label: 'Snap notes to edges and each other', type: 'checkbox', checked: !!settings.snap, click: i => setSnap(i.checked) },
+    { label: 'Start with Windows', type: 'checkbox', checked: startupOn(), enabled: app.isPackaged, click: i => setStartup(i.checked) },
+    { type: 'separator' },
+    { label: 'Quit StickyPad', click: () => app.quit() }
+  ]);
+}
+function refreshTray() { if (tray) tray.setContextMenu(buildMenu()); }
+function createTray() {
+  try {
+    tray = new Tray(nativeImage.createFromPath(path.join(__dirname, 'tray.png')));
+    tray.setToolTip('StickyPad'); tray.on('click', () => openAll()); refreshTray();
+  } catch { tray = null; }
+}
+
+/* ---------- IPC: notes ---------- */
+const idOf = e => byContents.get(e.sender.id);
+const winOf = e => wins.get(idOf(e));
+const canEditBody = n => !n.lock || sessions.has(n.id);
+
+ipcMain.handle('note:get', e => {
+  const n = notes[idOf(e)]; if (!n) return null;
+  const { lock, ...rest } = n;
+  const bs = canEditBody(n) ? blocksOf(n).map(b => b.t === 'img' ? { t: 'img', id: b.id, src: readImg(b.id) } : b).filter(b => b.t !== 'img' || b.src) : [];
+  return { ...rest, blocks: bs, locked: !!lock, unlocked: sessions.has(n.id) };
+});
+
+ipcMain.handle('note:update', (e, p) => {
+  const n = notes[idOf(e)]; if (!n || !p) return;
+  if (Array.isArray(p.blocks) && canEditBody(n)) { n.blocks = sanitizeBlocks(p.blocks); n.text = textOf(n.blocks); }
+  if (typeof p.title === 'string') n.title = p.title.slice(0, 60);
+  if (typeof p.color === 'string' && /^#[0-9a-f]{6}$/i.test(p.color)) n.color = p.color;
+  if (typeof p.font === 'string') n.font = p.font.replace(/["'\\;{}]/g, '').slice(0, 60) || 'Segoe UI';
+  if (Number.isFinite(p.size)) n.size = Math.min(72, Math.max(8, Math.round(p.size)));
+  n.updated = Date.now();
+  save();
+});
+
+ipcMain.handle('img:save', (e, dataUrl) => {
+  const m = /^data:image\/(png|jpeg|webp|gif);base64,([A-Za-z0-9+/=]+)$/.exec(String(dataUrl));
+  if (!m || m[2].length > 14e6) return null;
+  const id = rid() + '.' + (m[1] === 'jpeg' ? 'jpg' : m[1]);
+  try { fs.mkdirSync(imgDir(), { recursive: true }); fs.writeFileSync(path.join(imgDir(), id), Buffer.from(m[2], 'base64')); return id; }
+  catch { return null; }
+});
+
+ipcMain.handle('note:pin', (e, v) => {
+  const n = notes[idOf(e)], w = winOf(e); if (!n || !w) return false;
+  n.pinned = !!v; w.setAlwaysOnTop(n.pinned, 'screen-saver'); save(); return n.pinned;
+});
+
+ipcMain.handle('note:roll', (e, v) => {
+  const n = notes[idOf(e)], w = winOf(e); if (!n || !w) return false;
+  const b = w.getBounds(); n.rolled = !!v;
+  if (n.rolled) {
+    n.bounds = { ...n.bounds, x: b.x, y: b.y, width: b.width, height: b.height };
+    w.setMinimumSize(MIN_W, ROLL_H); w.setMaximumSize(10000, ROLL_H); w.setBounds({ ...b, height: ROLL_H });
+  } else {
+    w.setMaximumSize(0, 0); w.setMinimumSize(MIN_W, MIN_H); w.setBounds({ ...b, height: Math.max(MIN_H, n.bounds.height || 320) });
+  }
+  save(); return n.rolled;
+});
+
+ipcMain.handle('note:lock', (e, pw) => {
+  const n = notes[idOf(e)]; if (!n || n.lock || typeof pw !== 'string' || pw.length < 4) return false;
+  const salt = crypto.randomBytes(16).toString('base64'), key = deriveKey(pw, salt), imgs = imgIds(n);
+  n.lock = { ...encryptBlob({ blocks: blocksOf(n) }, key, salt), imgs };
+  n.blocks = []; n.text = ''; sessions.delete(n.id); save(); return true;
+});
+ipcMain.handle('note:unlock', (e, pw) => {
+  const n = notes[idOf(e)]; if (!n || !n.lock) return false;
+  const p = decryptBlob(n.lock, deriveKey(pw, n.lock.salt)); if (!p) return false;
+  n.blocks = sanitizeBlocks(p.blocks); n.text = textOf(n.blocks); sessions.set(n.id, { key: deriveKey(pw, n.lock.salt) });
+  pingAll(); return true;
+});
+ipcMain.handle('note:relock', e => { relock(notes[idOf(e)]); pingAll(); });
+ipcMain.handle('note:removeLock', (e, pw) => {
+  const n = notes[idOf(e)]; if (!n || !n.lock) return false;
+  const p = decryptBlob(n.lock, deriveKey(pw, n.lock.salt)); if (!p) return false;
+  n.blocks = sanitizeBlocks(p.blocks); n.text = textOf(n.blocks); delete n.lock; sessions.delete(n.id); save(); return true;
+});
+
+ipcMain.handle('note:new', e => { makeNote(winOf(e)); });
+ipcMain.handle('note:close', e => {
+  const id = idOf(e), w = winOf(e), n = notes[id];
+  if (n && !hasContent(n)) { delete notes[id]; save(); }   // closing an empty note throws it away
+  if (w) w.close();
+});
+function deleteNote(id) {
+  const n = notes[id]; if (!n) return;
+  if (hasContent(n)) trash.unshift({ ...packNote(n), deletedAt: Date.now() }); else dropImages(n);
+  delete notes[id]; sessions.delete(id);
+  const w = wins.get(id);
+  if (!Object.keys(notes).length && !tray) { const nn = newNote(); notes[nn.id] = nn; openNote(nn); }
+  save(); pingTrash(); if (w && !w.isDestroyed()) w.close();
+}
+ipcMain.handle('note:delete', e => { const id = idOf(e); if (id) deleteNote(id); });
+/* ---------- IPC: folders ---------- */
+ipcMain.handle('grp:new', (e, name) => {
+  name = String(name || '').trim().slice(0, 40); if (!name) return null;
+  const g = { id: rid(), name, collapsed: false }; groups.push(g); save(); return g.id;
+});
+ipcMain.handle('grp:update', (e, id, p) => {
+  const g = groups.find(x => x.id === id); if (!g || !p) return;
+  if (typeof p.name === 'string' && p.name.trim()) g.name = p.name.trim().slice(0, 40);
+  if (typeof p.collapsed === 'boolean') g.collapsed = p.collapsed;
+  save(); refreshTray();
+});
+ipcMain.handle('grp:delete', (e, id) => {
+  groups = groups.filter(g => g.id !== id);
+  Object.values(notes).concat(trash).forEach(n => { if (n.group === id) n.group = null; });
+  save();
+});
+ipcMain.handle('grp:move', (e, noteId, gid) => {
+  const n = notes[noteId]; if (!n) return;
+  n.group = groups.some(g => g.id === gid) ? gid : null; save();
+});
+
+/* ---------- IPC: overview window ---------- */
+ipcMain.handle('all:open', (e, tab) => openAll(tab === 'trash' ? 'trash' : undefined));
+ipcMain.handle('all:new', () => { makeNote(null); });
+ipcMain.handle('all:tidy', () => tidy());
+const trashList = () => trash.map(t => ({
+  id: t.id, title: t.title || '', locked: !!t.lock, text: t.lock ? '' : String(t.text || '').slice(0, 300),
+  images: imgIds(t).length, color: t.color, font: t.font, deletedAt: t.deletedAt
+}));
+ipcMain.handle('all:list', () => {
+  const g = greetingParts();
+  return {
+    groups, greeting: g.text, emoji: g.emoji, prefs: prefs(), trash: trashList(),
+    notes: Object.values(notes).map(n => {
+      const w = wins.get(n.id);
+      return { id: n.id, title: n.title || '', text: n.lock ? '' : String(n.text || '').slice(0, 240), images: n.lock ? 0 : imgIds(n).length,
+               color: n.color, font: n.font, pinned: !!n.pinned, locked: !!n.lock, rolled: !!n.rolled, group: n.group || null,
+               open: !!(w && !w.isDestroyed()), updated: n.updated || 0 };
+    }).sort((a, b) => b.updated - a.updated)
+  };
+});
+ipcMain.handle('all:context', (e, id) => {
+  const n = notes[id]; if (!n) return;
+  const move = gid => { n.group = gid; save(); };
+  Menu.buildFromTemplate([
+    { label: 'Open note', click: () => { const w = openNote(n); if (w.isMinimized()) w.restore(); w.show(); w.focus(); } },
+    { label: 'Copy text', enabled: !n.lock && String(n.text || '').trim() !== '', click: () => clipboard.writeText(String(n.text || '')) },
+    { label: 'Move to folder', submenu: [
+      { label: 'No folder', type: 'radio', checked: !n.group, click: () => move(null) },
+      ...(groups.length ? [{ type: 'separator' }] : []),
+      ...groups.map(g => ({ label: g.name, type: 'radio', checked: n.group === g.id, click: () => move(g.id) }))
+    ] },
+    { type: 'separator' },
+    { label: 'Move to trash', click: () => deleteNote(id) }
+  ]).popup({ window: BrowserWindow.fromWebContents(e.sender) });
+});
+ipcMain.handle('all:show', (e, id) => {
+  const n = notes[id]; if (!n) return;
+  const w = openNote(n); if (w.isMinimized()) w.restore(); w.show(); w.focus();
+});
+ipcMain.handle('all:openGroup', (e, gid) => {
+  Object.values(notes).filter(n => (n.group || null) === (gid || null)).forEach(n => { const w = openNote(n); w.show(); });
+});
+
+/* ---------- IPC: trash ---------- */
+ipcMain.handle('trash:open', () => openAll('trash'));
+ipcMain.handle('trash:list', () => trashList());
+ipcMain.handle('trash:restore', (e, id) => {
+  const k = trash.findIndex(t => t.id === id); if (k < 0) return;
+  const [t] = trash.splice(k, 1); delete t.deletedAt;
+  if (!groups.some(g => g.id === t.group)) t.group = null;
+  notes[t.id] = t; openNote(t); save(); pingTrash();
+});
+ipcMain.handle('trash:purge', (e, id) => { const t = trash.find(x => x.id === id); if (t) dropImages(t); trash = trash.filter(x => x.id !== id); save(); pingTrash(); });
+ipcMain.handle('trash:empty', () => { trash.forEach(dropImages); trash = []; save(); pingTrash(); });
+
+/* ---------- IPC: app settings ---------- */
+ipcMain.handle('app:info', () => ({
+  packaged: app.isPackaged, startup: startupOn(), trash: trash.length,
+  hideTaskbar: !!settings.hideTaskbar, snap: !!settings.snap, groups, theme: settings.theme
+}));
+ipcMain.handle('app:prefs', (e, p) => setPrefs(p));
+ipcMain.handle('app:startup', (e, v) => setStartup(v));
+ipcMain.handle('app:hideTaskbar', (e, v) => setHide(v));
+ipcMain.handle('app:snap', (e, v) => setSnap(v));
+
+/* ---------- AI helper (summarise / fix grammar) ---------- */
+function setKey(k) {
+  if (safeStorage.isEncryptionAvailable()) { settings.ai.keyEnc = safeStorage.encryptString(k).toString('base64'); memKey = null; }
+  else { memKey = k; settings.ai.keyEnc = ''; }   // no secure storage: keep it only until the app closes
+}
+function getKey() {
+  if (memKey) return memKey;
+  if (settings.ai.keyEnc && safeStorage.isEncryptionAvailable()) { try { return safeStorage.decryptString(Buffer.from(settings.ai.keyEnc, 'base64')); } catch {} }
+  return '';
+}
+const aiCfg = () => ({ provider: settings.ai.provider, model: settings.ai.model, url: settings.ai.url, key: getKey() });
+ipcMain.handle('ai:get', () => ({ provider: settings.ai.provider, model: settings.ai.model, url: settings.ai.url, hasKey: !!getKey(),
+  secure: safeStorage.isEncryptionAvailable(), defaultModel: ai.DEFAULT_CLAUDE_MODEL }));
+ipcMain.handle('ai:set', (e, p) => {
+  if (!p) return false;
+  if (['off', 'ollama', 'claude'].includes(p.provider)) settings.ai.provider = p.provider;
+  if (typeof p.model === 'string') settings.ai.model = p.model.trim().slice(0, 80);
+  if (typeof p.url === 'string' && p.url.trim()) settings.ai.url = p.url.trim().slice(0, 200);
+  if (typeof p.key === 'string' && p.key.trim()) setKey(p.key.trim());
+  if (p.clearKey) { settings.ai.keyEnc = ''; memKey = null; }
+  save(); ai.warmup(aiCfg()); return true;
+});
+ipcMain.handle('ai:run', async (e, task, payload) => {
+  try {
+    const cfg = aiCfg();
+    if (task === 'summarize') return { ok: true, text: await ai.summarize(cfg, String((payload && payload.text) || '')) };
+    if (task === 'grammar') return { ok: true, items: await ai.fixGrammar(cfg, payload && payload.items) };
+    if (task === 'checklist') return { ok: true, items: await ai.toChecklist(cfg, String((payload && payload.text) || '')) };
+    if (task === 'ping') return { ok: true, text: await ai.ping(cfg) };
+    return { ok: false, error: 'Unknown task.' };
+  } catch (err) {
+    return { ok: false, error: err && err.friendly ? err.message : 'Something went wrong: ' + (err && err.message ? err.message : err) };
+  }
+});
+
+/* ---------- live edit: the answer streams straight into the note ---------- */
+const editJobs = new Map();
+ipcMain.handle('ai:edit', async (e, p) => {
+  const id = String((p && p.id) || ''), sender = e.sender;
+  const send = m => { if (!sender.isDestroyed()) sender.send('ai:event', { id, ...m }); };
+  const ac = new AbortController(); editJobs.set(id, ac);
+  try {
+    const full = await ai.editStream(aiCfg(), String((p && p.mode) || 'fix'), String((p && p.text) || ''), t => send({ type: 'chunk', text: t }), ac.signal);
+    send({ type: 'done', text: full });
+  } catch (err) {
+    if (ac.signal.aborted) send({ type: 'done', stopped: true });
+    else send({ type: 'error', error: err && err.friendly ? err.message : 'Something went wrong: ' + (err && err.message ? err.message : err) });
+  } finally { editJobs.delete(id); }
+  return true;
+});
+ipcMain.handle('ai:editStop', (e, id) => { const a = editJobs.get(String(id)); if (a) a.abort(); });
+
+/* ---------- Ollama: installed models, downloads and installing Ollama itself ---------- */
+const olJobs = new Map();   // 'pull:<name>' or 'install' -> AbortController
+const olSend = m => BrowserWindow.getAllWindows().forEach(w => { if (!w.isDestroyed()) w.webContents.send('ollama:event', m); });
+const olUrl = u => { u = String(u || '').trim(); return /^https?:\/\//i.test(u) ? u : (settings.ai.url || ollama.DEFAULT_URL); };
+const isLocalUrl = u => { try { const h = new URL(u).hostname; return h === 'localhost' || h === '127.0.0.1' || h === '[::1]' || h === '::1'; } catch { return false; } };
+ipcMain.handle('ollama:status', async (e, url) => {
+  const u = olUrl(url), st = await ollama.status(u), local = isLocalUrl(u);
+  return { running: st.running, installed: !!ollama.findOllama() || st.running, canInstall: process.platform === 'win32' && local, local,
+    models: st.models, recommended: ollama.RECOMMENDED,
+    pulling: [...olJobs.keys()].filter(k => k.startsWith('pull:')).map(k => k.slice(5)), installing: olJobs.has('install') };
+});
+ipcMain.handle('ollama:start', async (e, url) => {
+  const u = olUrl(url);
+  if ((await ollama.status(u)).running) return { ok: true };
+  if (!isLocalUrl(u)) return { ok: false, error: 'That Ollama address is not on this PC, so I cannot start it.' };
+  if (!ollama.startOllama()) return { ok: false, error: 'Ollama does not seem to be installed.' };
+  return (await ollama.waitUntilRunning(u, 20, 1000)) ? { ok: true } : { ok: false, error: 'Ollama did not start. Try opening it from the Start menu.' };
+});
+ipcMain.handle('ollama:pull', async (e, name, url) => {
+  name = String(name || '');
+  if (!ollama.validName(name)) return { ok: false, error: 'That model name is not valid.' };
+  const key = 'pull:' + name; if (olJobs.has(key)) return { ok: true };
+  const u = olUrl(url);
+  const ac = new AbortController(); olJobs.set(key, ac);
+  try {
+    if (!(await ollama.status(u)).running) {
+      olSend({ type: 'pull', name, state: 'progress', status: 'Starting Ollama…', pct: null });
+      if (!isLocalUrl(u) || !ollama.startOllama() || !(await ollama.waitUntilRunning(u, 20, 1000))) throw new Error('Ollama is not running. Start it (or install it) first.');
+    }
+    await ollama.pull(u, name, p => olSend({ type: 'pull', name, state: 'progress', status: p.status, pct: p.pct }), ac.signal);
+    olSend({ type: 'pull', name, state: 'done' });
+    return { ok: true };
+  } catch (err) {
+    if (ac.signal.aborted) { olSend({ type: 'pull', name, state: 'cancelled' }); return { ok: false, cancelled: true }; }
+    const msg = err && err.message ? err.message : 'The download failed.';
+    olSend({ type: 'pull', name, state: 'error', error: msg }); return { ok: false, error: msg };
+  } finally { olJobs.delete(key); }
+});
+ipcMain.handle('ollama:cancel', (e, what) => { const a = olJobs.get(String(what)); if (a) a.abort(); });
+ipcMain.handle('ollama:install', async (e, url) => {
+  if (process.platform !== 'win32') return { ok: false, error: 'Automatic install only works on Windows. Get Ollama from ollama.com.' };
+  if (olJobs.has('install')) return { ok: true };
+  const u = olUrl(url);
+  if (!isLocalUrl(u)) return { ok: false, error: 'That address is not on this PC. Install Ollama on the other computer.' };
+  const ac = new AbortController(); olJobs.set('install', ac);
+  const dest = path.join(app.getPath('temp'), 'OllamaSetup.exe');
+  const step = (status, pct) => olSend({ type: 'install', state: 'progress', status, pct: pct == null ? null : pct });
+  try {
+    if (!ollama.findOllama() && !(await ollama.status(u)).running) {
+      step('Downloading Ollama…', 0);
+      await ollama.downloadInstaller(dest, p => step('Downloading Ollama…', p.pct), ac.signal);
+      step('Installing Ollama… (accept the Windows prompt if it appears)', null);
+      await ollama.runInstaller(dest);
+    }
+    step('Starting Ollama…', null);
+    if (!(await ollama.status(u)).running) ollama.startOllama();
+    if (!(await ollama.waitUntilRunning(u, 40, 1000))) throw new Error('Ollama is installed but did not start. Open it from the Start menu, then press Refresh.');
+    olSend({ type: 'install', state: 'done' });
+    return { ok: true };
+  } catch (err) {
+    if (ac.signal.aborted) { olSend({ type: 'install', state: 'cancelled' }); return { ok: false, cancelled: true }; }
+    const msg = err && err.message ? err.message : 'The install failed.';
+    olSend({ type: 'install', state: 'error', error: msg }); return { ok: false, error: msg };
+  } finally { olJobs.delete('install'); try { fs.unlinkSync(dest); } catch {} }
+});
+ipcMain.handle('ai:warmup', () => ai.warmup(aiCfg()));
+
+/* ---------- themes ---------- */
+ipcMain.handle('theme:set', (e, id) => { settings.theme = THEMES.byId(id).id; save(); return settings.theme; });
+ipcMain.handle('theme:applyAll', (e, id) => {
+  const th = THEMES.byId(id); settings.theme = th.id; let k = 0;
+  Object.values(notes).forEach(n => { n.color = THEMES.mapColor(n.color, th.id, k++); n.font = th.font; });   // keeps "the pink one" pink-ish in the new theme
+  wins.forEach((w, nid) => { const n = notes[nid]; if (n && !w.isDestroyed()) w.webContents.send('note:style', { color: n.color, font: n.font }); });
+  save(); return th.id;
+});
+
+/* ---------- AI chat sidebar ---------- */
+const chatFile = () => path.join(dataDir(), 'chat.json');
+function loadChat() {
+  if (chatState) return chatState;
+  if (!settings.chatHistory) { chatState = { messages: [], noteId: null }; return chatState; }
+  try { chatState = JSON.parse(fs.readFileSync(chatFile(), 'utf8')); } catch { chatState = null; }
+  if (!chatState || !Array.isArray(chatState.messages)) chatState = { messages: [], noteId: null };
+  return chatState;
+}
+const saveChat = () => { if (!settings.chatHistory) return; try { fs.writeFileSync(chatFile(), JSON.stringify(chatState)); } catch {} };
+function clearChat() { chatState = { messages: [], noteId: null }; try { fs.unlinkSync(chatFile()); } catch {} }
+function cleanChat(messages, keep) {
+  const out = (Array.isArray(messages) ? messages : [])
+    .filter(m => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string' && m.content !== '')
+    .map(m => ({ role: m.role, content: m.content.slice(0, 8000) })).slice(-keep);
+  while (out.length && out[0].role !== 'user') out.shift();   // models expect the conversation to start with the user
+  return out;
+}
+// A long note goes in whole (up to ~40,000 characters); beyond that the start and the END are kept, never just the start.
+function chatContext(text) {
+  text = String(text || ''); const MAX = 40000;
+  return text.length <= MAX ? text : text.slice(0, MAX * 0.4) + '\n[… middle of the note left out …]\n' + text.slice(-MAX * 0.6);
+}
+function chatSystem(noteId) {
+  let sys = ai.SYS_CHAT;
+  const n = notes[noteId];
+  if (n && !n.lock) sys += `\n\nThe user attached this sticky note as context.\nTitle: ${n.title || '(none)'}\n---\n${chatContext(n.text)}\n---`;
+  return sys;
+}
+function openChat(noteId) {
+  if (chatWin && !chatWin.isDestroyed()) {
+    chatWin.show(); chatWin.focus(); chatWin.webContents.focus();
+    if (noteId) chatWin.webContents.send('chat:attach', noteId);
+    return;
+  }
+  const wa = screen.getPrimaryDisplay().workArea, W = 400;
+  chatWin = new BrowserWindow({
+    x: wa.x + wa.width - W, y: wa.y, width: W, height: wa.height, minWidth: 340, minHeight: 420, frame: false, show: false,
+    title: 'StickyPad – AI chat', icon: iconPath, backgroundColor: '#161b27',
+    webPreferences: { preload, contextIsolation: true, nodeIntegration: false }
+  });
+  chatWin.setMenu(null);
+  chatWin.loadFile('chat.html', noteId ? { query: { note: noteId } } : undefined);
+  chatWin.once('ready-to-show', () => { chatWin.show(); chatWin.focus(); chatWin.webContents.focus(); });
+  chatWin.on('focus', () => { if (!chatWin.isDestroyed()) chatWin.webContents.focus(); });
+  chatWin.on('closed', () => { chatJobs.forEach(a => a.abort()); chatJobs.clear(); chatWin = null; });
+}
+ipcMain.handle('chat:open', (e, noteId) => openChat(typeof noteId === 'string' ? noteId : undefined));
+ipcMain.handle('chat:close', () => { if (chatWin && !chatWin.isDestroyed()) chatWin.close(); });
+ipcMain.handle('chat:load', () => {
+  const c = loadChat();
+  return { messages: cleanChat(c.messages, 100), noteId: notes[c.noteId] && !notes[c.noteId].lock ? c.noteId : null,
+           provider: settings.ai.provider, model: settings.ai.model || (settings.ai.provider === 'claude' ? ai.DEFAULT_CLAUDE_MODEL : '') };
+});
+ipcMain.handle('chat:save', (e, p) => { const c = loadChat(); c.messages = cleanChat(p && p.messages, 100); c.noteId = p && typeof p.noteId === 'string' ? p.noteId : null; saveChat(); });
+ipcMain.handle('chat:notes', () => Object.values(notes).filter(n => !n.lock && String(n.text || '').trim())
+  .sort((a, b) => (b.updated || 0) - (a.updated || 0)).map(n => ({ id: n.id, title: n.title || String(n.text).split('\n')[0].slice(0, 40) || 'Note' })));
+ipcMain.handle('chat:saveAsNote', (e, text) => {
+  const t = String(text || '').slice(0, 100000); if (!t.trim()) return false;
+  makeNote(null, { title: 'From AI chat', blocks: [{ t: 'text', v: t }], text: t }); return true;
+});
+ipcMain.handle('chat:stop', (e, id) => { const a = chatJobs.get(id); if (a) a.abort(); });
+ipcMain.handle('chat:send', async (e, p) => {
+  const id = String((p && p.id) || ''), sender = e.sender;
+  const send = m => { if (!sender.isDestroyed()) sender.send('chat:event', { id, ...m }); };
+  const ac = new AbortController(); chatJobs.set(id, ac);
+  try {
+    const full = await ai.chatStream(aiCfg(), chatSystem(p && p.noteId), cleanChat(p && p.messages, 20), t => send({ type: 'chunk', text: t }), ac.signal);
+    send({ type: 'done', text: full });
+  } catch (err) {
+    if (ac.signal.aborted) send({ type: 'done', stopped: true });
+    else send({ type: 'error', error: err && err.friendly ? err.message : 'Something went wrong: ' + (err && err.message ? err.message : err) });
+  } finally { chatJobs.delete(id); }
+  return true;
+});
+
+/* ---------- global shortcuts ---------- */
+function unregisterShortcuts() { try { globalShortcut.unregisterAll(); } catch {} }
+function registerShortcuts() {
+  unregisterShortcuts();
+  const reg = (accel, fn) => { try { globalShortcut.register(accel, fn); } catch {} };
+  reg('Control+Alt+N', () => makeNote(null));
+  reg('Control+Alt+A', () => openAll());
+  reg('Control+Alt+C', () => openChat());
+  reg('Control+Alt+S', () => openSettings());
+}
+
+/* ---------- backups and trash retention ---------- */
+function doBackup() { flush(); const dir = backup.makeBackup(dataDir(), 7, new Date(), app.getPath('userData')); settings.lastBackup = Date.now(); save(); return dir; }
+function purgeTrash() {
+  const keep = [], drop = [];
+  trash.forEach(t => (Date.now() - t.deletedAt < settings.trashDays * DAY ? keep : drop).push(t));
+  drop.forEach(dropImages); trash = keep;
+}
+
+/* ---------- the Settings window ---------- */
+let settingsWin = null;
+function openSettings(section) {
+  if (settingsWin && !settingsWin.isDestroyed()) {
+    settingsWin.show(); settingsWin.focus(); settingsWin.webContents.focus();
+    if (section) settingsWin.webContents.send('settings:section', section);
+    return;
+  }
+  settingsWin = utilWindow(null, 'StickyPad – Settings', 'settings.html', 860, 640, section ? { section } : undefined);
+  settingsWin.setMinimumSize(700, 480);
+  settingsWin.on('closed', () => { settingsWin = null; });
+}
+function allSettings() {
+  return {
+    version: app.getVersion(), packaged: app.isPackaged, startup: startupOn(), dataPath: dataDir(), dataCustom: dataDir() !== app.getPath('userData'),
+    hideTaskbar: !!settings.hideTaskbar, snap: !!settings.snap, snapDistance: settings.snapDistance, defaultSize: settings.defaultSize,
+    trashDays: settings.trashDays, trashCount: trash.length, shortcuts: !!settings.shortcuts, chatHistory: !!settings.chatHistory,
+    autoBackup: !!settings.autoBackup, lastBackup: settings.lastBackup || 0, backupCount: backup.list(app.getPath('userData')).length,
+    theme: settings.theme, prefs: prefs(), groups, notesCount: Object.keys(notes).length
+  };
+}
+const clampInt = (v, lo, hi) => Math.min(hi, Math.max(lo, Math.round(Number(v))));
+ipcMain.handle('settings:open', (e, section) => openSettings(typeof section === 'string' ? section : undefined));
+ipcMain.handle('settings:get', () => allSettings());
+ipcMain.handle('settings:set', (e, p) => {
+  if (p) {
+    if ('hideTaskbar' in p) setHide(p.hideTaskbar);
+    if ('snap' in p) setSnap(p.snap);
+    if ('startup' in p) setStartup(p.startup);
+    if (Number.isFinite(p.snapDistance)) settings.snapDistance = clampInt(p.snapDistance, 4, 40);
+    if (Number.isFinite(p.defaultSize)) settings.defaultSize = clampInt(p.defaultSize, 10, 48);
+    if ([7, 14, 30, 60, 90].includes(p.trashDays)) { settings.trashDays = p.trashDays; purgeTrash(); pingTrash(); }
+    if ('shortcuts' in p) { settings.shortcuts = !!p.shortcuts; if (settings.shortcuts) registerShortcuts(); else unregisterShortcuts(); }
+    if ('chatHistory' in p) { settings.chatHistory = !!p.chatHistory; if (!settings.chatHistory) clearChat(); }
+    if ('autoBackup' in p) settings.autoBackup = !!p.autoBackup;
+    if (typeof p.theme === 'string') settings.theme = THEMES.byId(p.theme).id;
+    if (p.prefs) setPrefs(p.prefs);
+    save(); refreshTray();
+  }
+  return allSettings();
+});
+ipcMain.handle('settings:action', (e, name) => {
+  try {
+    if (name === 'backupNow') { doBackup(); return { ok: true, info: allSettings() }; }
+    if (name === 'openData') { shell.openPath(dataDir()); return { ok: true }; }
+    if (name === 'chooseDataFolder' || name === 'resetDataFolder') {
+      const def = app.getPath('userData'); let target = def;
+      if (name === 'chooseDataFolder') {
+        const r = dialog.showOpenDialogSync(settingsWin || undefined, { title: 'Choose where StickyPad keeps your notes', properties: ['openDirectory', 'createDirectory'], defaultPath: dataDir() });
+        if (!r || !r[0]) return { ok: false, cancelled: true };
+        target = r[0];
+      }
+      if (path.resolve(target) === path.resolve(dataDir())) return { ok: false, error: 'That is already the data folder.' };
+      const has = fs.existsSync(path.join(target, 'notes.json'));
+      const c = dialog.showMessageBoxSync(settingsWin || undefined, { type: 'question', buttons: ['Continue', 'Cancel'], defaultId: 0, cancelId: 1, title: 'Move StickyPad data',
+        message: has ? 'There are already notes in that folder.' : 'Move your notes to that folder?',
+        detail: (has ? 'StickyPad will use the notes that are there. Your current notes stay where they are (nothing is deleted).' : 'Your notes and pictures are copied there. The old copy is kept as a backup.') + '\n\nStickyPad restarts afterwards.' });
+      if (c !== 0) return { ok: false, cancelled: true };
+      flush(); datadir.setLocation(def, dataDir(), target);
+      app.relaunch(); setTimeout(() => app.exit(0), 200);
+      return { ok: true, restarting: true };
+    }
+    if (name === 'openBackups') { const d = path.join(app.getPath('userData'), 'backups'); fs.mkdirSync(d, { recursive: true }); shell.openPath(d); return { ok: true }; }
+    if (name === 'clearChat') { clearChat(); return { ok: true }; }
+    if (name === 'emptyTrash') { trash.forEach(dropImages); trash = []; save(); pingTrash(); return { ok: true, info: allSettings() }; }
+  } catch (err) { return { ok: false, error: String(err && err.message || err) }; }
+  return { ok: false, error: 'Unknown action.' };
+});
+
+/* ---------- lifecycle ---------- */
+app.on('second-instance', () => { if (settings.launch === 'all') openAll(); else showAll(); });
+app.whenReady().then(async () => {
+  DATA = datadir.resolve(app.getPath('userData'));
+  file = path.join(DATA, 'notes.json');
+  load(); sweepImages(); lastMtime = datadir.mtimeOf(file); watchData();
+  if (settings.autoBackup && !firstRun && !backup.sameDay(settings.lastBackup)) { try { doBackup(); } catch {} }   // one safety copy a day
+  createTray();
+  // Only the very first launch (or a missing tray) creates a blank note; otherwise closed empty notes stay gone.
+  if (!Object.keys(notes).length && (firstRun || !tray)) { const n = newNote(); notes[n.id] = n; }
+  if (settings.shortcuts) registerShortcuts();
+  if (settings.splash) await showSplash();
+  openStartup();
+  save();
+  ai.warmup(aiCfg());   // load the local model in the background so the first answer is quick
+});
+// With a tray icon the app keeps running when every note window is closed; reopen them from the tray.
+app.on('window-all-closed', () => { flush(); if (!tray) app.quit(); });
+app.on('before-quit', flush);
+app.on('will-quit', () => globalShortcut.unregisterAll());

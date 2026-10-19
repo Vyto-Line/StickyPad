@@ -1,0 +1,88 @@
+{
+  "name": "stickypad",
+  "productName": "StickyPad",
+  "version": "1.11.0",
+  "description": "Colourful sticky notes for Windows with a local AI helper (Ollama), Greek support and optional sync through any synced folder",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win",
+    "test": "node tests/run.js"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  },
+  "build": {
+    "appId": "com.stickypad.app",
+    "productName": "StickyPad",
+    "files": [
+      "main.js",
+      "preload.js",
+      "ai.js",
+      "themes.js",
+      "backup.js",
+      "note.html",
+      "note.css",
+      "note.js",
+      "all.html",
+      "all.css",
+      "all.js",
+      "splash.html",
+      "splash.css",
+      "splash.js",
+      "chat.html",
+      "chat.css",
+      "chat.js",
+      "settings.html",
+      "settings.css",
+      "settings.js",
+      "icon.png",
+      "tray.png",
+      "datadir.js",
+      "ollama.js",
+      "ollamaui.js",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "icon.ico"
+    },
+    "asar": true,
+    "compression": "maximum",
+    "electronLanguages": [
+      "en-US",
+      "el"
+    ],
+    "removePackageScripts": true,
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "differentialPackage": false,
+      "deleteAppDataOnUninstall": false
+    }
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Vyto-Line/StickyPad.git"
+  },
+  "homepage": "https://github.com/Vyto-Line/StickyPad",
+  "keywords": [
+    "sticky-notes",
+    "electron",
+    "ollama",
+    "local-ai",
+    "greek",
+    "windows",
+    "notes"
+  ],
+  "author": "Vyto-Line"
+}
