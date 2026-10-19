@@ -67,7 +67,7 @@ with sync_playwright() as p:
     NOTES['links'] = dict(title='Weekend', color='#CDEFFF', font='Segoe UI', size=15,
       blocks=[T('Tickets: https://www.aegeanair.com/booking\nHotel contact: reservations@seaview.gr\nDentist tomorrow at 5pm\nCall Nick'), ])
     pg = page(b, 'links'); goto(pg, 'note.html'); pg.wait_for_timeout(1000); shot(pg, 'feature_links'); pg.close()
-    pg = page(b, 'links', extra="window.__S.updateNow={state:'ready',version:'1.14.10'}"); goto(pg, 'note.html'); pg.wait_for_timeout(1000); shot(pg, 'feature_update'); pg.close()
+    pg = page(b, 'links', extra="window.__S.updateNow={state:'ready',version:'1.14.11'}"); goto(pg, 'note.html'); pg.wait_for_timeout(1000); shot(pg, 'feature_update'); pg.close()
     # shortcuts you can change
     pg = page(b, None, 1030, 700); goto(pg, 'settings.html'); pg.click('[data-cat=shortcuts]'); pg.wait_for_timeout(300)
     pg.click('[data-key=g_clip]'); pg.keyboard.press('Control+Alt+Shift+V'); pg.wait_for_timeout(300); shot(pg, 'feature_shortcuts'); pg.close()
@@ -86,7 +86,7 @@ with sync_playwright() as p:
       groups: [{id:'g1',name:'Home',collapsed:false},{id:'g2',name:'Work',collapsed:false}], trash: [], prefs: {} });'''
     pg = page(b, None, 900, 560, extra=allj); goto(pg, 'all.html'); shot(pg, 'feature_all'); pg.close()
     # settings window
-    setj = "const o=window.api.settingsGet; window.api.settingsGet=async()=>({...(await o()),version:'1.14.9',notesCount:6,groups:[{id:'g1',name:'Home'},{id:'g2',name:'Work'}],autoBackup:true,backupCount:7,lastBackup:Date.now()-3600e3,dataPath:'C:/Users/you/OneDrive/StickyPad',dataCustom:true,autoUpdate:true,shortcuts:true,snap:true});"
+    setj = "const o=window.api.settingsGet; window.api.settingsGet=async()=>({...(await o()),version:'1.14.10',notesCount:6,groups:[{id:'g1',name:'Home'},{id:'g2',name:'Work'}],autoBackup:true,backupCount:7,lastBackup:Date.now()-3600e3,dataPath:'C:/Users/you/OneDrive/StickyPad',dataCustom:true,autoUpdate:true,shortcuts:true,snap:true});"
     pg = page(b, None, 1030, 640, extra=setj); goto(pg, 'settings.html'); pg.click('[data-cat=data]'); pg.wait_for_timeout(300); shot(pg, 'feature_settings_data'); pg.click('[data-cat=about]'); pg.wait_for_timeout(300); shot(pg, 'feature_settings_about'); pg.close()
     b.close()
 

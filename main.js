@@ -1,4 +1,5 @@
-const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, screen, globalShortcut, clipboard, safeStorage, shell, dialog, Notification, net } = require('electron');
+const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, screen, globalShortcut, clipboard, safeStorage, shell, dialog, Notification, net, nativeTheme } = require('electron');
+const NT = nativeTheme || { shouldUseDarkColors: false, themeSource: 'system', on() {} };   // light/dark of Windows (and of our own windows)
 const ai = require('./ai');
 const ollama = require('./ollama');
 const datadir = require('./datadir');
@@ -53,7 +54,7 @@ const rid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 
 
 const newNote = (over = {}) => ({
   id: rid(), updated: Date.now(), title: '', group: null, rolled: false, text: '', blocks: [],
-  color: THEMES.byId(settings.theme).colors[0], font: THEMES.byId(settings.theme).font, size: settings.defaultSize || 16, pinned: false, bounds: { width: 300, height: 320 }, ...over
+  color: THEMES.palette(settings.theme, uiDark())[0], font: THEMES.byId(settings.theme).font, size: settings.defaultSize || 16, pinned: false, bounds: { width: 300, height: 320 }, ...over
 });
 
 /* ---------- note content helpers ---------- */
@@ -879,13 +880,32 @@ ipcMain.handle('ollama:install', async (e, url) => {
 });
 ipcMain.handle('ai:warmup', () => ai.warmup(aiCfg()));
 
-/* ---------- themes ---------- */
-ipcMain.handle('theme:set', (e, id) => { settings.theme = THEMES.byId(id).id; save(); return settings.theme; });
+/* ---------- themes: one theme colours the whole app, in a light and a dark version ---------- */
+const modeOf = () => (['light', 'dark'].includes(settings.mode) ? settings.mode : 'system');
+function uiDark() { return !!NT.shouldUseDarkColors; }   // follows settings.mode through nativeTheme.themeSource
+function applyMode() { try { NT.themeSource = modeOf(); } catch {} }
+function uiTheme() {
+  const dark = uiDark(), id = THEMES.byId(settings.theme).id;
+  return { id, dark, mode: modeOf(), follow: settings.notesFollowMode !== false, vars: THEMES.vars(id, dark), palette: THEMES.palette(id, dark) };
+}
+// Tells every window about the theme. When light/dark changed, notes in theme colours follow (custom colours never change).
+function themeChanged() {
+  const t = uiTheme();
+  if (t.follow && typeof settings.lastDark === 'boolean' && settings.lastDark !== t.dark) {
+    Object.values(notes).forEach(n => { n.color = THEMES.followMode(n.color, t.id, t.dark); });
+    wins.forEach((w, nid) => { const n = notes[nid]; if (n && !w.isDestroyed()) w.webContents.send('note:style', { color: n.color, font: n.font }); });
+  }
+  if (settings.lastDark !== t.dark) { settings.lastDark = t.dark; save(); }   // the first time it only remembers: existing notes are left alone
+  BrowserWindow.getAllWindows().forEach(w => { if (!w.isDestroyed()) w.webContents.send('ui:theme', t); });
+  return t;
+}
+ipcMain.handle('ui:theme', () => uiTheme());
+ipcMain.handle('theme:set', (e, id) => { settings.theme = THEMES.byId(id).id; save(); themeChanged(); return settings.theme; });
 ipcMain.handle('theme:applyAll', (e, id) => {
   const th = THEMES.byId(id); settings.theme = th.id; let k = 0;
-  Object.values(notes).forEach(n => { n.color = THEMES.mapColor(n.color, th.id, k++); n.font = th.font; });   // keeps "the pink one" pink-ish in the new theme
+  Object.values(notes).forEach(n => { n.color = THEMES.mapColor(n.color, th.id, k++, uiDark()); n.font = th.font; });   // keeps "the pink one" pink-ish in the new theme
   wins.forEach((w, nid) => { const n = notes[nid]; if (n && !w.isDestroyed()) w.webContents.send('note:style', { color: n.color, font: n.font }); });
-  save(); return th.id;
+  save(); themeChanged(); return th.id;
 });
 
 /* ---------- AI chat sidebar ---------- */
@@ -1087,7 +1107,7 @@ function allSettings() {
     trashDays: settings.trashDays, trashCount: trash.length, shortcuts: !!settings.shortcuts, suggestDates: settings.suggestDates !== false, keys: curKeys(), keysFailed: settings.shortcuts ? keysFailed : [], chatHistory: !!settings.chatHistory,
     autoBackup: !!settings.autoBackup, lastBackup: settings.lastBackup || 0, backupCount: backup.list(app.getPath('userData')).length,
     autoUpdate: settings.autoUpdate !== false, update: updater ? updater.get() : null,
-    theme: settings.theme, prefs: prefs(), groups, notesCount: Object.keys(notes).length,
+    theme: settings.theme, mode: modeOf(), notesFollowMode: settings.notesFollowMode !== false, uiDark: uiDark(), prefs: prefs(), groups, notesCount: Object.keys(notes).length,
     lowMemory: launchcfg.read(app.getPath('userData')).lowMemory, lowMemoryActive: LAUNCH.lowMemory, aiKeep: settings.ai.keepAlive || '5m'
   };
 }
@@ -1110,7 +1130,11 @@ ipcMain.handle('settings:set', (e, p) => {
     if ('autoUpdate' in p) settings.autoUpdate = !!p.autoUpdate;
     if ('lowMemory' in p) { try { launchcfg.write(app.getPath('userData'), { lowMemory: !!p.lowMemory }); } catch {} }   // used at the next start
     if (typeof p.aiKeep === 'string' && ['0', '5m', '30m'].includes(p.aiKeep)) settings.ai.keepAlive = p.aiKeep;
-    if (typeof p.theme === 'string') settings.theme = THEMES.byId(p.theme).id;
+    let themeTouched = false;
+    if (typeof p.theme === 'string') { settings.theme = THEMES.byId(p.theme).id; themeTouched = true; }
+    if (['light', 'dark', 'system'].includes(p.mode)) { settings.mode = p.mode; applyMode(); themeTouched = true; }
+    if ('notesFollowMode' in p) settings.notesFollowMode = !!p.notesFollowMode;
+    if (themeTouched) themeChanged();
     if (p.prefs) setPrefs(p.prefs);
     save(); refreshTray();
   }
@@ -1160,6 +1184,8 @@ app.whenReady().then(async () => {
   DATA = datadir.resolve(app.getPath('userData'));
   file = path.join(DATA, 'notes.json');
   load(); sweepHistory(); sweepImages(); lastMtime = datadir.mtimeOf(file); watchData();
+  applyMode(); try { NT.on('updated', () => themeChanged()); } catch {}
+  if (typeof settings.lastDark !== 'boolean') settings.lastDark = uiDark();   // first start with themes: remember, do not repaint existing notes
   if (settings.autoBackup && !firstRun && !backup.sameDay(settings.lastBackup)) { try { doBackup(); } catch {} }   // one safety copy a day
   createTray();
   ['display-added', 'display-removed', 'display-metrics-changed'].forEach(ev => screen.on(ev, () => setTimeout(onScreensChanged, 400)));

@@ -32,6 +32,7 @@ function fill() {
   if (S.aiKeep) $('#aiKeep').value = S.aiKeep;
   $('#aboutNotes').textContent = `${S.notesCount} note${S.notesCount === 1 ? '' : 's'}, ${S.groups.length} folder${S.groups.length === 1 ? '' : 's'}`;
   drawThemes(); drawFolders(); drawKeys();
+  $$('[data-mode]').forEach(b => { const on = b.dataset.mode === (S.mode || 'system'); b.classList.toggle('on', on); b.setAttribute('aria-checked', on); });
 }
 /* ---------- keyboard shortcuts ---------- */
 const KS = window.StickyKeys;
@@ -80,9 +81,20 @@ function drawThemes() {
   const box = $('#themes'); box.textContent = '';
   TH.THEMES.forEach(t => {
     const b = document.createElement('button'); b.className = 'theme' + (t.id === S.theme ? ' on' : ''); b.type = 'button'; b.setAttribute('aria-pressed', t.id === S.theme);
-    const sw = document.createElement('span'); sw.className = 'sw'; t.colors.slice(0, 5).forEach(c => { const i = document.createElement('i'); i.style.background = c; sw.appendChild(i); });
-    const nm = document.createElement('span'); nm.textContent = t.name; const mt = document.createElement('span'); mt.className = 'meta'; mt.textContent = t.font;
-    b.append(sw, nm, mt); b.onclick = () => save({ theme: t.id }); box.appendChild(b);
+    b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', t.id === S.theme); b.title = t.name + ' theme (light and dark)';
+    const pv = document.createElement('span'); pv.className = 'tpv';
+    for (const mode of ['light', 'dark']) {   // a tiny picture of the app in each version: sidebar, background and four note colours
+      const u = t.ui[mode], half = document.createElement('span'); half.className = 'half'; half.style.background = u.bg;
+      const nav = document.createElement('i'); nav.className = 'nav'; nav.style.background = u.nav; half.appendChild(nav);
+      const g = document.createElement('span'); g.className = 'cols';
+      (mode === 'dark' ? t.dark : t.colors).slice(0, 4).forEach(c => { const i = document.createElement('i'); i.style.background = c; g.appendChild(i); });
+      half.appendChild(g); pv.appendChild(half);
+    }
+    const nm = document.createElement('span'); nm.className = 'tname'; nm.textContent = t.name;
+    const ac = document.createElement('span'); ac.className = 'acc';
+    ['light', 'dark'].forEach(m => { const i = document.createElement('i'); i.style.background = t.ui[m].accent; ac.appendChild(i); });
+    nm.appendChild(ac);
+    b.append(pv, nm); b.onclick = () => save({ theme: t.id }); box.appendChild(b);
   });
 }
 function drawFolders() {
@@ -108,6 +120,7 @@ function save(patch) { saving = saving.then(async () => { S = await api.settings
 async function load() { S = await api.settingsGet(); fill(); }
 
 $$('[data-set]').forEach(el => { el.onchange = () => save({ [el.dataset.set]: el.checked }); });
+$$('[data-mode]').forEach(b => { b.onclick = () => save({ mode: b.dataset.mode }); });
 $$('[data-pref]').forEach(el => { el.onchange = () => save({ prefs: { [el.dataset.pref]: el.type === 'checkbox' ? el.checked : el.value } }); });
 $$('[data-num]').forEach(el => { el.onchange = () => save({ [el.dataset.num]: Number(el.value) }); });
 $$('[data-range]').forEach(el => {

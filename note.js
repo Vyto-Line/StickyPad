@@ -5,15 +5,15 @@ let KEYMAP = StickyKeys.DEFAULTS;   // the shortcuts (Settings > Shortcuts can c
 const KEY = (e, id) => StickyKeys.matches(e, KEYMAP[id]);
 if (window.api.onKeys) api.onKeys(m => { KEYMAP = m || StickyKeys.DEFAULTS; });
 const srcCache = new Map();
-let themeId = 'classic', scopeAll = false;
+let themeId = 'classic', scopeAll = false, uiDarkNow = false;
 const TH = window.StickyThemes;
 
-const isDark = hex => { const n = parseInt(hex.slice(1), 16); return (0.299 * (n >> 16 & 255) + 0.587 * (n >> 8 & 255) + 0.114 * (n & 255)) / 255 < 0.5; };
+const isDark = hex => TH.wantsLightText(hex);   // light text reads better on this colour (WCAG contrast)
 
 /* ---------- themes ---------- */
 function buildSwatches() {
   document.querySelectorAll('.sw[data-c]').forEach(x => x.remove());
-  TH.byId(themeId).colors.forEach(c => {
+  TH.palette(themeId, uiDarkNow).forEach(c => {
     const b = document.createElement('button'); b.className = 'sw'; b.dataset.c = c;
     b.style.background = c; b.title = c; b.setAttribute('aria-label', 'Colour ' + c);
     b.onclick = () => set({ color: c }); $('#swatches').insertBefore(b, $('#customSw'));
@@ -26,7 +26,7 @@ function buildThemes() {
     const b = document.createElement('button'); b.className = 'theme' + (t.id === themeId ? ' on' : ''); b.type = 'button';
     b.setAttribute('aria-pressed', t.id === themeId); b.title = t.name + ' theme';
     const dots = document.createElement('span'); dots.className = 'dots';
-    t.colors.slice(0, 4).forEach(c => { const d = document.createElement('i'); d.style.background = c; dots.appendChild(d); });
+    TH.palette(t.id, uiDarkNow).slice(0, 4).forEach(c => { const d = document.createElement('i'); d.style.background = c; dots.appendChild(d); });
     const nm = document.createElement('span'); nm.textContent = t.name;
     b.append(dots, nm); b.onclick = () => applyTheme(t.id); box.appendChild(b);
   });
@@ -36,15 +36,19 @@ async function applyTheme(id) {
   themeId = id; buildThemes(); buildSwatches();
   const t = TH.byId(id);
   if (scopeAll) { await api.themeApplyAll(id); }   // the app updates every note and tells each window
-  else { await api.themeSet(id); set({ color: TH.mapColor(note.color, id, 0), font: t.font }); }
+  else { await api.themeSet(id); set({ color: TH.mapColor(note.color, id, 0, uiDarkNow), font: t.font }); }
 }
 $('#scopeThis').onclick = () => { scopeAll = false; try { localStorage.setItem('sp.scope', 'this'); } catch (e) {} paintScope(); };
 $('#scopeAll').onclick = () => { scopeAll = true; try { localStorage.setItem('sp.scope', 'all'); } catch (e) {} paintScope(); };
 api.onStyle(st => { note.color = st.color; note.font = st.font; apply(); });
+// the app-wide theme changed (another theme, or light/dark): new swatches and the theme's accent colour
+if (api.onUiTheme) api.onUiTheme(t => { if (!t) return; themeId = t.id; uiDarkNow = !!t.dark; buildThemes(); buildSwatches(); });
 
 function apply() {
   document.documentElement.style.setProperty('--bg', note.color);
-  document.body.classList.toggle('dark', isDark(note.color));
+  const dk = isDark(note.color); document.body.classList.toggle('dark', dk);
+  const acc = TH.byId(themeId).ui[dk ? 'dark' : 'light'];   // the theme's accent, in the version that reads well on this note
+  document.body.style.setProperty('--accent', acc.accent); document.body.style.setProperty('--on-accent', acc.onAccent);
   ed.style.fontFamily = '"' + note.font.replace(/["\\]/g, '') + '", "Segoe UI", sans-serif';
   ed.style.fontSize = note.size + 'px';
   if (document.activeElement !== $('#topic')) $('#topic').value = note.title || '';
@@ -512,6 +516,7 @@ api.onReload(() => { if (!timer && !edit && document.activeElement !== $('#topic
   await reload();
   aiLoad();
   try { themeId = ((await api.info()) || {}).theme || 'classic'; } catch (e) {}
+  try { const ut = api.uiTheme ? await api.uiTheme() : null; if (ut) { themeId = ut.id; uiDarkNow = !!ut.dark; } } catch (e) {}
   buildSwatches(); buildThemes();
   try { scopeAll = localStorage.getItem('sp.scope') === 'all'; } catch (e) {}
   paintScope();

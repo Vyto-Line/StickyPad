@@ -1,5 +1,5 @@
 (() => {
-  const L = { ollama: [], ai: [], update: [] };
+  const L = { ollama: [], ai: [], update: [], ui: [] };
   const REC = [{name:'llama3.2:1b',label:'Llama 3.2 · 1B',size:'1.3 GB',note:'Fastest'},{name:'llama3.2:3b',label:'Llama 3.2 · 3B',size:'2.0 GB',note:'Recommended'},{name:'llama3.1:8b',label:'Llama 3.1 · 8B',size:'4.9 GB',note:'Best'}];
   const S = window.__S = { calls: [], editMode: 'ok', stop: false,
     ai: { provider: 'ollama', model: 'llama3.2', url: 'http://localhost:11434', hasKey: false, defaultModel: 'claude-haiku-5-5' },
@@ -26,6 +26,7 @@
       if (S.pullFail) { emit('ollama', { type: 'pull', name, state: 'error', error: 'disk full' }); return { ok: false, error: 'disk full' }; }
       S.ol.models.push({ name, size: 1.3e9 }); emit('ollama', { type: 'pull', name, state: 'done' }); return { ok: true };
     },
+    uiTheme: async () => (S.uiTheme ? JSON.parse(JSON.stringify(S.uiTheme)) : null), onUiTheme: cb => L.ui.push(cb),
     home: async (id, arg) => { S.calls.push(['home', id, arg]); return true; },
     ollamaDelete: async name => { S.calls.push(['delete', name]); if (S.delFail) return { ok: false, error: 'Ollama is busy' }; S.ol.models = S.ol.models.filter(m => m.name !== name); return { ok: true }; },
     ollamaInstall: async () => {

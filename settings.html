@@ -5,6 +5,7 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'">
 <title>StickyPad – Settings</title>
 <link rel="stylesheet" href="settings.css">
+<script src="apptheme.js"></script>
 </head>
 <body>
 <aside>
@@ -39,7 +40,9 @@
 
   <section class="cat" id="cat-appearance" data-title="Appearance">
     <h2>Appearance</h2>
-    <div class="row col"><div class="lbl"><b>Theme</b><span>Sets the colour palette and font for new notes. Existing notes keep their look unless you apply it below.</span></div><div class="ctl wide"><div id="themes" class="themegrid" role="group" aria-label="Theme"></div></div></div>
+    <div class="row"><div class="lbl"><b>Light or dark</b><span>"Same as Windows" switches by itself when Windows does.</span></div><div class="ctl"><div class="modeseg" role="radiogroup" aria-label="Light or dark"><button type="button" data-mode="light" role="radio">Light</button><button type="button" data-mode="dark" role="radio">Dark</button><button type="button" data-mode="system" role="radio">Same as Windows</button></div></div></div>
+    <div class="row col"><div class="lbl"><b>Theme</b><span>Colours the whole app (these windows, menus, the note panel) and offers the colours for new notes. Each preview shows the light version on the left and the dark one on the right.</span></div><div class="ctl wide"><div id="themes" class="themegrid" role="radiogroup" aria-label="Theme"></div></div></div>
+    <div class="row"><div class="lbl"><b>Notes follow light and dark</b><span>A yellow note becomes a deep yellow in dark mode and back again in light mode. Notes with your own custom colour never change.</span></div><div class="ctl"><input id="notesFollowMode" class="toggle" type="checkbox" data-set="notesFollowMode"></div></div>
     <div class="row"><div class="lbl"><b>Apply the theme to all notes</b><span>Restyles every note you have. Each keeps its colour slot (the pink one stays pink-ish).</span><span id="applyMsg" class="ok"></span></div><div class="ctl"><button id="applyAll" class="btn">Apply to all notes</button></div></div>
     <div class="row"><div class="lbl"><b>Text size for new notes</b><span>The starting font size (you can still change it per note).</span></div><div class="ctl"><input id="defaultSize" class="range" type="range" min="10" max="48" data-range="defaultSize"><output id="defaultSizeOut"></output></div></div>
   </section>

@@ -41,8 +41,7 @@ body.rolled #roll svg{transform:rotate(180deg)}
 .todo input{-webkit-appearance:none;appearance:none;flex:none;width:17px;height:17px;margin:.26em 0 0;border-radius:50%;border:1.7px solid var(--fg);opacity:.6;cursor:pointer;position:relative;background:transparent}
 .todo input:hover{opacity:1}
 .todo input:checked{background:var(--accent);border-color:var(--accent);opacity:1}
-.todo input:checked::after{content:"";position:absolute;left:4.6px;top:1.6px;width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
-body.dark .todo input:checked::after{border-color:#14181f}
+.todo input:checked::after{content:"";position:absolute;left:4.6px;top:1.6px;width:4px;height:8px;border:solid var(--on-accent,#fff);border-width:0 2px 2px 0;transform:rotate(45deg)}
 
 /* shared controls */
 .field{font:inherit;font-size:12.5px;color:inherit;background:var(--tint);border:1px solid var(--line);border-radius:8px;padding:5px 9px;min-width:0;outline:0}
@@ -51,8 +50,7 @@ select.field{cursor:pointer}
 select.field option{color:#222;background:#fff}
 .btn{font:inherit;font-size:12.5px;font-weight:600;color:inherit;background:var(--tint2);border:0;border-radius:8px;padding:5px 12px;cursor:pointer;flex:none}
 .btn:hover{background:var(--line)}
-.btn.primary{background:var(--accent);color:#fff}
-body.dark .btn.primary{color:#14181f}
+.btn.primary{background:var(--accent);color:var(--on-accent,#fff)}
 .btn.primary:hover{filter:brightness(1.08)}
 .hint{margin:0;font-size:11px;opacity:.65;line-height:1.35}
 .hint:empty{display:none}
@@ -91,14 +89,12 @@ body.dark .btn.danger{color:#ff8a80}
 .toggle{-webkit-appearance:none;appearance:none;margin:0;width:30px;height:18px;border-radius:999px;background:var(--tint2);position:relative;cursor:pointer;flex:none;transition:background .15s}
 .toggle::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:currentColor;opacity:.75;transition:transform .15s,opacity .15s}
 .toggle:checked{background:var(--accent)}
-.toggle:checked::after{transform:translateX(12px);background:#fff;opacity:1}
-body.dark .toggle:checked::after{background:#14181f}
+.toggle:checked::after{transform:translateX(12px);background:var(--on-accent,#fff);opacity:1}
 .toggle:disabled{opacity:.4;cursor:default}
 .tools{display:grid;grid-template-columns:repeat(4,1fr);gap:3px}
 .tool{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0 5px;border:0;border-radius:9px;background:none;color:inherit;font:inherit;font-size:10.5px;cursor:pointer;opacity:.85}
 .tool:hover{background:var(--tint2);opacity:1}
-.badge{position:absolute;top:1px;right:calc(50% - 20px);min-width:15px;height:15px;line-height:15px;border-radius:8px;padding:0 4px;background:var(--accent);color:#fff;font-size:9.5px;font-weight:700;text-align:center}
-body.dark .badge{color:#14181f}
+.badge{position:absolute;top:1px;right:calc(50% - 20px);min-width:15px;height:15px;line-height:15px;border-radius:8px;padding:0 4px;background:var(--accent);color:var(--on-accent,#fff);font-size:9.5px;font-weight:700;text-align:center}
 .badge:empty{display:none}
 
 /* lock screen */
@@ -160,8 +156,7 @@ body.rolled #aibox{display:none}
 .aibody .cl.done span{text-decoration:line-through;opacity:.6}
 .aiacts .btn{white-space:nowrap;padding:7px 8px}
 .aibody .cl b{position:relative}
-.aibody .cl.done b::after{content:"";position:absolute;left:4.2px;top:1.2px;width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
-body.dark .aibody .cl.done b::after{border-color:#14181f}
+.aibody .cl.done b::after{content:"";position:absolute;left:4.2px;top:1.2px;width:4px;height:8px;border:solid var(--on-accent,#fff);border-width:0 2px 2px 0;transform:rotate(45deg)}
 
 /* smaller topic box (grows a little while you type) and more room to drag the window */
 #topic{flex:0 1 20%;min-width:44px;font-size:12.5px;padding:2px 5px}

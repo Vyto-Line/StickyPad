@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.14.10
+- **Themes for the whole app, in light and dark.** A theme now colours everything: the Home window, Settings, the AI chat, the note panel and the colours offered for notes. Every theme has a light and a dark version, and there is a new **Purple** theme (10 themes in all).
+- **Light, Dark or Same as Windows** in *Settings > Appearance*. "Same as Windows" switches by itself when Windows does; window title bars follow too.
+- **Notes follow light and dark** (on by default): notes in theme colours switch to the matching dark colour and back. Custom colours never change. The first time you start this version nothing is repainted; notes follow from the next switch on (or press *Apply to all notes*).
+- Text stays readable: every theme passes a contrast check (WCAG AA) in both versions, and a note chooses dark or light text by itself. The Mono theme's mid grey is a little darker for that reason.
+- Not tried on a real Windows PC yet: please check switching Light/Dark/Same as Windows and a few themes.
+
 ## 1.14.9
 - **A simpler layout: one Home window.** All notes, Trash, the AI chat and Settings are now pages of a single window, switched from a sidebar (Notes, Trash, Ask the AI, Settings). Ctrl+Alt+A, Ctrl+Alt+C, Ctrl+Alt+S, the tray menu and the buttons in a note all open that same window on the right page, so there are no more separate windows to lose track of. The chat is no longer a docked side window.
 - **The note's settings panel lost its duplicates.** The *App* tab is gone (start with Windows, snapping and hiding from the taskbar are in Settings, and New / Tidy / Trash are in the Home window). The AI tab keeps the AI buttons and folds the provider and model options under *Model and connection*, which opens by itself when the AI is off or the model is missing.

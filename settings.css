@@ -62,10 +62,18 @@ select.field{cursor:pointer}
 output{min-width:44px;text-align:right;font-weight:600;font-size:12.5px;color:var(--mute)}
 .note{margin:2px 4px 12px;font-size:12px;color:var(--mute)}
 .none{text-align:center;color:var(--mute);margin-top:60px}
-.themegrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-top:10px}
+.themegrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:10px}
 .theme{display:flex;flex-direction:column;gap:7px;text-align:left;background:var(--bg);border:1.5px solid var(--line);border-radius:11px;padding:9px 10px;cursor:pointer;font-weight:600}
 .theme:hover{border-color:var(--mute)}
 .theme.on{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 25%,transparent)}
+.theme .tpv{display:flex;height:46px;border-radius:7px;overflow:hidden;box-shadow:0 0 0 1px var(--line)}
+.theme .half{flex:1;display:flex}.theme .half .nav{width:24%;display:block}
+.theme .cols{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:3px;padding:5px}.theme .cols i{border-radius:3px;display:block}
+.theme .tname{display:flex;align-items:center;justify-content:space-between}.theme .acc{display:flex;gap:3px}.theme .acc i{width:10px;height:10px;border-radius:50%;display:block}
+.modeseg{display:flex;background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:2px;gap:2px}
+.modeseg button{border:0;background:none;border-radius:7px;padding:5px 10px;font-weight:600;color:var(--mute);cursor:pointer;white-space:nowrap}
+.modeseg button.on{background:var(--accent);color:var(--on-accent,#fff)}
+.modeseg button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .theme .sw{display:flex;gap:0}
 .theme .sw i{width:20px;height:20px;border-radius:50%;margin-right:-6px;border:2px solid var(--card)}
 .theme .meta{font-size:11px;font-weight:500;color:var(--mute)}

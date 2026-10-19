@@ -109,7 +109,18 @@ StickyPad checks this repository's Releases when it starts and every few hours. 
 
 <img src="docs/images/feature_update.png" width="300" alt="The Restart to update bar at the bottom of a note">
 
-### Themes and look
+### Themes, light and dark
+<img align="right" width="300" src="docs/images/feature_themes.png" alt="Settings, Appearance: Light, Dark or Same as Windows, and ten themes, each with a light and a dark preview">
+
+A theme colours **the whole app**: the Home window, Settings, the AI chat, the note panel, and the colours offered for notes. There are **10 themes** (Classic, Purple, Paper, Pastel, Ocean, Forest, Sunset, Midnight, Neon, Mono), and **every theme has a light and a dark version**.
+
+- *Settings > Appearance > Light or dark*: **Light**, **Dark** or **Same as Windows** (switches by itself when Windows does).
+- **Notes follow light and dark** (on by default): a yellow note becomes a deep yellow in dark mode and goes back in light mode. Notes with your own custom colour never change.
+- Every theme is checked for readable text (WCAG AA contrast) in both versions, and a note picks dark or light text by itself, whichever reads better on its colour.
+- Pick a colour, font and size per note in the note's **Style** tab.
+
+<br clear="right">
+<img src="docs/images/feature_dark.png" width="560" alt="The Home window in the Purple theme, dark version">
 <img src="docs/images/feature_style.png" width="300" alt="The Style tab with colours, font, size and themes">
 
 ---

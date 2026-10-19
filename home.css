@@ -1,11 +1,11 @@
 /* sidebar of the Home window (see home.js) */
 body.homed{flex-direction:row!important;border:0!important}
 .homeMain{flex:1;min-width:0;height:100%;display:flex;overflow:hidden}
-#homeNav{flex:none;width:172px;height:100%;display:flex;flex-direction:column;gap:2px;padding:14px 10px;background:var(--card,#fff);border-right:1px solid var(--line,#e0e3ee)}
+#homeNav{flex:none;width:172px;height:100%;display:flex;flex-direction:column;gap:2px;padding:14px 10px;background:var(--nav,var(--card,#fff));border-right:1px solid var(--line,#e0e3ee)}
 .hbrand{font-weight:800;font-size:15px;letter-spacing:-.01em;padding:2px 10px 14px}
 .hitem{display:flex;align-items:center;gap:10px;width:100%;text-align:left;font:inherit;font-size:13.5px;font-weight:600;color:var(--mute,#6b7288);background:none;border:0;border-radius:9px;padding:9px 10px;cursor:pointer}
 .hitem:hover{background:var(--hover,#e8ebf6);color:var(--fg,#1c2030)}
-.hitem.on{background:var(--hover,#e8ebf6);color:var(--accent,#4263eb)}
+.hitem.on{background:var(--card,#fff);color:var(--fg,#1c2030);box-shadow:0 0 0 1px var(--line,#e0e3ee)}
 .hitem em{margin-left:auto;font-style:normal;font-size:11px;font-weight:700;color:var(--mute,#6b7288)}
 .hitem em:empty{display:none}
 .hitem:focus-visible{outline:2px solid var(--accent,#4263eb);outline-offset:1px}
