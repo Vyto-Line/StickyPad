@@ -16,6 +16,7 @@ const launchcfg = require('./launchcfg');
 
 // A second launch must stop immediately (otherwise it would open duplicate notes).
 if (!app.requestSingleInstanceLock()) process.exit(0);
+app.setAppUserModelId('com.stickypad.app');   // Windows shows this app as "StickyPad" on notifications (matches build.appId)
 
 // Memory-saving start-up options (they must be set before the app is ready). See Settings > General > Low memory mode.
 const LAUNCH = launchcfg.read(app.getPath('userData'));

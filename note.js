@@ -429,7 +429,7 @@ $('#histBtn').onclick = histOpen;
 const REM = window.StickyReminders;
 function remindPaint() {
   const t = note && note.remind > 0 ? note.remind : 0;
-  $('#remAt').value = REM.toLocalInput(t); $('#remClear').hidden = !t;
+  $('#remAt').value = REM.toLocalInput(t); $('#remClear').style.visibility = t ? 'visible' : 'hidden';
   document.body.classList.toggle('hasRemind', !!t);
   $('#remMsg').textContent = t ? 'Reminder: ' + new Date(t).toLocaleString([], { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Pick a time and a Windows notification will bring this note back.';
 }

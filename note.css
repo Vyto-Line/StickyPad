@@ -222,6 +222,7 @@ body.rolled #editbar{display:none}
 .hrow .btn{flex:none;padding:3px 8px;font-size:11.5px}
 
 /* reminder */
+#remAt{font-variant-numeric:tabular-nums}
 .quick{flex-wrap:wrap}
 .quick .btn{flex:1 1 auto;padding:3px 6px;font-size:11.5px}
 body.hasRemind #cfg::after{content:"";position:absolute;width:6px;height:6px;margin:-9px 0 0 9px;border-radius:50%;background:var(--accent)}

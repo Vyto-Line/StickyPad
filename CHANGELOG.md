@@ -5,6 +5,7 @@
 - **The AI model is no longer loaded at start.** It used to be preloaded and kept in memory for 30 minutes, which could take several GB. Now it loads when you open the AI tab or chat, stays for 5 minutes by default, and *Settings > AI > Keep the model in memory* lets you choose Unload right away, 5 minutes or 30 minutes.
 - **Pictures are read from files** instead of being copied into the page as huge text, which saves memory in notes with many images.
 - **Memory meter**: Settings > About > *Measure* shows how much memory StickyPad uses right now, split into notes, main process, graphics and other. Press it with Low memory mode on and off to see the difference on your PC.
+- **Fixed**: reminder notifications showed an Electron/author name in Windows instead of just "StickyPad". The time field in *Note > Reminder* no longer shifts sideways when a reminder is set.
 - Smaller things: the notes file is written in a compact form, notes open one after another at start instead of all at once, and the undo history of very large notes is capped by size.
 
 ## 1.13.2
