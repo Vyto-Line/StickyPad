@@ -7,16 +7,16 @@ const { spawn } = require('child_process');
 
 const DEFAULT_URL = 'http://localhost:11434';
 const RECOMMENDED = [   // sizes are approximate; ordered from smallest to largest
-  { name: 'gemma3:1b', label: 'Gemma 3 · 1B', size: '0.8 GB', note: 'Tiny and fast, weak in Greek' },
-  { name: 'llama3.2:1b', label: 'Llama 3.2 · 1B', size: '1.3 GB', note: 'Fast, mostly for English' },
-  { name: 'qwen2.5:3b', label: 'Qwen 2.5 · 3B', size: '1.9 GB', note: 'Light, decent Greek' },
-  { name: 'llama3.2:3b', label: 'Llama 3.2 · 3B', size: '2.0 GB', note: 'Recommended balance' },
-  { name: 'phi4-mini', label: 'Phi-4 mini · 3.8B', size: '2.5 GB', note: 'Sharp, English first' },
-  { name: 'gemma3:4b', label: 'Gemma 3 · 4B', size: '3.3 GB', note: 'Good Greek, good for translating' },
-  { name: 'mistral:7b', label: 'Mistral · 7B', size: '4.1 GB', note: 'Solid all-rounder' },
-  { name: 'qwen2.5:7b', label: 'Qwen 2.5 · 7B', size: '4.7 GB', note: 'Strong Greek and translation, slower' },
-  { name: 'llama3.1:8b', label: 'Llama 3.1 · 8B', size: '4.9 GB', note: 'Best Llama, slower' },
-  { name: 'gemma3:12b', label: 'Gemma 3 · 12B', size: '8.1 GB', note: 'Best Greek and translation, needs 16 GB RAM' }
+  // Checked against ollama.com/library in October 2026. Gemma and Qwen3 are the strongest small models for Greek.
+  { name: 'qwen3:1.7b', label: 'Qwen3 · 1.7B', size: '1.4 GB', note: 'Tiny, for older PCs (Greek is basic)' },
+  { name: 'llama3.2:3b', label: 'Llama 3.2 · 3B', size: '2.0 GB', note: 'Light, mostly for English' },
+  { name: 'qwen3:4b', label: 'Qwen3 · 4B', size: '2.5 GB', note: 'Light, 100+ languages, decent Greek' },
+  { name: 'gemma3:4b', label: 'Gemma 3 · 4B', size: '3.3 GB', note: 'Good Greek for 8 GB RAM' },
+  { name: 'gemma4:e2b', label: 'Gemma 4 · E2B', size: '4.6 GB', note: 'Newest small Gemma, good Greek' },
+  { name: 'qwen3:8b', label: 'Qwen3 · 8B', size: '5.2 GB', note: 'Strong Greek and translation' },
+  { name: 'gemma4:e4b', label: 'Gemma 4 · E4B', size: '6.6 GB', note: 'Recommended: best Greek for 16 GB RAM' },
+  { name: 'gemma4:12b', label: 'Gemma 4 · 12B', size: '7.7 GB', note: 'Best quality, needs 16 GB RAM or more' },
+  { name: 'qwen3:14b', label: 'Qwen3 · 14B', size: '9.3 GB', note: 'Very strong, needs 24 GB RAM' }
 ];
 const NAME_RE = /^[A-Za-z0-9][A-Za-z0-9._\-:/]{0,100}$/;
 const validName = n => typeof n === 'string' && NAME_RE.test(n);

@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.14.12
+This release also contains everything from 1.14.8 to 1.14.11 (Home window, themes with light and dark, the new note panel, the neon update bar, deleting AI models).
+- **Better local AI models.** The download list now offers current models: **Gemma 4** (E2B, E4B, 12B) and **Qwen3** (1.7B to 14B), plus Gemma 3 4B and Llama 3.2 3B, each with a note on its Greek. For Greek, Gemma 4 E4B is the pick on a PC with 16 GB of RAM. Models you already have stay in the list.
+- **Better instructions for the AI.** The note is now always sent marked as text to work on (between note tags, with the task repeated after it). Small models used to answer what a note said ("Call Nick…") instead of summarising, titling, making a checklist or editing it.
+- Qwen3 and other reasoning models are told not to "think out loud": much faster, and their thinking can no longer appear in your note during a live edit. Older Ollama versions that do not know this setting are handled.
+- Translating into Greek no longer tells the model that the (English) text "is Greek", which confused small models.
+- **Settings has one menu**: its pages are listed under *Settings* in the Home sidebar, and the search box sits at the top of the page.
+- **The chat's note context is a chip** inside the message box (📎 No note / a note / ★ All my notes).
+- Not tried on a real Windows PC yet.
+
 ## 1.14.11
 - **The note panel is one short list, no tabs.** *Look* (colours, font, size), *This note* (Reminder, Folder, Lock, Earlier versions, Copy or export: one line each, and only the one you click opens; each line shows its current value) and *AI*. *Chat about this note* and *Move to trash* sit at the bottom.
 - **AI: one list and a Run button** instead of six buttons plus a second list. It remembers your last choice. The local model is loaded only when you point at the AI list or Run, not every time the panel opens.

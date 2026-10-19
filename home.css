@@ -13,3 +13,11 @@ body.homed{flex-direction:row!important;border:0!important}
 /* the pages' own switches for the same things are now in the sidebar */
 .homed .tabs2,.homed #chatBtn,.homed #gear{display:none!important}
 .homed #close{display:none!important}
+.hsubs{display:flex;flex-direction:column;gap:1px;margin:2px 0 6px}
+.hsub{text-align:left;font:inherit;font-size:12.5px;color:var(--mute,#6b7288);background:none;border:0;border-radius:7px;padding:6px 10px 6px 36px;cursor:pointer}
+.hsub:hover{background:var(--hover,#e8ebf6);color:var(--fg,#1c2030)}
+.hsub.on{color:var(--accent,#4263eb);font-weight:700}
+.hsub:focus-visible{outline:2px solid var(--accent,#4263eb);outline-offset:1px}
+.homed aside{display:none!important}
+.homed #content>.search{display:flex;align-items:center;gap:8px;max-width:520px;margin:0 0 16px;background:var(--card);border:1px solid var(--line);border-radius:9px;padding:0 10px;color:var(--mute)}
+.homed #content>.search input{flex:1;border:0;background:none;outline:0;padding:7px 0;color:var(--fg)}

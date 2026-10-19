@@ -89,8 +89,9 @@ Open the gear: the **AI** part is one list and a **Run** button (the model and c
 **Chat about this note** (bottom of the panel) opens the AI chat with the note, or **all your notes** (pick *★ All my notes*).
 
 - Works with **Ollama on your PC (free, private)** or the **Claude API (online)**.
-- A built-in **model list** offers ten models from 0.8 GB to 8 GB (Gemma 3, Qwen 2.5, Phi-4 mini, Mistral, Llama) and downloads them with a progress bar. A model that does not work well for you can be removed again with **Delete model…** to free the disk space. If Ollama itself is missing, one button downloads and installs it.
+- A built-in **model list** offers current models from 1.4 GB to 9 GB (**Gemma 4**, **Qwen3**, Gemma 3, Llama 3.2), each with a note on how good its Greek is, and downloads them with a progress bar. A model that does not work well for you can be removed again with **Delete model…** to free the disk space. If Ollama itself is missing, one button downloads and installs it.
 - If the model you picked is not downloaded, or Ollama is not running, the AI tab tells you **right away** and shows where to press Download.
+- **Your note is never mistaken for an instruction**: it is sent to the model clearly marked as text to work on, so a note that says "Call Nick" gets summarised or edited, not answered. Reasoning models such as Qwen3 are told not to "think out loud" (faster, and nothing odd appears in your note).
 - **Long notes** are processed in pieces, so even a very large note is handled completely.
 - **Greek** has dedicated rules (accents, final ς, spelling) and a guard: if the model answers in English or rewrites your text too heavily, the answer is discarded and your original stays.
 
@@ -132,7 +133,7 @@ Download **StickyPad-Setup-x.y.z.exe** from the [Releases](../../releases) page 
 ### Local AI in two minutes
 1. Open a note, click the gear, choose the **AI** tab, set *Use* to **Ollama**
 2. If you see "Ollama is not installed", press **Download and install Ollama**
-3. Choose a model from the list (for Greek try *Gemma 3 4B*, *Qwen 2.5 7B* or *Gemma 3 12B*) and wait for the download
+3. Choose a model from the list (for Greek try *Gemma 4 E4B* on a PC with 16 GB of RAM, *Qwen3 8B*, or *Gemma 3 4B* on 8 GB) and wait for the download
 4. Select text (or put the cursor in a paragraph) and press **Edit live** (Ctrl+Shift+E) or **Translate**
 
 ## Shortcuts

@@ -125,7 +125,7 @@ $('#close').onclick = () => api.chatClose();
 $('#newChat').onclick = () => { if (busy) api.chatStop(curId); messages = []; persist(); drawAll(); input.focus(); };
 async function loadNotes(select) {
   const list = await api.chatNotes(), sel = $('#ctx');
-  sel.innerHTML = ''; const none = document.createElement('option'); none.value = ''; none.textContent = 'None'; sel.appendChild(none);
+  sel.innerHTML = ''; const none = document.createElement('option'); none.value = ''; none.textContent = 'No note'; sel.appendChild(none);
   const all = document.createElement('option'); all.value = '*'; all.textContent = '★ All my notes (search them)'; sel.appendChild(all);
   list.forEach(n => { const o = document.createElement('option'); o.value = n.id; o.textContent = n.title; sel.appendChild(o); });
   const want = select !== undefined ? select : noteId;
@@ -138,7 +138,7 @@ const SUGGEST = ['Help me plan my day', 'Give me three ideas for a weekend trip'
 function setStatus(st) {
   provider = st.provider;
   $('#status').textContent = provider === 'off' ? 'AI is off. Set it up in a note: ⋯ → AI' : (provider === 'ollama' ? 'Ollama' : 'Claude') + (st.model ? ' · ' + st.model : '');
-  $('#emptyText').textContent = provider === 'off' ? 'The AI is off. Open a note, press ⋯ → AI, and choose Ollama or the Claude API.' : 'Ask me anything. Pick a note above and I will use it as context.';
+  $('#emptyText').textContent = provider === 'off' ? 'The AI is off. Open a note, press ⋯ → AI, and choose Ollama or the Claude API.' : 'Ask me anything. Pick a note with 📎 below and I will use it as context.';
 }
 (async () => {
   const st = await api.chatLoad();

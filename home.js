@@ -43,6 +43,21 @@
     const n = document.getElementById('trashN'), h = document.getElementById('hTrashN'); if (n && h) h.textContent = n.textContent.trim();
   }
   mark(here);
+  // Settings: its categories become sub-items under "Settings" here, so there is one menu instead of two
+  if (here === 'settings') {
+    const subs = document.createElement('div'); subs.className = 'hsubs'; subs.setAttribute('role', 'group'); subs.setAttribute('aria-label', 'Settings categories');
+    const own = [...document.querySelectorAll('#nav button[data-cat]')];
+    own.forEach(src => {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'hsub'; b.dataset.cat = src.dataset.cat;
+      b.textContent = [...src.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join('').trim();
+      b.onclick = () => src.click(); subs.appendChild(b);
+    });
+    btns.settings.after(subs);
+    const search = document.querySelector('aside .search'), content = document.getElementById('content');
+    if (search && content) content.insertBefore(search, content.firstChild);   // the search box moves to the top of the page
+    const paint = () => subs.querySelectorAll('.hsub').forEach(b => { const on = !!document.querySelector('#nav button.on[data-cat="' + b.dataset.cat + '"]'); b.classList.toggle('on', on); b.setAttribute('aria-current', on ? 'true' : 'false'); });
+    const mo = new MutationObserver(paint); own.forEach(src => mo.observe(src, { attributes: true, attributeFilter: ['class'] })); paint();
+  }
   if (here === 'notes') {
     const obs = new MutationObserver(sync);
     ['tabTrash', 'tabNotes', 'trashN'].forEach(i => { const e = document.getElementById(i); e && obs.observe(e, { attributes: true, childList: true, characterData: true, subtree: true }); });

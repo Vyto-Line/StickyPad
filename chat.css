@@ -65,3 +65,11 @@ main{padding:10px 10px;gap:9px}
 textarea{padding:6px 10px;border-radius:10px}
 .send{padding:7px 14px;border-radius:10px}
 .ctx{padding:5px 10px}
+
+/* the note used as context: a chip inside the message box */
+.composer{flex-wrap:wrap}
+.ctxrow{flex-basis:100%;display:flex}
+.ctxchip{display:inline-flex;align-items:center;gap:4px;max-width:100%;padding:2px 4px 2px 9px;border-radius:999px;background:color-mix(in srgb,var(--accent) 14%,var(--card));color:var(--fg);font-size:12px;font-weight:600}
+.ctxchip select{border:0;background:transparent;font-weight:600;font-size:12px;padding:3px 4px;max-width:260px;cursor:pointer;color:inherit}
+.ctxchip select:focus-visible{outline:2px solid var(--accent);border-radius:999px}
+.ctxchip select option{color:#222;background:#fff}
