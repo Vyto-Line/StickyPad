@@ -1,4 +1,5 @@
 *{box-sizing:border-box}
+body:not(.go) *{animation-play-state:paused!important}
 html,body{margin:0;height:100%;background:transparent;overflow:hidden}
 body{display:grid;place-items:center;font-family:"Segoe UI Variable Display","Segoe UI",system-ui,sans-serif}
 .card{position:relative;width:340px;height:220px;border-radius:26px;display:flex;flex-direction:column;align-items:center;justify-content:center;

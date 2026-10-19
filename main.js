@@ -367,9 +367,14 @@ function showSplash() {
       });
       splashWin.setMenu(null);
       splashWin.loadFile('splash.html', { query: { g: g.text, e: g.emoji } });
-      splashWin.once('ready-to-show', () => { splashWin.show(); setTimeout(finish, 2700); });
+      // The 2.7 s of animation are counted from the moment the window is really shown (on a slow start, loading can take
+      // seconds and used to eat the whole time, so the splash flashed and vanished). A stuck splash can never block the app:
+      // 9 s if it never appears, 5 s at most once it is on screen.
+      splashWin.once('ready-to-show', () => { if (done) return; splashWin.showInactive(); setTimeout(finish, 2700); setTimeout(finish, 5000); });
       splashWin.on('closed', finish);
-      setTimeout(finish, 6000);   // never let a stuck splash block the app
+      splashWin.webContents.on('did-fail-load', () => finish());
+      splashWin.webContents.on('render-process-gone', () => finish());
+      setTimeout(finish, 9000);
     } catch { finish(); }
   });
 }
