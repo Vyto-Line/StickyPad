@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.14.6
+- **The settings panel no longer covers your note.** In a narrow note the panel now sits above the text and the note stays visible below it (the panel scrolls if it is tall). In a wide note (about 560 px and more) the panel is a column on the right, beside the text, and it stays open while you click in the note, so you can select text and press *Translate* or *Edit live* right away.
+
 ## 1.14.5
 - **A small "Restart to update" message instead of a Windows notification.** When an update has finished downloading, every open note (and the All notes window) shows a small bar at the bottom: *Update 1.x.y is ready* with a **Restart to update** button and a ✕ for later. It comes back for the next version, and the update still installs by itself when you close StickyPad.
 

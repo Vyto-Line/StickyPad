@@ -235,7 +235,8 @@ function addTodo() {
 const clearSel = () => ed.querySelectorAll('img.sel').forEach(i => i.classList.remove('sel'));
 
 // the settings popover closes as soon as you go back to typing
-ed.addEventListener('focus', () => { const p = $('#panel'); if (!p.hidden) { p.hidden = true; $('#cfg').setAttribute('aria-expanded', 'false'); } });
+ed.addEventListener('focus', () => { const p = $('#panel'); if (!p.hidden && window.innerWidth < 560) {   // in a wide window the panel sits beside the text, so it stays open
+    p.hidden = true; $('#cfg').setAttribute('aria-expanded', 'false'); } });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && edit) { api.aiEditStop(edit.id); return; } if (e.key === 'Escape' && !aiBox.hidden) { aiToken++; aiBusy = false; aiClose(); return; } if (e.key === 'Escape' && !$('#panel').hidden) { $('#panel').hidden = true; $('#cfg').setAttribute('aria-expanded', 'false'); } });
 ed.addEventListener('input', () => { repairTodos(); mark(); queue(); schedule(); });
 ed.addEventListener('beforeinput', e => {
