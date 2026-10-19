@@ -3,3 +3,4 @@ dist/
 tests/ui/out/
 *.tmp
 .DS_Store
+.node/

@@ -19,7 +19,7 @@ Each note is its own small window. Everything is stored on your PC; nothing is s
 Download **StickyPad Setup x.y.z.exe** from the [Releases](../../releases) page and run it. Windows SmartScreen may warn because the app is not code-signed; choose "More info", then "Run anyway".
 
 ### Build it yourself
-Needs [Node.js LTS](https://nodejs.org).
+Needs [Node.js LTS](https://nodejs.org). If you double-click `build.bat` or `start-dev.bat` and Node.js is missing, they download a private copy for you (checked against nodejs.org's checksum, no admin rights, kept in a `.node` folder).
 
     npm install
     npm start          # run from source

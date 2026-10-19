@@ -3,13 +3,7 @@ setlocal
 cd /d "%~dp0"
 title StickyPad - build the installer
 
-where node >nul 2>nul || (
-  echo.
-  echo Node.js is not installed.
-  echo Install the LTS version from https://nodejs.org , then double-click this file again.
-  echo.
-  pause & exit /b 1
-)
+call "%~dp0get-node.bat" || (pause & exit /b 1)
 
 echo.
 echo === Step 1 of 2: installing the build tools (the first time this takes a few minutes) ===

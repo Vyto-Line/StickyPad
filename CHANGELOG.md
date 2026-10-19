@@ -1,6 +1,7 @@
 # Changelog
 
 ## 1.11.0
+- `build.bat` and `start-dev.bat` download Node.js automatically if it is not installed (`get-node.bat` / `get-node.ps1`).
 - **Better Greek**: Greek notes get Greek-specific instructions (accents/τόνοι, final ς, ν ephelkystikon, ό,τι/ότι, ι/η/υ/ει/οι spelling), a worked example, and a safety check that rejects answers that were translated to English or rewritten wildly. Summaries of Greek notes are written in Greek. Added Gemma 3 4B and Qwen 2.5 7B (both good at Greek) to the recommended models.
 - **Long notes fixed**: notes were silently cut off after 400 blocks (so the last lines vanished after a save). The limit is now 50,000 blocks / 5 MB of text per block. The AI chat also kept only the first 6,000 characters of a note; it now sends up to 40,000 and, beyond that, keeps the start *and the end*.
 - **Long notes and the AI**: Fix grammar, Summarize and To checklist work on any length by processing the note in chunks (summaries are merged so the end counts as much as the start). The model's context window is sized to the text so nothing is dropped.
