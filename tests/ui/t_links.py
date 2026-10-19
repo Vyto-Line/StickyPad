@@ -24,6 +24,10 @@ with sync_playwright() as p:
     pos2=where(q,'plain')
     before=len(q.evaluate('__S.calls')); q.keyboard.down('Control'); q.mouse.click(pos2[0],pos2[1]); q.keyboard.up('Control')
     ok(len(q.evaluate('__S.calls'))==before,'Ctrl+click on normal text does nothing')
+    pos=where(q,'example.com'); q.mouse.click(pos[0],pos[1],button='right'); q.wait_for_timeout(100)
+    ok(['linkMenu','https://example.com/docs'] in q.evaluate('__S.calls'),'right-click on a link asks for the link menu')
+    pos2=where(q,'plain'); n0=len(q.evaluate('__S.calls')); q.mouse.click(pos2[0],pos2[1],button='right'); q.wait_for_timeout(100)
+    ok(len([c for c in q.evaluate('__S.calls') if c[0]=='linkMenu'])==1,'right-click on normal text does not')
     ok(not q.errs,'no errors %s'%q.errs); q.close()
     # ---- date suggestion ----
     q=page(b,'',"[{t:'text',v:'Dentist tomorrow at 5pm'}]")

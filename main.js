@@ -725,6 +725,16 @@ ipcMain.handle('ai:set', (e, p) => {
   save(); return true;   // (the model is loaded into memory only when you actually use the AI, see ai:warmup)
 });
 ipcMain.handle('app:openLink', (e, url) => { if (!links.safe(url)) return false; shell.openExternal(String(url)); return true; });
+// right-click on a link in a note: open it or copy the address
+ipcMain.handle('app:linkMenu', (e, url) => {
+  if (!links.safe(url)) return false;
+  const mail = /^mailto:/i.test(url), plain = String(url).replace(/^mailto:/i, '');
+  Menu.buildFromTemplate([
+    { label: mail ? 'Write an e-mail' : 'Open link', click: () => shell.openExternal(String(url)) },
+    { label: mail ? 'Copy e-mail address' : 'Copy link', click: () => clipboard.writeText(plain) }
+  ]).popup({ window: BrowserWindow.fromWebContents(e.sender) || undefined });
+  return true;
+});
 ipcMain.handle('ai:run', async (e, task, payload) => {
   try {
     const cfg = aiCfg();

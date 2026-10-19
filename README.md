@@ -24,7 +24,7 @@ Each note is its own small window on your desktop. Everything is stored on your 
 - **Colours, 9 themes, any font and size.** Pick a colour per note, or apply a theme to one note or all of them.
 - **Checklists** (Ctrl+Shift+C): tick items off, *Remove ticked* clears the finished ones, *Make plain text* turns them back into lines.
 - **Pictures**: paste or drop them straight into the text.
-- **Links**: web and e-mail addresses are underlined; **Ctrl+click** opens them.
+- **Links**: web and e-mail addresses are underlined; **Ctrl+click** opens them, and a right-click offers *Open link* and *Copy link*.
 - **Pin** a note on top of other windows, **roll it up** to just its title, or **close** it and reopen it from the tray.
 - **Folders** to group notes; **snap** to screen edges and to other notes; **tidy up** arranges the open notes in rows.
 - **Trash** keeps deleted notes for 30 days, so nothing is lost by accident.

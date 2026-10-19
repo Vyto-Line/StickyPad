@@ -435,6 +435,7 @@ ed.addEventListener('mousemove', e => {
   hoverRaf = requestAnimationFrame(() => { hoverRaf = 0; ed.classList.toggle('linkhover', ctrl && !!linkAt(x, y)); });
 });
 ed.addEventListener('mouseleave', () => ed.classList.remove('linkhover'));
+ed.addEventListener('contextmenu', e => { const u = linkAt(e.clientX, e.clientY); if (u) { e.preventDefault(); api.linkMenu(u); } });   // right-click on a link: open / copy
 
 // dates: "tomorrow at 5pm", "αύριο στις 17:30" ... -> offer a reminder (rules, not the AI: instant, works offline)
 const dateDismissed = new Set();

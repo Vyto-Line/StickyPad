@@ -62,6 +62,11 @@ const H = require('./fake-electron');
   H.dialogCalls.length = 0;
   assert.strictEqual(await h['app:openLink'](e, 'https://example.com/a'), true); assert.strictEqual(await h['app:openLink'](e, 'file:///c:/windows/system32/calc.exe'), false); assert.strictEqual(await h['app:openLink'](e, 'javascript:alert(1)'), false);
   assert.deepStrictEqual(H.dialogCalls.filter(c => c[0] === 'external').map(c => c[1]), ['https://example.com/a']);
+  electron.__menus.length = 0;
+  assert.strictEqual(await h['app:linkMenu'](e, 'https://example.com/x'), true); let tpl = electron.__menus.pop(); assert.deepStrictEqual(tpl.map(i => i.label), ['Open link', 'Copy link']);
+  tpl[1].click(); assert.strictEqual(electron.__written, 'https://example.com/x'); tpl[0].click(); assert.ok(H.dialogCalls.some(c => c[0] === 'external' && c[1] === 'https://example.com/x'));
+  await h['app:linkMenu'](e, 'mailto:a@b.io'); tpl = electron.__menus.pop(); assert.strictEqual(tpl[1].label, 'Copy e-mail address'); tpl[1].click(); assert.strictEqual(electron.__written, 'a@b.io', 'copies the address without mailto:');
+  assert.strictEqual(await h['app:linkMenu'](e, 'file:///c:/x.exe'), false); assert.strictEqual(electron.__menus.length, 0, 'no menu for an unsafe address');
   // dates setting reaches the note; title needs the AI
   assert.strictEqual((await h['note:get'](e)).suggestDates, true); await h['settings:set']({}, { suggestDates: false }); assert.strictEqual((await h['note:get'](e)).suggestDates, false);
   const tr = await h['ai:run'](e, 'title', { text: 'hello' }); assert.strictEqual(tr.ok, false, 'AI is off by default');
