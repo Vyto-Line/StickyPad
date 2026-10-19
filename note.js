@@ -63,6 +63,7 @@ function apply() {
   $('#pin').classList.toggle('on', note.pinned);
   $('#pin').setAttribute('aria-pressed', note.pinned);
   $('#size').value = note.size; $('#sizeLabel').textContent = note.size + 'px';
+  const tr = Math.round((1 - (Number.isFinite(note.opacity) ? note.opacity : 1)) * 100); $('#opac').value = tr; $('#opacLabel').textContent = tr + '%';
   $('#font').value = note.font; $('#color').value = note.color;
   document.querySelectorAll('.sw[data-c]').forEach(b => b.classList.toggle('on', b.dataset.c.toLowerCase() === note.color.toLowerCase()));
 }
@@ -529,6 +530,7 @@ api.onReload(() => { if (!timer && !edit && document.activeElement !== $('#topic
 $('#color').addEventListener('input', e => set({ color: e.target.value }));
 $('#font').addEventListener('change', e => { const f = e.target.value.trim(); if (f) set({ font: f }); });
 $('#size').addEventListener('input', e => set({ size: +e.target.value }));
+$('#opac').addEventListener('input', e => set({ opacity: 1 - (+e.target.value) / 100 }));
 $('#pin').onclick = async () => { note.pinned = await api.pin(!note.pinned); apply(); };
 /* ---------- removing checklist items in bulk ---------- */
 function chkRow() {

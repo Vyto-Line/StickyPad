@@ -262,6 +262,7 @@ function openNote(n) {
     webPreferences: { preload, contextIsolation: true, nodeIntegration: false }
   });
   if (n.rolled) w.setMaximumSize(10000, ROLL_H);
+  if (Number.isFinite(n.opacity) && n.opacity < 1) { try { w.setOpacity(Math.min(1, Math.max(0.3, n.opacity))); } catch {} }
   wins.set(n.id, w); byContents.set(w.webContents.id, n.id);
   if (n.pinned) w.setAlwaysOnTop(true, 'screen-saver');
   w.loadFile('note.html', { query: { id: n.id } });
@@ -625,6 +626,10 @@ ipcMain.handle('note:update', (e, p) => {
   if (typeof p.color === 'string' && /^#[0-9a-f]{6}$/i.test(p.color)) n.color = p.color;
   if (typeof p.font === 'string') n.font = p.font.replace(/["'\\;{}]/g, '').slice(0, 60) || 'Segoe UI';
   if (Number.isFinite(p.size)) n.size = Math.min(72, Math.max(8, Math.round(p.size)));
+  if (Number.isFinite(p.opacity)) {   // see-through notes: 100% (solid) down to 30%, so a note never disappears
+    n.opacity = Math.min(1, Math.max(0.3, Math.round(p.opacity * 100) / 100));
+    const w = winOf(e); if (w && !w.isDestroyed()) { try { w.setOpacity(n.opacity); } catch {} }
+  }
   n.updated = Date.now();
   save();
 });

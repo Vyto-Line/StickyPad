@@ -112,6 +112,11 @@ const H = require('./fake-electron');
   await h['settings:set']({}, { notesFollowMode: false, mode: 'light' }); assert.strictEqual((await h['settings:get']({})).notesFollowMode, false);
   await h['settings:set']({}, { mode: 'system', notesFollowMode: true }); NTf.__sys = true; NTf.__cb && NTf.__cb(); assert.strictEqual((await h['ui:theme']({})).dark, true, 'follows Windows when set to Same as Windows');
   NTf.__sys = false; NTf.__cb && NTf.__cb();
+  // see-through notes
+  await h['note:update'](te, { opacity: 0.6 }); assert.strictEqual((await h['note:get'](te)).opacity, 0.6); assert.strictEqual(tw.opacity, 0.6, 'the window became see-through');
+  await h['note:update'](te, { opacity: 0.05 }); assert.strictEqual((await h['note:get'](te)).opacity, 0.3, 'never fainter than 30%');
+  await h['note:update'](te, { opacity: 5 }); assert.strictEqual((await h['note:get'](te)).opacity, 1, 'never above 100%');
+  await h['note:update'](te, { opacity: 'x' }); assert.strictEqual((await h['note:get'](te)).opacity, 1, 'junk is ignored');
   // "What's new" after an update
   const wn = await h['whatsnew:get']({}); assert.strictEqual(wn.version, '9.9.9'); assert.ok(Array.isArray(wn.sections), 'sections list');
   assert.strictEqual((await h['settings:get']({})).whatsNew, true, 'on by default');

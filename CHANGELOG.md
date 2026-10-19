@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.14.16
+- **A Transparency bar for every note.** In the note's settings panel, under *Look*, drag *Transparency* to make that note see-through, from 0% (solid) up to 70%, so you can read what is behind it. Each note remembers its own setting. It never goes fainter than 30% visible, so a note cannot disappear.
+- Not tried on a real Windows PC yet.
+
 ## 1.14.15
 - **Pick the AI model right in the chat.** *Ask the AI* has a model chip (🧠) in the message box: choose any model you have installed (or a Claude model) and the next answer uses it. *Get more models…* opens *Settings > AI*. When the AI is off, the chip becomes a button that takes you to *Settings > AI*, and the hints now say Settings instead of the old note menu.
 - Not tried on a real Windows PC yet.

@@ -79,6 +79,7 @@ body{position:relative}
 .line{display:flex;gap:8px;align-items:center}
 .line[hidden]{display:none}
 .sz{display:flex;align-items:center;gap:6px;flex:1;min-width:0}
+.op{margin-top:2px}.oplbl{font-size:12px;opacity:.75;white-space:nowrap}.op input[type=range]{flex:1;min-width:0;accent-color:var(--accent)}.op b{min-width:34px;text-align:right;font-size:12px;font-weight:600}
 #size{flex:1;min-width:0;accent-color:var(--accent)}
 #sizeLabel{font-size:11px;font-weight:600;min-width:28px;text-align:right;opacity:.75}
 #chkTools .btn{flex:1;min-width:0;white-space:nowrap;padding:6px 8px}
