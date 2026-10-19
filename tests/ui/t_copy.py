@@ -15,6 +15,6 @@ with sync_playwright() as p:
     t=pg.evaluate('navigator.clipboard.readText()'); print(repr(t))
     ok(t.startswith('Shopping\n') and 'hello' in t,'topic and text copied')
     ok('[x] milk' in t and '[ ] eggs' in t,'checklist copied as [x]/[ ]')
-    pg.click('#cfg'); pg.click('[data-tab=note]'); pg.click('#copyTxt'); ok('Copied' in pg.inner_text('#copyTxt'),'button confirms')
+    pg.click('#cfg'); pg.evaluate("document.querySelector('#rowOut').open=true"); pg.click('#copyTxt'); ok('Copied' in pg.inner_text('#copyTxt'),'button confirms')
     ok(not errs,'no errors %s'%errs); b.close()
 import sys; sys.exit(1 if fails else 0)

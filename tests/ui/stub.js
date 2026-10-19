@@ -27,6 +27,7 @@
       S.ol.models.push({ name, size: 1.3e9 }); emit('ollama', { type: 'pull', name, state: 'done' }); return { ok: true };
     },
     uiTheme: async () => (S.uiTheme ? JSON.parse(JSON.stringify(S.uiTheme)) : null), onUiTheme: cb => L.ui.push(cb),
+    grpMove: async (id, g) => { S.calls.push(['grpMove', id, g]); if (S.all) { const n = S.all.notes.find(x => x.id === id); if (n) n.group = g; } return true; },
     home: async (id, arg) => { S.calls.push(['home', id, arg]); return true; },
     ollamaDelete: async name => { S.calls.push(['delete', name]); if (S.delFail) return { ok: false, error: 'Ollama is busy' }; S.ol.models = S.ol.models.filter(m => m.name !== name); return { ok: true }; },
     ollamaInstall: async () => {
@@ -47,7 +48,7 @@
     openSettings: async s => { S.calls.push(['openSettings', s]); },
     update: async p => { S.calls.push(['update', p]); S.lastUpdate = p; },
     info: async () => ({ groups: [], theme: 'classic', snap: true, hideTaskbar: false, startup: false, packaged: true, trashCount: 0 }),
-    allList: async () => ({ emoji: '☀️', greeting: 'Good morning', notes: [{ id: 'n1', title: 'Shopping', text: 'milk, eggs', color: '#FFF2A8', group: null, updated: Date.now(), open: true }], groups: [], trash: [], prefs: {} }),
+    allList: async () => S.all ? JSON.parse(JSON.stringify(S.all)) : ({ emoji: '☀️', greeting: 'Good morning', notes: [{ id: 'n1', title: 'Shopping', text: 'milk, eggs', color: '#FFF2A8', group: null, updated: Date.now(), open: true }], groups: [], trash: [], prefs: {} }),
     chatLoad: async () => ({ messages: [], noteId: null, notes: [], ai: { provider: 'ollama' } }),
     chatNotes: async () => [],
     aiRun: async () => ({ ok: true, text: 'ok' }),

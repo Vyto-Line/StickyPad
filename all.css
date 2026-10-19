@@ -97,3 +97,13 @@ main{padding:8px 11px 12px}
 .hello h1{font-size:16px}
 .iconbtn{width:28px;height:28px}
 .item{padding:8px 10px;margin-bottom:7px}
+
+/* folder chips */
+.chips{display:flex;flex-wrap:wrap;gap:6px}.chips[hidden]{display:none}
+.fchip{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 11px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--fg);font:inherit;font-size:12.5px;font-weight:600;cursor:pointer}
+.fchip em{font-style:normal;font-size:11px;color:var(--mute)}
+.fchip:hover{border-color:var(--mute)}
+.fchip.on{background:var(--fg);color:var(--bg);border-color:var(--fg)}.fchip.on em{color:inherit;opacity:.75}
+.fchip.over{outline:2px dashed var(--accent);outline-offset:2px}
+.fchip:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+h1{font-size:15px}

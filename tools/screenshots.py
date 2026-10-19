@@ -41,7 +41,10 @@ def shot(pg, name): pg.screenshot(path=os.path.join(OUT, name + '.png'))
 
 def panel(pg, tab, w=660, h=470):
     pg.set_viewport_size({'width': w, 'height': h}); pg.wait_for_timeout(150)
-    pg.click('#cfg'); pg.click('[data-tab=%s]' % tab); pg.wait_for_timeout(450)
+    pg.click('#cfg'); pg.wait_for_timeout(200)
+    if tab == 'note': pg.click('#rowRem > summary')
+    if tab == 'ai': pg.evaluate("document.querySelector('#aiAction').scrollIntoView({block:'end'})")
+    pg.wait_for_timeout(400)
 
 def shot_panel(pg, name):
     pg.screenshot(path=os.path.join(OUT, name + '.png'))
@@ -58,7 +61,7 @@ with sync_playwright() as p:
     soon = int((time.time() + 3 * 3600) * 1000)
     pg = page(b, 'groceries', extra='window.__S.note.remind=%d;window.__S.hist=[{t:Date.now()-20*60e3,words:19,pics:0,preview:"For the weekend dinner"},{t:Date.now()-26*3600e3,words:11,pics:0,preview:"For the weekend dinner"},{t:Date.now()-3*86400e3,words:4,pics:1,preview:"Tomatoes"}];' % soon)
     goto(pg, 'note.html'); panel(pg, 'note'); shot_panel(pg, 'feature_reminder')
-    pg.click('#histBtn'); pg.wait_for_timeout(400); shot_panel(pg, 'feature_history'); pg.close()
+    pg.click('#rowHist > summary'); pg.wait_for_timeout(400); shot_panel(pg, 'feature_history'); pg.close()
     # AI tab
     pg = page(b, 'greek'); goto(pg, 'note.html'); panel(pg, 'ai'); shot_panel(pg, 'feature_ai'); pg.close()
     # style tab with themes

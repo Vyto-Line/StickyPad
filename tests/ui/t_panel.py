@@ -10,7 +10,7 @@ with sync_playwright() as p:
     for name,w,h in (('narrow',320,340),('wide',900,480),('tall narrow',300,600)):
         q=b.new_page(viewport={'width':w,'height':h}); errs=[]; q.on('pageerror',lambda e:errs.append(str(e)))
         q.add_init_script("window.__BLOCKS=[{t:'text',v:'hello world'}];"+STUB); q.goto('file://'+ROOT+'note.html'); q.wait_for_timeout(300)
-        q.click('#cfg'); q.click('[data-tab=ai]'); q.wait_for_timeout(200)
+        q.click('#cfg'); q.wait_for_timeout(50); q.wait_for_timeout(200)
         pn,ed=box(q,'#panel'),box(q,'#ed')
         overlap=not (ed['r']<=pn['x']+1 or pn['r']<=ed['x']+1 or ed['b']<=pn['y']+1 or pn['b']<=ed['y']+1)
         ok(not overlap,name+': the panel does not cover the note (panel %s, note %s)'%({k:round(v) for k,v in pn.items()},{k:round(v) for k,v in ed.items()}))

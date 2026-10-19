@@ -13,7 +13,7 @@ with sync_playwright() as p:
         pg.on('pageerror',lambda e:errs.append(str(e))); pg.on('console',lambda m: errs.append(m.text) if m.type=='error' else None)
         pg.add_init_script(pre+STUB); pg.goto('file://'+ROOT+f); pg.wait_for_timeout(300); pg.errs=errs; return pg
     # ---------- note: model list ----------
-    pg=page('note.html'); pg.click('#cfg'); pg.click('[data-tab=ai]'); pg.wait_for_timeout(300)
+    pg=page('note.html'); pg.click('#cfg'); pg.evaluate("document.querySelector('#aiSetup').open=true"); pg.wait_for_timeout(300)
     opts=pg.eval_on_selector_all('#aiModelSel option','o=>o.map(x=>[x.value,x.textContent,x.parentElement.label||""])')
     print(opts)
     ok(any(v=='llama3.2:latest' and g=='Installed' for v,t,g in opts),'installed model listed')
@@ -40,7 +40,7 @@ with sync_playwright() as p:
     ok(not pg.errs,'no page errors (%s)'%pg.errs)
     pg.screenshot(path=os.path.join(OUT,'note_ai.png'))
     # delete an installed model: two clicks, then it is gone and no longer chosen
-    pg=page('note.html'); pg.click('#cfg'); pg.click('[data-tab=ai]'); pg.wait_for_timeout(300)
+    pg=page('note.html'); pg.click('#cfg'); pg.evaluate("document.querySelector('#aiSetup').open=true"); pg.wait_for_timeout(300)
     ok('Delete model' in pg.inner_text('#aiOl'),'delete button for the selected installed model')
     pg.click('#aiOl .btn.danger'); pg.wait_for_timeout(80)
     ok('Yes, delete it' in pg.inner_text('#aiOl') and 'Keep it' in pg.inner_text('#aiOl'),'asks to confirm')
@@ -50,23 +50,23 @@ with sync_playwright() as p:
     calls=pg.evaluate('__S.calls'); ok(['delete','llama3.2:latest'] in calls,'delete requested for the real model name')
     ok(not any(v=='llama3.2:latest' for v,t,g in pg.eval_on_selector_all('#aiModelSel option','o=>o.map(x=>[x.value,x.textContent,x.parentElement.label||""])')),'model no longer listed')
     ok(any(c[0]=='aiSet' and c[1].get('model')=='' for c in calls),'chosen model cleared after deleting it')
-    pg=page('note.html'); pg.evaluate('__S.delFail=true'); pg.click('#cfg'); pg.click('[data-tab=ai]'); pg.wait_for_timeout(300)
+    pg=page('note.html'); pg.evaluate('__S.delFail=true'); pg.click('#cfg'); pg.evaluate("document.querySelector('#aiSetup').open=true"); pg.wait_for_timeout(300)
     pg.click('#aiOl .btn.danger'); pg.click('text=Yes, delete it'); pg.wait_for_timeout(300)
     ok('Ollama is busy' in pg.inner_text('#aiOl'),'delete error shown'); ok(not pg.errs,'no page errors on delete (%s)'%pg.errs)
     # not installed -> install button
-    pg=page('note.html'); pg.evaluate("__S.ol.running=false;__S.ol.installed=false;__S.ol.models=[]"); pg.click('#cfg'); pg.click('[data-tab=ai]'); pg.wait_for_timeout(300)
+    pg=page('note.html'); pg.evaluate("__S.ol.running=false;__S.ol.installed=false;__S.ol.models=[]"); pg.click('#cfg'); pg.evaluate("document.querySelector('#aiSetup').open=true"); pg.wait_for_timeout(300)
     ok('not installed' in pg.inner_text('#aiOl') and 'Download and install Ollama' in pg.inner_text('#aiOl'),'install button when Ollama missing')
     pg.click('#aiOl .btn.primary'); pg.wait_for_timeout(100); ok(pg.is_visible('#aiOl .ol-bar'),'install progress visible'); pg.wait_for_timeout(500)
     ok('running' in pg.inner_text('#aiOl'),'running after install'); ok(['install'] in pg.evaluate('__S.calls'),'install requested')
-    pg=page('note.html'); pg.evaluate("__S.ol.running=false;__S.ol.models=[]"); pg.click('#cfg'); pg.click('[data-tab=ai]'); pg.wait_for_timeout(300)
+    pg=page('note.html'); pg.evaluate("__S.ol.running=false;__S.ol.models=[]"); pg.click('#cfg'); pg.evaluate("document.querySelector('#aiSetup').open=true"); pg.wait_for_timeout(300)
     ok('Start Ollama' in pg.inner_text('#aiOl'),'start button when installed but stopped'); pg.click('#aiOl .btn.primary'); pg.wait_for_timeout(400); ok('running' in pg.inner_text('#aiOl'),'running after start')
     # claude provider hides list
-    pg=page('note.html'); pg.click('#cfg'); pg.click('[data-tab=ai]'); pg.select_option('#aiProv','claude'); pg.wait_for_timeout(200)
+    pg=page('note.html'); pg.click('#cfg'); pg.evaluate("document.querySelector('#aiSetup').open=true"); pg.select_option('#aiProv','claude'); pg.wait_for_timeout(200)
     ok(pg.is_hidden('#aiModelSel') and pg.is_hidden('#aiOl') and pg.is_visible('#aiModel'),'Claude provider uses the text box, no Ollama UI')
     # ---------- live edit ----------
     def text(pg): return pg.evaluate("document.querySelector('#ed').textContent")
-    pg=page('note.html'); pg.click('#cfg'); pg.click('[data-tab=ai]'); pg.wait_for_timeout(200)
-    pg.click('#aiEdit'); pg.wait_for_timeout(110)
+    pg=page('note.html'); pg.click('#cfg'); pg.evaluate("document.querySelector('#aiSetup').open=true"); pg.wait_for_timeout(200)
+    pg.select_option('#aiAction','fix'); pg.click('#aiRun'); pg.wait_for_timeout(110)
     mid=text(pg); ok(mid!='helo wrold this is a tset' and len(mid)<28 or mid.startswith('Hello'),'text changes while streaming: %r'%mid)
     ok(pg.evaluate("document.querySelector('#ed').contentEditable")=='false','editor locked while streaming')
     ok(pg.is_visible('#editStop'),'stop button visible')
@@ -77,16 +77,16 @@ with sync_playwright() as p:
     ok(pg.evaluate('__S.lastUpdate.blocks[0].v')=='Hello world, this is a test.','saved to note')
     pg.click('#editUndo'); pg.wait_for_timeout(100); ok(text(pg)=='helo wrold this is a tset','undo restores original: %r'%text(pg))
     # stop mid-way
-    pg.evaluate('__S.editDelay=150'); pg.click('#cfg'); pg.click('[data-tab=ai]'); pg.click('#aiEdit'); pg.wait_for_timeout(250); pg.click('#editStop'); pg.wait_for_timeout(400)
+    pg.evaluate('__S.editDelay=150'); pg.click('#cfg'); pg.evaluate("document.querySelector('#aiSetup').open=true"); pg.select_option('#aiAction','fix'); pg.click('#aiRun'); pg.wait_for_timeout(250); pg.click('#editStop'); pg.wait_for_timeout(400)
     ok(text(pg)=='helo wrold this is a tset','stop restores original: %r'%text(pg)); ok(pg.is_hidden('#editbar'),'bar hidden after stop')
     # error
-    pg.evaluate("__S.editMode='error'"); pg.click('#cfg'); pg.click('[data-tab=ai]'); pg.click('#aiEdit'); pg.wait_for_timeout(300)
+    pg.evaluate("__S.editMode='error'"); pg.click('#cfg'); pg.evaluate("document.querySelector('#aiSetup').open=true"); pg.select_option('#aiAction','fix'); pg.click('#aiRun'); pg.wait_for_timeout(300)
     ok(text(pg)=='helo wrold this is a tset','error restores original'); ok('not running' in pg.inner_text('#aibox'),'error shown')
     ok(pg.evaluate("document.querySelector('#ed').contentEditable")=='true','editor unlocked after error')
     # selection edit
     pg=page('note.html'); pg.evaluate("__S.editOut='world'"); 
     pg.evaluate("""()=>{const ed=document.querySelector('#ed');const t=ed.firstChild;const r=document.createRange();r.setStart(t,5);r.setEnd(t,10);const s=getSelection();s.removeAllRanges();s.addRange(r);}""")
-    pg.click('#cfg'); pg.click('[data-tab=ai]');
+    pg.click('#cfg'); pg.evaluate("document.querySelector('#aiSetup').open=true");
     pg.evaluate("""()=>{const ed=document.querySelector('#ed');const t=[...ed.childNodes].find(n=>n.nodeType==3);const r=document.createRange();r.setStart(t,5);r.setEnd(t,10);const s=getSelection();s.removeAllRanges();s.addRange(r);}""")
     pg.evaluate("document.querySelector('#aiEdit').click()"); pg.wait_for_timeout(400)
     ok(pg.evaluate("__S.calls.find(c=>c[0]=='edit')[2]")=='wrold','only selected text sent: %s'%pg.evaluate("JSON.stringify(__S.calls.find(c=>c[0]=='edit'))"))

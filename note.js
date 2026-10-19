@@ -20,8 +20,8 @@ function buildSwatches() {
   });
   if (note) apply();
 }
-function buildThemes() {
-  const box = $('#themes'); box.textContent = '';
+function buildThemes() {   // (the theme picker now lives in Settings > Appearance; kept for windows that still have it)
+  const box = $('#themes'); if (!box) return; box.textContent = '';
   TH.THEMES.forEach(t => {
     const b = document.createElement('button'); b.className = 'theme' + (t.id === themeId ? ' on' : ''); b.type = 'button';
     b.setAttribute('aria-pressed', t.id === themeId); b.title = t.name + ' theme';
@@ -31,15 +31,14 @@ function buildThemes() {
     b.append(dots, nm); b.onclick = () => applyTheme(t.id); box.appendChild(b);
   });
 }
-function paintScope() { $('#scopeThis').classList.toggle('on', !scopeAll); $('#scopeAll').classList.toggle('on', scopeAll); }
+function paintScope() { if (!$('#scopeThis')) return; $('#scopeThis').classList.toggle('on', !scopeAll); $('#scopeAll').classList.toggle('on', scopeAll); }
 async function applyTheme(id) {
   themeId = id; buildThemes(); buildSwatches();
   const t = TH.byId(id);
   if (scopeAll) { await api.themeApplyAll(id); }   // the app updates every note and tells each window
   else { await api.themeSet(id); set({ color: TH.mapColor(note.color, id, 0, uiDarkNow), font: t.font }); }
 }
-$('#scopeThis').onclick = () => { scopeAll = false; try { localStorage.setItem('sp.scope', 'this'); } catch (e) {} paintScope(); };
-$('#scopeAll').onclick = () => { scopeAll = true; try { localStorage.setItem('sp.scope', 'all'); } catch (e) {} paintScope(); };
+if ($('#scopeThis')) { $('#scopeThis').onclick = () => { scopeAll = false; try { localStorage.setItem('sp.scope', 'this'); } catch (e) {} paintScope(); }; $('#scopeAll').onclick = () => { scopeAll = true; try { localStorage.setItem('sp.scope', 'all'); } catch (e) {} paintScope(); }; }
 api.onStyle(st => { note.color = st.color; note.font = st.font; apply(); });
 // the app-wide theme changed (another theme, or light/dark): new swatches and the theme's accent colour
 if (api.onUiTheme) api.onUiTheme(t => { if (!t) return; themeId = t.id; uiDarkNow = !!t.dark; buildThemes(); buildSwatches(); });
@@ -59,6 +58,7 @@ function apply() {
   $('#lockscreen').hidden = !locked; ed.hidden = locked; $('#chk').disabled = locked;
   if (typeof updateAiButtons === 'function') updateAiButtons();
   $('#lock').hidden = !note.locked; $('#lock').classList.toggle('on', !!note.locked);
+  $('#lockSum').textContent = note.locked ? 'On' : 'Off';
   $('#lockNew').hidden = !!note.locked; $('#lockOld').hidden = !note.locked || locked;
   $('#pin').classList.toggle('on', note.pinned);
   $('#pin').setAttribute('aria-pressed', note.pinned);
@@ -504,6 +504,7 @@ function remindPaint() {
   const t = note && note.remind > 0 ? note.remind : 0;
   $('#remAt').value = REM.toLocalInput(t); $('#remClear').style.visibility = t ? 'visible' : 'hidden';
   document.body.classList.toggle('hasRemind', !!t); if (typeof scheduleLook === 'function') scheduleLook();
+  $('#remSum').textContent = t ? new Date(t).toLocaleString([], { weekday: 'short', hour: '2-digit', minute: '2-digit' }) : 'None';
   $('#remMsg').textContent = t ? 'Reminder: ' + new Date(t).toLocaleString([], { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Pick a time and a Windows notification will bring this note back.';
 }
 async function remindSet(ts) { const v = await api.remind(ts); if (note) note.remind = v; remindPaint(); }
@@ -573,9 +574,10 @@ async function refreshInfo() {
   const g = $('#grp'); g.innerHTML = '';
   const none = document.createElement('option'); none.value = ''; none.textContent = '— No folder —'; g.appendChild(none);
   i.groups.forEach(x => { const o = document.createElement('option'); o.value = x.id; o.textContent = x.name; g.appendChild(o); });
-  g.value = note.group || '';
+  g.value = note.group || ''; grpPaint();
 }
-$('#grp').onchange = e => { note.group = e.target.value || null; api.grpMove(note.id, note.group); };
+function grpPaint() { const g = $('#grp'), o = g.selectedOptions[0]; $('#grpSum').textContent = g.value && o ? o.textContent : 'None'; }
+$('#grp').onchange = e => { note.group = e.target.value || null; api.grpMove(note.id, note.group); grpPaint(); };
 $('#chk').onclick = () => { addTodo(); ed.focus(); };
 $('#topic').addEventListener('input', e => { note.title = e.target.value; api.update({ title: note.title }); });
 $('#topic').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); ed.focus(); } });
@@ -780,9 +782,9 @@ $('#aiTr').onclick = () => { $('#editMode').value = 'translate'; liveEdit(); };
 ed.addEventListener('input', () => { if (!editBar.hidden && !edit) editBarHide(); });
 function updateAiButtons() {
   const off = !aiCfgState || aiCfgState.provider === 'off', locked = bodyLocked();
-  $('#aiTitle').disabled = $('#aiSum').disabled = $('#aiFix').disabled = $('#aiList').disabled = $('#aiEdit').disabled = $('#aiTr').disabled = off || locked; $('#aiChat').disabled = locked;
+  $('#aiTitle').disabled = $('#aiSum').disabled = $('#aiFix').disabled = $('#aiList').disabled = $('#aiEdit').disabled = $('#aiTr').disabled = off || locked; $('#aiChat').disabled = locked; $('#aiRun').disabled = $('#aiAction').disabled = off || locked;
   if (off) $('#aiSetup').open = true;
-  $('#aiHint').textContent = locked ? 'Unlock this note first.' : off ? 'Turn the AI on below (Model and connection) to use these.' : 'Works on the text of this note. Select text to translate or edit just that part.';
+  $('#aiHint').textContent = locked ? 'Unlock this note first.' : off ? 'Turn the AI on under Model and connection below.' : 'Works on the selected text, or the whole note.';
   if (!locked && !off) modelCheck();
 }
 // Tells you right away when the chosen Ollama model has not been downloaded, instead of failing on the first request.
@@ -860,19 +862,28 @@ function warmModel() {   // opening the AI tab means you are about to use it: lo
   if (Date.now() - lastWarm < 240000) return; lastWarm = Date.now();
   try { api.aiWarmup(); } catch (e) {}
 }
+// The panel is one list (Look, This note, AI). showTab only brings a part into view; the AI part is always ready.
 function showTab(t) {
-  if (!['style', 'note', 'ai'].includes(t)) t = 'style';
-  ['style', 'note', 'ai'].forEach(k => { $('#pg-' + k).hidden = k !== t; });
-  document.querySelectorAll('.tabs button[data-tab]').forEach(b => { const on = b.dataset.tab === t; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
-  try { localStorage.setItem('sp.tab', t); } catch (e) {}
-  $('#panel').scrollTop = 0;
-  if (t === 'ai') { aiLoad(); warmModel(); }
+  aiLoad();
+  const target = t === 'ai' ? $('#aiAction') : t === 'note' ? $('#rowRem') : null;
+  if (target) target.scrollIntoView({ block: 'nearest' });
 }
-document.querySelectorAll('.tabs button[data-tab]').forEach(b => { b.onclick = () => showTab(b.dataset.tab); });
 $('#cfg').onclick = () => {
   const p = $('#panel'); p.hidden = !p.hidden; $('#cfg').setAttribute('aria-expanded', !p.hidden);
-  if (!p.hidden) { let t = 'style'; try { t = localStorage.getItem('sp.tab') || 'style'; } catch (e) {} showTab(t); refreshInfo(); }
+  if (!p.hidden) { p.scrollTop = 0; showTab(); refreshInfo(); }
 };
+// One list of AI actions and one Run button (the old buttons stay hidden, so their code and shortcuts keep working)
+const AI_DO = { summarize: () => runAI('summarize'), grammar: () => runAI('grammar'), checklist: () => runAI('checklist'), title: () => runAI('title') };
+$('#aiRun').onclick = () => { const v = $('#aiAction').value; if (AI_DO[v]) return AI_DO[v](); $('#editMode').value = v; liveEdit(); };
+try { const last = localStorage.getItem('sp.aiAction'); if (last && $('#aiAction').querySelector('option[value="' + last + '"]')) $('#aiAction').value = last; } catch (e) {}
+$('#aiAction').addEventListener('change', () => { try { localStorage.setItem('sp.aiAction', $('#aiAction').value); } catch (e) {} });
+['pointerenter', 'focus'].forEach(ev => { $('#aiAction').addEventListener(ev, warmModel); $('#aiRun').addEventListener(ev, warmModel); });   // load the local model only when you are about to use it
+// only one row of "This note" open at a time; opening Earlier versions loads them
+document.querySelectorAll('#panel details.prow').forEach(d => d.addEventListener('toggle', () => {
+  if (!d.open) return;
+  document.querySelectorAll('#panel details.prow').forEach(o => { if (o !== d) o.open = false; });
+  if (d.id === 'rowHist' && $('#histBox').hidden) histOpen();
+}));
 $('#close').onclick = () => { if (timer) saveNow(); api.close(); };
 $('#del').onclick = () => api.remove();
 document.addEventListener('keydown', e => {

@@ -42,8 +42,8 @@ with sync_playwright() as p:
     q=page(b,'',"[{t:'text',v:'price 5.50 and room 12'}]"); ok(not q.is_visible('#datebar'),'no suggestion for ordinary numbers'); q.close()
     q=page(b,'window.__S.note.suggestDates=false',"[{t:'text',v:'tomorrow 9am'}]"); ok(not q.is_visible('#datebar'),'switched off in settings -> no suggestion'); q.close()
     # ---- title ----
-    q=page(b,'',"[{t:'text',v:'milk bread eggs'}]"); q.click('#cfg'); q.click('[data-tab=ai]')
-    q.evaluate("__S.calls.length=0"); q.click('#aiTitle'); q.wait_for_timeout(400)
+    q=page(b,'',"[{t:'text',v:'milk bread eggs'}]"); q.click('#cfg'); q.wait_for_timeout(100)
+    q.evaluate("__S.calls.length=0"); q.select_option('#aiAction','title'); q.click('#aiRun'); q.wait_for_timeout(400)
     ok('ok' in q.inner_text('#aiBody') and q.is_visible('#aibox'),'suggested title is shown')
     q.click('#aiActs .btn.primary'); q.wait_for_timeout(300)
     ok(q.input_value('#topic')=='ok' and [c for c in q.evaluate('__S.calls') if c[0]=='update' and c[1].get('title')=='ok'],'Use this title puts it in the topic and saves')

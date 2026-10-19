@@ -32,6 +32,18 @@ with sync_playwright() as p:
         else:
             pg.click('[data-go=notes]'); ok(['home','notes',None] in pg.evaluate('__S.calls'),f+': Notes asks the app to switch page')
             pg.click('[data-go=%s]'%cur); ok(sum(1 for c in pg.evaluate('__S.calls') if c[0]=='home')==1,f+': clicking the page you are on does nothing')
+    ALL="window.__S.all={emoji:'',greeting:'Hi',groups:[{id:'g1',name:'Home'},{id:'g2',name:'Work'}],trash:[],prefs:{},notes:[{id:'a',title:'Groceries',text:'milk',color:'#FFF2A8',group:'g1',open:true},{id:'b',title:'Meeting',text:'agenda',color:'#CDEFFF',group:'g2',open:false},{id:'c',title:'Loose',text:'x',color:'#D4F5C4',group:null,open:true}]};"
+    pg=b.new_page(viewport={'width':980,'height':680}); errs=[]; pg.on('pageerror',lambda e:errs.append(str(e)))
+    pg.add_init_script('try{localStorage.clear()}catch(e){}'+STUB+';'+ALL); pg.goto('file://'+ROOT+'all.html'); pg.wait_for_timeout(400)
+    chips=pg.eval_on_selector_all('#chips .fchip','e=>e.map(x=>x.textContent)')
+    ok(chips==['All3','Home1','Work1','No folder1'],'folder chips with counts %s'%chips)
+    pg.click('#chips .fchip >> nth=2'); pg.wait_for_timeout(100)
+    ok(pg.locator('.card').count()==1 and 'Meeting' in pg.inner_text('#sections'),'a chip shows only that folder')
+    ok(pg.eval_on_selector('#chips .fchip >> nth=2','e=>e.getAttribute("aria-pressed")')=='true','chosen chip is marked')
+    pg.click('#chips .fchip >> nth=0'); pg.wait_for_timeout(100); ok(pg.locator('.card').count()==3,'All shows everything again')
+    pg.drag_and_drop('.card >> text=Loose','#chips .fchip >> nth=1'); pg.wait_for_timeout(300)
+    ok(['grpMove','c','g1'] in pg.evaluate('__S.calls'),'dropping a card on a chip moves the note into that folder')
+    pg.screenshot(path=os.path.join(OUT,'home_chips.png')); ok(not errs,'chips: no errors %s'%errs)
     pg=page('all.html','?tab=trash'); ok(pg.eval_on_selector('#homeNav .hitem.on','e=>e.dataset.go')=='trash','opening with ?tab=trash highlights Trash')
     pg=page('all.html',w=800,h=520); ok(pg.is_visible('#sections') or pg.is_visible('#empty'),'fits the smallest window (800x520)')
     b.close()

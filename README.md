@@ -34,7 +34,7 @@ The icons in the header, from the left: add a checklist item, pin, all notes, se
 ### Settings panel on the right
 <img align="right" width="300" src="docs/images/feature_ai.png" alt="A note with the settings panel docked on its right side">
 
-The gear opens a panel **beside your text instead of on top of it**, so you can keep reading the note while you change its colour, set a reminder or run the AI. A narrow note grows to make room while the panel is open and returns to its size when you close it. The tabs are **Style**, **Note** and **AI**; the small gear next to them (or Ctrl+,) opens the full Settings. Everything about *the app* (start with Windows, snapping, shortcuts, backups) lives in Settings only, so each thing has one place.
+The gear opens a panel **beside your text instead of on top of it**, so you can keep reading the note while you change its colour, set a reminder or run the AI. A narrow note grows to make room while the panel is open and returns to its size when you close it. It is **one short list, no tabs**: *Look* (colour, font, size), *This note* (Reminder, Folder, Lock, Earlier versions, Copy or export: each is one line and only the one you click opens) and *AI* (one list and a **Run** button). The small gear at the top (or Ctrl+,) opens the full Settings. Everything about *the app* (start with Windows, snapping, shortcuts, backups) lives in Settings only, so each thing has one place.
 
 <br clear="right">
 
@@ -46,17 +46,17 @@ A search bar appears with **every match highlighted** and the current one in ora
 ### Reminders
 <img align="right" width="300" src="docs/images/feature_reminder.png" alt="The Note tab showing a reminder set for 5:55 PM">
 
-Open the gear, tab **Note**, **Reminder**. Pick a date and time, or press **10 min**, **1 hour**, **3 hours** or **Tomorrow 9:00**. When the time comes, **Windows shows a notification and clicking it opens the note**. A reminder that came due while StickyPad was closed fires the next time you start it. A small dot on the gear shows that a note has a reminder.
+Open the gear and click **Reminder**. Pick a date and time, or press **10 min**, **1 hour**, **3 hours** or **Tomorrow 9:00**. When the time comes, **Windows shows a notification and clicking it opens the note**. A reminder that came due while StickyPad was closed fires the next time you start it. A small dot on the gear shows that a note has a reminder.
 
 A small bar also appears when a note **mentions a date** ("tomorrow at 5pm", "αύριο στις 17:30", "15/11 10:00", "in 2 hours") and offers to set the reminder for it. It works without the AI, in Greek and English, and can be switched off in Settings.
 
 ### Version history
 <img align="right" width="300" src="docs/images/feature_history.png" alt="The version history list with Restore buttons">
 
-StickyPad quietly keeps **up to 30 older copies of each note** while you edit: at least one every 5 minutes, and always one right before a sudden big deletion (for example Ctrl+A then Delete). Open **Note > Version history…**, see each copy with its time, word count and a preview, and press **Restore** (it asks once more to be sure). Restoring keeps today's version in the list as well, so you can always go back. Locked notes keep no copies, so nothing readable is left behind.
+StickyPad quietly keeps **up to 30 older copies of each note** while you edit: at least one every 5 minutes, and always one right before a sudden big deletion (for example Ctrl+A then Delete). Open the gear and click **Earlier versions**, see each copy with its time, word count and a preview, and press **Restore** (it asks once more to be sure). Restoring keeps today's version in the list as well, so you can always go back. Locked notes keep no copies, so nothing readable is left behind.
 
 ### Export and import
-- **Note > Export…** saves the note as a **Markdown (.md)** or **text (.txt)** file. Checklist items become `- [x] done` and `- [ ] to do`.
+- **Copy or export > Export…** (in the gear panel) saves the note as a **Markdown (.md)** or **text (.txt)** file. Checklist items become `- [x] done` and `- [ ] to do`.
 - **Settings > Data & backup > Export all notes** writes one file per note, in folders that match your note folders.
 - **Import from other apps** reads **Google Keep** (the `.json` files from Google Takeout) and **Windows Sticky Notes**.
 - **Import notes** turns `.md` and `.txt` files into notes. A first line `# Title` becomes the note's topic and lines like `- [ ] item` become checklist items.
@@ -67,7 +67,7 @@ Pictures are not included in exported files.
 ### Home: notes, trash, AI chat and settings in one window
 <img align="right" width="300" src="docs/images/feature_all.png" alt="The All notes window with folders and coloured cards">
 
-Ctrl+Alt+A (or the tray icon) opens the **Home** window. A sidebar switches between **Notes** (every note as a card, grouped by folder, with search, *Open all* per folder and *Tidy up*), **Trash**, **Ask the AI** (the chat) and **Settings**. It is always the same one window, so nothing gets lost behind others. Closed notes are greyed out; click one to open it.
+Ctrl+Alt+A (or the tray icon) opens the **Home** window. A sidebar switches between **Notes** (every note as a card, with search, *Open all* per folder and *Tidy up*; **folder chips** show one folder at a time, and dropping a card on a chip moves the note there), **Trash**, **Ask the AI** (the chat) and **Settings**. It is always the same one window, so nothing gets lost behind others. Closed notes are greyed out; click one to open it.
 
 ### Lock
 Give a note a password (4+ characters) and its text is stored **encrypted (AES-256-GCM)**. It shows a lock screen until you enter the password. A forgotten password cannot be recovered. Pictures stay on disk unencrypted, but are hidden in the app.
@@ -75,17 +75,18 @@ Give a note a password (4+ characters) and its text is stored **encrypted (AES-2
 ### AI helper (off by default)
 <img align="right" width="300" src="docs/images/feature_chat_all.png" alt="The AI chat answering a question from all notes, with a Looked at line">
 
-Open the gear, tab **AI** (the model and connection options are folded under *Model and connection*, and open by themselves when something needs fixing):
+Open the gear: the **AI** part is one list and a **Run** button (the model and connection options are folded under *Model and connection*, and open by themselves when something needs fixing):
 
-| Button | What it does |
+| In the list | What it does |
 |---|---|
-| ✨ **Summarize** | A short summary of the note, in the note's own language. |
-| ✨ **Fix grammar** | Finds spelling and grammar mistakes and shows each change, so you can **Apply** or **Cancel**. |
-| ✨ **To checklist** | Turns the note into a clean checklist. |
-| 🌐 **Translate** | **Greek → English**, anything else → Greek. Works on the selected text, or the paragraph with the cursor. |
-| ✎ **Edit live** (Ctrl+Shift+E) | The model rewrites the selected text **right in the note as it types**: fix, polish, shorten, friendlier, translate or continue writing. **Stop** cancels, **Undo** brings the original back. |
-| ✨ **Title** | Suggests a short title for the note. |
-| 💬 **Chat about it** | Opens a chat sidebar that knows the note, or **all your notes** (pick *★ All my notes*). |
+| **Summarize** | A short summary of the note, in the note's own language. |
+| **Fix spelling and grammar** | Finds mistakes and shows each change, so you can **Apply** or **Cancel**. |
+| **Turn into a checklist** | Turns the note into a clean checklist. |
+| **Suggest a title** | A short title for the note. |
+| **Translate Greek ⇄ English** | **Greek → English**, anything else → Greek, right in the note. Works on the selected text, or the paragraph with the cursor. |
+| **Polish / shorter / friendlier / fix it right in the note / continue writing** | The model rewrites the selected text **right in the note as it types** (Ctrl+Shift+E does it too). **Stop** cancels, **Undo** brings the original back. |
+
+**Chat about this note** (bottom of the panel) opens the AI chat with the note, or **all your notes** (pick *★ All my notes*).
 
 - Works with **Ollama on your PC (free, private)** or the **Claude API (online)**.
 - A built-in **model list** offers ten models from 0.8 GB to 8 GB (Gemma 3, Qwen 2.5, Phi-4 mini, Mistral, Llama) and downloads them with a progress bar. A model that does not work well for you can be removed again with **Delete model…** to free the disk space. If Ollama itself is missing, one button downloads and installs it.
@@ -105,9 +106,9 @@ StickyPad remembers which screen each note is on. Unplug a monitor and its notes
 <img src="docs/images/feature_settings_data.png" width="560" alt="Settings window, Data and backup page">
 
 ### Updates
-StickyPad checks this repository's Releases when it starts and every few hours. A newer version downloads in the background and a small bar at the bottom of your notes offers **Restart to update** (or ✕ for later; no Windows dialog); if you ignore it, it installs when you quit. *Settings > About* has a switch, a **Check now** button, and, if anything goes wrong, **Open update log** and **Releases page**.
+StickyPad checks this repository's Releases when it starts and every few hours. A newer version downloads in the background with a glowing **neon progress bar** at the bottom of your notes, then the bar offers **Restart to update** (or ✕ for later; no Windows dialog); if you ignore it, it installs when you quit. *Settings > About* has a switch, a **Check now** button, and, if anything goes wrong, **Open update log** and **Releases page**.
 
-<img src="docs/images/feature_update.png" width="300" alt="The Restart to update bar at the bottom of a note">
+<img src="docs/images/feature_update_progress.png" width="300" alt="The neon progress bar while an update downloads"> <img src="docs/images/feature_update.png" width="300" alt="The Restart to update bar at the bottom of a note">
 
 ### Themes, light and dark
 <img align="right" width="300" src="docs/images/feature_themes.png" alt="Settings, Appearance: Light, Dark or Same as Windows, and ten themes, each with a light and a dark preview">

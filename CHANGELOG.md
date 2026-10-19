@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.14.11
+- **The note panel is one short list, no tabs.** *Look* (colours, font, size), *This note* (Reminder, Folder, Lock, Earlier versions, Copy or export: one line each, and only the one you click opens; each line shows its current value) and *AI*. *Chat about this note* and *Move to trash* sit at the bottom.
+- **AI: one list and a Run button** instead of six buttons plus a second list. It remembers your last choice. The local model is loaded only when you point at the AI list or Run, not every time the panel opens.
+- **Folder chips in Home:** All, each folder (with how many notes), No folder. Click one to see only that folder; drop a card on a chip to move the note there.
+- **A neon progress bar while an update downloads**, then "Restart to update" when it is ready. It respects "reduce motion" in Windows and can be hidden with ✕.
+- The theme picker moved out of the note panel (it is in *Settings > Appearance* since 1.14.10); "All notes" left the note title bar (it is the Home window, Ctrl+Alt+A).
+- Not tried on a real Windows PC yet.
+
 ## 1.14.10
 - **Themes for the whole app, in light and dark.** A theme now colours everything: the Home window, Settings, the AI chat, the note panel and the colours offered for notes. Every theme has a light and a dark version, and there is a new **Purple** theme (10 themes in all).
 - **Light, Dark or Same as Windows** in *Settings > Appearance*. "Same as Windows" switches by itself when Windows does; window title bars follow too.

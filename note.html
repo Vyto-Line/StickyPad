@@ -13,85 +13,81 @@
   <span class="dragfill" title="Drag to move"></span>
   <button id="chk" class="ib" title="Add checklist item (Ctrl+Shift+C)" aria-label="Add checklist item"><svg class="i" viewBox="0 0 24 24"><path d="M4 6l1.6 1.6L8.4 4.8M4 12.5l1.6 1.6 2.8-2.8M4 19l1.6 1.6L8.4 17.8M12 6.5h8M12 13h8M12 19.5h8"/></svg></button>
   <button id="pin" class="ib" title="Keep on top" aria-label="Keep on top" aria-pressed="false"><svg class="i" viewBox="0 0 24 24"><path d="M12 16.5V22M8 3h8l-1 7 3 3.2v1.8H6v-1.8L9 10 8 3z"/></svg></button>
-  <button id="allTop" class="ib" title="All notes (Ctrl+Alt+A)" aria-label="All notes"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/></svg></button>
+  <button id="allTop" class="ib" hidden title="All notes (Ctrl+Alt+A)" aria-label="All notes"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/></svg></button>
   <button id="lock" class="ib" title="Lock now" aria-label="Lock note now" hidden><svg class="i" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9.5" rx="2.2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></button>
   <button id="cfg" class="ib" title="Note settings" aria-label="Note settings" aria-expanded="false"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
   <button id="roll" class="ib" title="Roll up" aria-label="Roll up"><svg class="i" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg></button>
   <button id="close" class="ib" title="Close (reopen from the tray icon)" aria-label="Close"><svg class="i" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg></button>
 </header>
 
-<section id="panel" hidden>
-  <div class="tabs" role="tablist" aria-label="Settings">
-    <button class="on" role="tab" data-tab="style">Style</button>
-    <button role="tab" data-tab="note">Note</button>
-    <button role="tab" data-tab="ai">AI</button>
-    <button id="tabSettings" class="tabgear" title="Open all settings (Ctrl+,)" aria-label="Open all settings"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+<section id="panel" hidden aria-label="Note settings">
+  <div class="ph"><span>Look</span><button id="tabSettings" class="tabgear" title="All settings (Ctrl+,)" aria-label="Open all settings"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button></div>
+  <div class="swatches" id="swatches" role="group" aria-label="Note colour">
+    <label class="sw custom" id="customSw" title="Custom colour"><input id="color" type="color" aria-label="Custom colour"></label>
   </div>
-
-  <div class="page" id="pg-style">
-    <div class="swatches" id="swatches" role="group" aria-label="Note colour">
-      <label class="sw custom" id="customSw" title="Custom colour"><input id="color" type="color" aria-label="Custom colour"></label>
-    </div>
-    <div class="line">
-      <input id="font" class="field" list="fonts" spellcheck="false" placeholder="Font" aria-label="Font" style="flex:1.2">
-      <span class="sz"><input id="size" type="range" min="10" max="48" aria-label="Font size"><b id="sizeLabel"></b></span>
-    </div>
-    <div class="sect">Theme</div>
-    <div class="themes" id="themes" role="group" aria-label="Colour theme"></div>
-    <div class="seg" role="group" aria-label="Apply theme to">
-      <button id="scopeThis" class="on">This note</button><button id="scopeAll">All notes</button>
-    </div>
-    <datalist id="fonts">
-      <option>Segoe UI</option><option>Calibri</option><option>Arial</option><option>Verdana</option>
-      <option>Georgia</option><option>Times New Roman</option><option>Consolas</option><option>Courier New</option>
-      <option>Comic Sans MS</option><option>Segoe Print</option><option>Ink Free</option><option>Trebuchet MS</option>
-    </datalist>
+  <div class="line">
+    <input id="font" class="field" list="fonts" spellcheck="false" placeholder="Font" aria-label="Font" style="flex:1.2">
+    <span class="sz"><input id="size" type="range" min="10" max="48" aria-label="Font size"><b id="sizeLabel"></b></span>
   </div>
+  <datalist id="fonts">
+    <option>Segoe UI</option><option>Calibri</option><option>Arial</option><option>Verdana</option>
+    <option>Georgia</option><option>Times New Roman</option><option>Consolas</option><option>Courier New</option>
+    <option>Comic Sans MS</option><option>Segoe Print</option><option>Ink Free</option><option>Trebuchet MS</option>
+  </datalist>
 
-  <div class="page" id="pg-note" hidden>
-    <label class="row"><span>Folder</span><select id="grp" class="field" aria-label="Folder"></select></label>
-    <div class="line" id="chkTools" hidden>
-      <button id="clearDone" class="btn" hidden>Remove ticked</button>
-      <button id="toText" class="btn" title="Turn every checklist item back into a normal line of text">Make plain text</button>
-    </div>
-    <div class="sect">History</div>
-    <div class="line"><button id="histBtn" class="btn" title="See older copies of this note and bring one back">Version history…</button></div>
-    <div id="histBox" hidden><p id="histMsg" class="hint"></p><div id="histList" class="hist" role="list"></div></div>
-    <div class="sect">Reminder</div>
-    <div class="line"><input id="remAt" class="field" type="datetime-local" aria-label="Remind me at" style="flex:1;min-width:0"><button id="remClear" class="btn" title="Remove the reminder" style="visibility:hidden">Clear</button></div>
-    <div class="line quick" role="group" aria-label="Quick reminders">
-      <button class="btn rq" data-q="m10">10 min</button><button class="btn rq" data-q="h1">1 hour</button><button class="btn rq" data-q="later">3 hours</button><button class="btn rq" data-q="tomorrow">Tomorrow 9:00</button>
-    </div>
-    <p id="remMsg" class="hint"></p>
-    <div class="sect">Lock</div>
-    <div id="lockNew">
-      <div class="line"><input id="lockpw" class="field" type="password" placeholder="Password (4+ characters)" autocomplete="off" aria-label="New password" style="flex:1"><button id="lockBtn" class="btn primary">Lock</button></div>
-      <p class="hint">A forgotten password cannot be recovered. Pictures stay on disk unencrypted (hidden in the app).</p>
-    </div>
-    <div id="lockOld" hidden>
-      <div class="line"><button id="relockBtn" class="btn primary">Lock now</button></div>
-      <div class="line" style="margin-top:6px"><input id="rmpw" class="field" type="password" placeholder="Password to remove lock" autocomplete="off" aria-label="Password" style="flex:1"><button id="rmLockBtn" class="btn">Remove</button></div>
-    </div>
-    <p id="lockmsg" class="hint"></p>
-    <div class="line"><button id="copyTxt" class="btn" title="Copy the whole note as plain text (Ctrl+Shift+T)">Copy note as text</button><button id="exportBtn" class="btn" title="Save this note as a Markdown or text file">Export…</button></div><p id="exportMsg" class="hint"></p>
-    <button id="del" class="btn danger" title="Move this note to the trash">Move note to trash</button>
+  <div class="ph"><span>This note</span></div>
+  <div class="line" id="chkTools" hidden>
+    <button id="clearDone" class="btn" hidden>Remove ticked</button>
+    <button id="toText" class="btn" title="Turn every checklist item back into a normal line of text">Make plain text</button>
   </div>
+  <details class="prow" id="rowRem"><summary><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 17h12l-1.5-2V11a4.5 4.5 0 0 0-9 0v4zM10 20h4"/></svg><span class="k">Reminder</span><span class="v" id="remSum">None</span></summary>
+    <div class="pbody">
+      <div class="line quick" role="group" aria-label="Quick reminders">
+        <button class="btn rq" data-q="m10">10 min</button><button class="btn rq" data-q="h1">1 hour</button><button class="btn rq" data-q="later">3 hours</button><button class="btn rq" data-q="tomorrow">Tomorrow 9:00</button>
+      </div>
+      <div class="line"><input id="remAt" class="field" type="datetime-local" aria-label="Remind me at" style="flex:1;min-width:0"><button id="remClear" class="btn" title="Remove the reminder" style="visibility:hidden">Clear</button></div>
+      <p id="remMsg" class="hint"></p>
+    </div>
+  </details>
+  <details class="prow" id="rowFolder"><summary><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 7a2 2 0 0 1 2-2h4l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></svg><span class="k">Folder</span><span class="v" id="grpSum">None</span></summary>
+    <div class="pbody"><select id="grp" class="field" aria-label="Folder"></select></div>
+  </details>
+  <details class="prow" id="rowLock"><summary><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10.5" width="14" height="9" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg><span class="k">Lock</span><span class="v" id="lockSum">Off</span></summary>
+    <div class="pbody">
+      <div id="lockNew">
+        <div class="line"><input id="lockpw" class="field" type="password" placeholder="Password (4+ characters)" autocomplete="off" aria-label="New password" style="flex:1"><button id="lockBtn" class="btn">Lock</button></div>
+        <p class="hint">A forgotten password cannot be recovered. Pictures stay on disk unencrypted (hidden in the app).</p>
+      </div>
+      <div id="lockOld" hidden>
+        <div class="line"><button id="relockBtn" class="btn">Lock now</button></div>
+        <div class="line"><input id="rmpw" class="field" type="password" placeholder="Password to remove lock" autocomplete="off" aria-label="Password" style="flex:1"><button id="rmLockBtn" class="btn">Remove</button></div>
+      </div>
+      <p id="lockmsg" class="hint"></p>
+    </div>
+  </details>
+  <details class="prow" id="rowHist"><summary><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4h4M12 8v4l3 2"/></svg><span class="k">Earlier versions</span><span class="v"></span></summary>
+    <div class="pbody"><button id="histBtn" class="btn" hidden title="See older copies of this note and bring one back">Version history…</button>
+      <div id="histBox" hidden><p id="histMsg" class="hint"></p><div id="histList" class="hist" role="list"></div></div></div>
+  </details>
+  <details class="prow" id="rowOut"><summary><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7.5 8.5L12 4l4.5 4.5M5 15v4h14v-4"/></svg><span class="k">Copy or export</span><span class="v"></span></summary>
+    <div class="pbody"><div class="line"><button id="copyTxt" class="btn" title="Copy the whole note as plain text (Ctrl+Shift+T)">Copy note as text</button><button id="exportBtn" class="btn" title="Save this note as a Markdown or text file">Export…</button></div><p id="exportMsg" class="hint"></p></div>
+  </details>
 
-  <div class="page" id="pg-ai" hidden>
-    <div class="aibtns">
-      <button id="aiSum" class="btn primary">✨ Summarize</button>
-      <button id="aiFix" class="btn primary">✨ Fix grammar</button>
-      <button id="aiList" class="btn primary" title="Turn this note into a clean checklist">✨ To checklist</button>
-      <button id="aiTitle" class="btn primary" title="Suggest a short title for this note">✨ Title</button>
-      <button id="aiTr" class="btn primary" title="Translate the selected text (or the paragraph with the cursor): Greek to English, anything else to Greek">🌐 Translate</button>
-      <button id="aiChat" class="btn" title="Open the AI chat with this note as context">💬 Chat about it</button>
-    </div>
-    <div class="line editline">
-      <select id="editMode" class="field" aria-label="How to edit"><option value="fix">Fix spelling and grammar</option><option value="polish">Polish the writing</option><option value="shorten">Make it shorter</option><option value="friendly">Make it friendlier</option><option value="translate">Translate Greek ⇄ English</option><option value="continue">Continue writing</option></select>
-      <button id="aiEdit" class="btn primary" title="Edits the selected text, or the paragraph with the cursor, live (Ctrl+Shift+E)">✎ Edit live</button>
-    </div>
-    <p id="aiHint" class="hint"></p>
-    <details id="aiSetup" class="setup"><summary>Model and connection</summary>
+  <div class="ph"><span>AI</span></div>
+  <div class="line airun">
+    <select id="aiAction" class="field" aria-label="What should the AI do?">
+      <option value="summarize">Summarize</option><option value="grammar">Fix spelling and grammar (shows each change)</option><option value="checklist">Turn into a checklist</option><option value="title">Suggest a title</option>
+      <option value="translate">Translate Greek ⇄ English</option><option value="polish">Polish the writing</option><option value="shorten">Make it shorter</option><option value="friendly">Make it friendlier</option><option value="fix">Fix it right in the note</option><option value="continue">Continue writing</option>
+    </select>
+    <button id="aiRun" class="btn primary" title="Run on the selected text, or the whole note (Ctrl+Shift+E edits live)">Run</button>
+  </div>
+  <p id="aiHint" class="hint"></p>
+  <div id="aiLegacy" hidden>
+    <button id="aiSum">Summarize</button><button id="aiFix">Fix grammar</button><button id="aiList">To checklist</button><button id="aiTitle">Title</button><button id="aiTr">Translate</button>
+    <select id="editMode" aria-label="How to edit"><option value="fix">Fix spelling and grammar</option><option value="polish">Polish the writing</option><option value="shorten">Make it shorter</option><option value="friendly">Make it friendlier</option><option value="translate">Translate Greek ⇄ English</option><option value="continue">Continue writing</option></select>
+    <button id="aiEdit">Edit live</button>
+  </div>
+  <details id="aiSetup" class="setup"><summary>Model and connection</summary>
     <label class="row"><span>Use</span><select id="aiProv" class="field" aria-label="AI provider">
       <option value="off">Off</option><option value="ollama">Ollama (on this PC, free)</option><option value="claude">Claude API (online)</option></select></label>
     <div class="row top"><span>Model</span><div class="mcol"><select id="aiModelSel" class="field" aria-label="Model" hidden></select><input id="aiModel" class="field" autocomplete="off" spellcheck="false" aria-label="Model name"></div></div>
@@ -101,7 +97,7 @@
     <p id="aiMsg" class="hint"></p>
     <p class="hint">The text of the note you ask about is sent to the provider you pick. Ollama keeps it on this PC; the Claude API sends it to Anthropic.</p>
     </details>
-  </div>
+  <div class="pfoot"><button id="aiChat" class="linkbtn" title="Open the AI chat with this note as context">Chat about this note</button><button id="del" class="linkbtn danger" title="Move this note to the trash">Move to trash</button></div>
 </section>
 
 <div id="findbar" hidden role="search">

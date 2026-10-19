@@ -256,3 +256,25 @@ body.rolled #datebar{display:none}
 body.rolled #findbar{display:none}
 ::highlight(find){background:#ffe066;color:#1c1a12}
 ::highlight(find-cur){background:#ff922b;color:#1c1a12}
+
+/* ---------- the panel as one list: Look, This note, AI ---------- */
+#panel{gap:6px}
+.ph{display:flex;align-items:center;justify-content:space-between;font-size:11px;font-weight:700;opacity:.8;padding:6px 2px 0}
+.ph .tabgear{width:26px;height:24px;display:grid;place-items:center;border:0;background:none;color:inherit;border-radius:7px;cursor:pointer;opacity:.8}
+.ph .tabgear:hover{background:var(--tint2);opacity:1}.ph .tabgear svg{width:14px;height:14px}
+.prow{border-radius:8px}
+.prow>summary{list-style:none;display:flex;align-items:center;gap:9px;min-height:34px;padding:0 8px;border-radius:8px;cursor:pointer;user-select:none}
+.prow>summary::-webkit-details-marker{display:none}
+.prow>summary:hover,.prow[open]>summary{background:var(--tint)}
+.prow>summary:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.prow>summary svg{flex:none;opacity:.85}
+.prow>summary .k{flex:1;font-weight:600}
+.prow>summary .v{opacity:.82;font-size:12px;max-width:50%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prow>summary::after{content:"";width:6px;height:6px;border:solid currentColor;border-width:0 1.6px 1.6px 0;transform:rotate(-45deg);opacity:.7;margin:0 3px 0 2px;transition:transform .15s}
+.prow[open]>summary::after{transform:rotate(45deg)}
+.pbody{display:flex;flex-direction:column;gap:8px;padding:8px 8px 10px 32px}
+.airun{gap:6px}.airun .field{flex:1;min-width:0}
+.pfoot{display:flex;justify-content:space-between;gap:6px;margin-top:4px;padding-top:6px;border-top:1px solid var(--line)}
+.pfoot .linkbtn{width:auto;flex:none;padding:6px 8px}
+.pfoot .linkbtn.danger{color:#b42318;opacity:1}body.dark .pfoot .linkbtn.danger{color:#ff9b8f}
+@media (prefers-reduced-motion:reduce){.prow>summary::after{transition:none}}

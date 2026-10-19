@@ -7,7 +7,7 @@ def ok(c,m):
 with sync_playwright() as p:
     b=p.chromium.launch(); pg=b.new_page(viewport={'width':330,'height':420}); errs=[]; pg.on('pageerror',lambda e:errs.append(str(e))); pg.add_init_script(STUB)
     pg.goto('file://'+os.path.abspath(os.path.join(HERE,'..','..'))+'/note.html'); pg.wait_for_timeout(300)
-    pg.click('#cfg'); pg.click('[data-tab=note]'); pg.click('#histBtn'); pg.wait_for_timeout(200)
+    pg.click('#cfg'); pg.evaluate("document.querySelector('#rowHist').open=true"); pg.wait_for_timeout(250)
     ok(pg.locator('.hrow').count()==2,'two copies listed')
     ok('old first line' in pg.inner_text('.hrow >> nth=0') and '12 words' in pg.inner_text('.hrow >> nth=0'),'row shows words and preview')
     ok('1 pic' in pg.inner_text('.hrow >> nth=1'),'row shows picture count')

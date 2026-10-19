@@ -1,7 +1,9 @@
 const $ = s => document.querySelector(s);
-const isDark = hex => { const n = parseInt(hex.slice(1), 16); return (0.299 * (n >> 16 & 255) + 0.587 * (n >> 8 & 255) + 0.114 * (n & 255)) / 255 < 0.5; };
+const isDark = hex => (window.StickyThemes ? window.StickyThemes.wantsLightText(hex) : (() => { const n = parseInt(hex.slice(1), 16); return (0.299 * (n >> 16 & 255) + 0.587 * (n >> 8 & 255) + 0.114 * (n & 255)) / 255 < 0.5; })());
 let data = { groups: [], notes: [], trash: [], greeting: 'Hello', emoji: '', prefs: {} };
 let view = new URLSearchParams(location.search).get('tab') === 'trash' ? 'trash' : 'notes';
+let folder = '*';   // which folder chip is chosen: '*' all, a folder id, or '-' for notes without a folder
+try { folder = localStorage.getItem('sp.folder') || '*'; } catch (e) {}
 
 // Two-step buttons instead of confirm(): a native confirm box can leave text fields in Electron unable to receive typing.
 function arm(btn, label, sure, action) {
@@ -114,11 +116,33 @@ function draw() {
   const match = n => !q || (n.title + ' ' + n.text).toLowerCase().includes(q);
   const shown = data.notes.filter(match).length;
   $('#count').textContent = total ? (q ? shown + ' of ' + total + ' notes' : total + (total === 1 ? ' note' : ' notes')) + ' · right-click for more' : 'No notes yet';
+  if (folder !== '*' && folder !== '-' && !data.groups.some(g => g.id === folder)) folder = '*';   // that folder was deleted
+  drawChips(match);
   const box = $('#sections'); box.innerHTML = '';
-  data.groups.forEach(g => { const items = data.notes.filter(n => n.group === g.id && match(n)); if (!q || items.length) box.appendChild(section(g, items)); });
+  data.groups.forEach(g => { if (folder !== '*' && folder !== g.id) return; const items = data.notes.filter(n => n.group === g.id && match(n)); if (!q || items.length) box.appendChild(section(g, items)); });
   const loose = data.notes.filter(n => !n.group && match(n));
-  if (loose.length || (!q && data.groups.length)) box.appendChild(section(null, loose, data.groups.length ? 'No folder' : 'Notes'));
+  if ((folder === '*' || folder === '-') && (loose.length || (!q && data.groups.length))) box.appendChild(section(null, loose, data.groups.length ? 'No folder' : 'Notes'));
   $('#empty').hidden = total > 0 || data.groups.length > 0; $('#empty').textContent = 'No notes yet. Press “＋ Note”.';
+}
+// Folder chips: click one to see only that folder; drop a card on a chip to move the note there.
+function drawChips(match) {
+  const box = $('#chips'); box.textContent = '';
+  if (!data.groups.length) { box.hidden = true; return; }
+  box.hidden = false;
+  const chip = (id, label, n) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'fchip' + (folder === id ? ' on' : ''); b.setAttribute('aria-pressed', folder === id);
+    b.textContent = label; const c = document.createElement('em'); c.textContent = n; b.appendChild(c);
+    b.onclick = () => { folder = id; try { localStorage.setItem('sp.folder', id); } catch (e) {} draw(); };
+    if (id !== '*') {
+      b.ondragover = e => { e.preventDefault(); b.classList.add('over'); };
+      b.ondragleave = () => b.classList.remove('over');
+      b.ondrop = async e => { e.preventDefault(); b.classList.remove('over'); const nid = e.dataTransfer.getData('text/plain'); if (nid) { await api.grpMove(nid, id === '-' ? null : id); refresh(); } };
+    }
+    box.appendChild(b);
+  };
+  chip('*', 'All', data.notes.filter(match).length);
+  data.groups.forEach(g => chip(g.id, g.name, data.notes.filter(n => n.group === g.id && match(n)).length));
+  const loose = data.notes.filter(n => !n.group && match(n)).length; if (loose) chip('-', 'No folder', loose);
 }
 async function refresh() { data = await api.allList(); draw(); }
 
