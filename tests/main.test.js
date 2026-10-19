@@ -112,6 +112,19 @@ const H = require('./fake-electron');
   await h['settings:set']({}, { notesFollowMode: false, mode: 'light' }); assert.strictEqual((await h['settings:get']({})).notesFollowMode, false);
   await h['settings:set']({}, { mode: 'system', notesFollowMode: true }); NTf.__sys = true; NTf.__cb && NTf.__cb(); assert.strictEqual((await h['ui:theme']({})).dark, true, 'follows Windows when set to Same as Windows');
   NTf.__sys = false; NTf.__cb && NTf.__cb();
+  // chat: "Apply to note"
+  await h['note:new']({ sender: { id: 0 } }); const aw = wins[wins.length - 1], ae = H.ev(aw); const aid = (await h['note:get'](ae)).id;
+  await h['note:update'](ae, { title: 'Trip', blocks: [{ t: 'text', v: 'Book ferry. Take hat.' }, { t: 'img', id: 'abcdef12.png' }] });
+  let ar = await h['chat:applyToNote']({}, { noteId: aid, text: '# Crete trip\nBook the ferry.\n- [ ] Hat\n- [x] Water', mode: 'replace' });
+  assert.ok(ar.ok, JSON.stringify(ar)); let an = await h['note:get'](ae);
+  assert.strictEqual(an.title, 'Trip', 'a title the note already has is kept'); assert.ok(an.blocks.some(b => b.t === 'check' && b.v === 'Hat' && !b.done) && an.blocks.some(b => b.t === 'check' && b.v === 'Water' && b.done), 'checklist items become checklist items');
+  assert.ok(an.blocks[0].v.startsWith('Crete trip'), 'the heading stays in the text'); assert.ok(!JSON.stringify(an.blocks).includes('Book ferry. Take'), 'old text replaced');
+  assert.ok((await h['hist:list'](ae)).items.some(i => /Book ferry\. Take hat/.test(i.preview || '')) || (await h['hist:list'](ae)).items.length >= 1, 'the old text is kept in Earlier versions');
+  assert.ok(aw.webContents.sent.some(m => m[0] === 'note:reload'), 'the note window reloads');
+  ar = await h['chat:applyToNote']({}, { noteId: aid, text: '```\nExtra line\n```', mode: 'append' }); assert.ok(ar.ok); an = await h['note:get'](ae);
+  assert.ok(JSON.stringify(an.blocks).includes('Extra line') && !JSON.stringify(an.blocks).includes('```') && JSON.stringify(an.blocks).includes('Water'), 'append keeps the old content and removes a code fence');
+  assert.deepStrictEqual((await h['chat:applyToNote']({}, { noteId: 'nope', text: 'x' })).ok, false, 'unknown note');
+  assert.deepStrictEqual((await h['chat:applyToNote']({}, { noteId: aid, text: '   ' })).ok, false, 'empty answer');
   // see-through notes
   await h['note:update'](te, { opacity: 0.6 }); assert.strictEqual((await h['note:get'](te)).opacity, 0.6); assert.strictEqual(tw.opacity, 0.6, 'the window became see-through');
   await h['note:update'](te, { opacity: 0.05 }); assert.strictEqual((await h['note:get'](te)).opacity, 0.3, 'never fainter than 30%');

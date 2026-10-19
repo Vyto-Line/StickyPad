@@ -1013,7 +1013,8 @@ function chatSystem(noteId, question, sources) {
     return sys;
   }
   const n = notes[noteId];
-  if (n && !n.lock) sys += `\n\nThe user attached this sticky note as context.\nTitle: ${n.title || '(none)'}\n---\n${chatContext(n.text)}\n---`;
+  if (n && !n.lock) sys += `\n\nThe user attached this sticky note as context.\nTitle: ${n.title || '(none)'}\n---\n${chatContext(n.text)}\n---` +
+    '\nIf the user asks you to change the note (rewrite, fix, shorten, translate, reorder, add something), reply with ONLY the complete new text of the note: no introduction, no closing remarks, no code fences. Write checklist items as "- [ ] item". The user can then put your reply into the note with one button. For any other question, answer normally.';
   return sys;
 }
 function openChat(noteId) {
@@ -1034,6 +1035,24 @@ ipcMain.handle('chat:notes', () => Object.values(notes).filter(n => !n.lock && S
 ipcMain.handle('chat:saveAsNote', (e, text) => {
   const t = String(text || '').slice(0, 100000); if (!t.trim()) return false;
   makeNote(null, { title: 'From AI chat', blocks: [{ t: 'text', v: t }], text: t }); return true;
+});
+// "Apply to note": puts an answer from the chat into the attached note. The old text is always kept in Earlier versions.
+ipcMain.handle('chat:applyToNote', (e, p) => {
+  const n = notes[String(p && p.noteId)];
+  if (!n) return { ok: false, error: 'That note is gone.' };
+  if (!canEditBody(n)) return { ok: false, error: 'That note is locked. Unlock it first.' };
+  const t = String((p && p.text) || '').slice(0, 100000).replace(/^\s*```[a-z]*\n([\s\S]*?)\n```\s*$/i, '$1');
+  if (!t.trim()) return { ok: false, error: 'There is nothing to apply.' };
+  const mode = p.mode === 'append' ? 'append' : 'replace', prev = blocksOf(n), parsed = convert.fromMarkdown(t, '');
+  let fresh = parsed.blocks;
+  if (parsed.title) { if (!n.title) n.title = parsed.title; else fresh = [{ t: 'text', v: parsed.title + (fresh.length && fresh[0].t === 'text' ? '\n' : '') }, ...fresh]; }
+  const pics = prev.filter(b => b.t === 'img');   // pictures are never lost by a replace
+  const next = sanitizeBlocks(mode === 'append' ? [...prev, ...fresh] : [...fresh, ...pics]);
+  if (!next.length) return { ok: false, error: 'There is nothing to apply.' };
+  try { if (!n.lock && history.add(dataDir(), n.id, { title: n.title, blocks: prev }, Date.now())) histT.set(n.id, Date.now()); } catch {}
+  n.blocks = next; n.text = textOf(next); n.updated = Date.now(); save();
+  const w = wins.get(n.id); if (w && !w.isDestroyed()) w.webContents.send('note:reload');
+  return { ok: true, mode };
 });
 ipcMain.handle('chat:stop', (e, id) => { const a = chatJobs.get(id); if (a) a.abort(); });
 ipcMain.handle('chat:send', async (e, p) => {

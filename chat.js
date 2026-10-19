@@ -58,8 +58,24 @@ function addActions(wrap, text) {
   copy.onclick = async () => { try { await navigator.clipboard.writeText(text); copy.textContent = 'Copied ✓'; setTimeout(() => copy.textContent = 'Copy', 1400); } catch (e) {} };
   const save = document.createElement('button'); save.textContent = 'Save as note';
   save.onclick = async () => { if (await api.chatSaveAsNote(text)) { save.textContent = 'Saved ✓'; setTimeout(() => save.textContent = 'Save as note', 1600); } };
-  a.append(copy, save); wrap.appendChild(a);
+  // "Apply to note": only while a single note is attached. Asks once how: replace the note, or add at the end.
+  const apply = document.createElement('button'); apply.className = 'apply'; apply.textContent = 'Apply to note'; apply.hidden = !canApply();
+  apply.title = 'Put this answer into the attached note (the old text stays in Earlier versions)';
+  const rep = document.createElement('button'), add = document.createElement('button'), no = document.createElement('button');
+  rep.textContent = 'Replace the note'; add.textContent = 'Add at the end'; no.textContent = 'Cancel'; [rep, add, no].forEach(x => { x.hidden = true; x.className = 'choice'; });
+  const msg = document.createElement('span'); msg.className = 'applymsg'; msg.setAttribute('role', 'status');
+  const ask = on => { apply.hidden = on || !canApply(); [rep, add, no].forEach(x => x.hidden = !on); msg.textContent = ''; };
+  apply.onclick = () => ask(true); no.onclick = () => ask(false);
+  const go = async mode => {
+    ask(false); const r = await api.chatApply({ noteId, text, mode });
+    msg.textContent = r && r.ok ? (mode === 'append' ? 'Added to the note ✓' : 'Note replaced ✓ (old text is in Earlier versions)') : (r && r.error) || 'Could not apply.';
+    msg.classList.toggle('err', !(r && r.ok)); setTimeout(() => { msg.textContent = ''; }, 5000);
+  };
+  rep.onclick = () => go('replace'); add.onclick = () => go('append');
+  a.append(copy, save, apply, rep, add, no, msg); wrap.appendChild(a);
 }
+const canApply = () => !!noteId && noteId !== '*';
+function syncApply() { msgsEl.querySelectorAll('.acts .apply').forEach(b => { b.hidden = !canApply(); }); }
 function drawAll() {
   [...msgsEl.querySelectorAll('.msg')].forEach(n => n.remove());
   $('#empty').hidden = messages.length > 0;
@@ -129,9 +145,9 @@ async function loadNotes(select) {
   const all = document.createElement('option'); all.value = '*'; all.textContent = '★ All my notes (search them)'; sel.appendChild(all);
   list.forEach(n => { const o = document.createElement('option'); o.value = n.id; o.textContent = n.title; sel.appendChild(o); });
   const want = select !== undefined ? select : noteId;
-  sel.value = want === '*' || list.some(n => n.id === want) ? want : ''; noteId = sel.value || null;
+  sel.value = want === '*' || list.some(n => n.id === want) ? want : ''; noteId = sel.value || null; syncApply();
 }
-$('#ctx').onchange = e => { noteId = e.target.value || null; persist(); };
+$('#ctx').onchange = e => { noteId = e.target.value || null; persist(); syncApply(); };
 api.onChatAttach(async id => { await loadNotes(id); persist(); input.focus(); });
 
 const SUGGEST = ['Help me plan my day', 'Give me three ideas for a weekend trip', 'Explain something simply: how does a VPN work?'];
