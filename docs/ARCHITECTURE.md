@@ -36,9 +36,24 @@ this PC's version is written and the other one is kept in `conflicts/`. Settings
 note that the file also contains them, so the last PC to save wins for those. Writes are atomic.
 Sync services copy whole files, so two PCs editing the same second can still conflict: that is what `conflicts/` is for.
 
-## Beyond Electron
-Electron bundles Chromium (~150 MB installed, ~1 GB of build leftovers). A lighter option is **Tauri 2**: it uses the
-WebView2 that Windows already has (installer in the single-digit MB), and Tauri 2 can also target Android.
-The screens would be reused as they are; the main-process logic (`main.js`, ~900 lines: windows, tray, storage, snapping,
-locking, IPC) would be rewritten in Rust behind the same `window.api` names, and `ai.js`/`ollama.js` logic ported or called over HTTP.
-This has **not** been done yet because it must be compiled and tested on a machine with the Rust toolchain.
+## Tauri port (in progress, `src-tauri/`)
+Goal: no bundled Chromium (the installer is about 2.5 MB instead of ~80 MB), and a path to Android (Tauri 2 mobile).
+
+How it works: `scripts/prep-tauri.js` copies the existing screens into `src-tauri/ui` and generates a small `tauri-shim.js` from `preload.js`
+that defines the same `window.api`; every call goes to one Rust command, `ipc(channel, args)`, whose channel names are the Electron ones
+(`note:get`, `note:update`, ...). So the screens do not change and the Rust side is a table of handlers ported one by one from `main.js`.
+`notes.json` / `images/` / `location.json` are read and written in the same format and place, so both apps can use the same data.
+
+| Area | Status |
+|---|---|
+| Notes storage (load, atomic save, sanitising, empty/expired cleanup) | done, compiles in CI, not yet run on a PC |
+| Note windows: open, move/resize remembered, pin, roll-up, new, close, delete to trash | done (same status) |
+| Pictures (save/load) | done (same status) |
+| Tray, All notes, trash window, folders, snap, tidy | not yet |
+| Locked notes (AES-256-GCM + scrypt) | not yet |
+| Settings window, themes apply-all, backups, data-folder sync, start with Windows | not yet |
+| AI: summarize / grammar / checklist / chat / live edit, Ollama manager | not yet (reports itself as off) |
+| Android | later: needs the Tauri mobile targets and a touch-friendly layout |
+
+Build: GitHub Actions workflow *Tauri build (preview)* produces the Windows installer as a downloadable artifact on every push that touches the port.
+Locally: install Rust + the MSVC build tools, then `node scripts/prep-tauri.js && npx @tauri-apps/cli@2 build`.

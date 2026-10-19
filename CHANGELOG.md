@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- **Tauri 2 preview** (`src-tauri/`, built by the *Tauri build (preview)* workflow): notes storage, note windows and pictures are ported; the rest follows step by step. See docs/ARCHITECTURE.md.
+
 ## 1.11.0
 - `build.bat` and `start-dev.bat` download Node.js automatically if it is not installed (`get-node.bat` / `get-node.ps1`).
 - **Better Greek**: Greek notes get Greek-specific instructions (accents/τόνοι, final ς, ν ephelkystikon, ό,τι/ότι, ι/η/υ/ει/οι spelling), a worked example, and a safety check that rejects answers that were translated to English or rewritten wildly. Summaries of Greek notes are written in Greek. Added Gemma 3 4B and Qwen 2.5 7B (both good at Greek) to the recommended models.
