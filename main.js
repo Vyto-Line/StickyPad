@@ -267,20 +267,35 @@ function onScreensChanged() {
     if (r.moved) { relocated.add(id); w.setBounds(r.bounds); }
   });
 }
+// A note's saved place and size, made safe: a note that came from another PC (or an older version, or a damaged file) can have missing, odd or huge
+// numbers, and Electron refuses to make a window from those (the note then simply does not open). Always whole numbers, a size that fits the screens.
+function cleanBounds(b) {
+  b = b && typeof b === 'object' ? b : {};
+  const ds = screen.getAllDisplays().map(d => d.workArea), maxW = Math.max(MIN_W, ...ds.map(a => a.width)), maxH = Math.max(MIN_H, ...ds.map(a => a.height));
+  const num = v => { const x = typeof v === 'number' || (typeof v === 'string' && v.trim() !== '') ? Number(v) : NaN; return Number.isFinite(x) ? Math.round(x) : NaN; };
+  const w = num(b.width), h = num(b.height), x = num(b.x), y = num(b.y);
+  const out = { width: w > 0 ? Math.min(Math.max(w, MIN_W), maxW) : 300, height: h > 0 ? Math.min(Math.max(h, MIN_H), maxH) : 320 };
+  if (Number.isFinite(x) && Number.isFinite(y) && Math.abs(x) < 1e6 && Math.abs(y) < 1e6) { out.x = x; out.y = y; }
+  else { const p = screen.getPrimaryDisplay().workArea, k = Object.keys(notes).length % 8; out.x = p.x + 80 + k * 28; out.y = p.y + 80 + k * 28; }
+  return out;
+}
 function openNote(n) {
   const solid = GPU_OK && !!n.solidText;   // only notes that ask for it get a see-through window (the rest stay as safe as before)
   const existing = wins.get(n.id);
   if (existing && !existing.isDestroyed()) { existing.show(); return existing; }
-  let b = { ...n.bounds }; if (n.rolled) b.height = ROLL_H;
+  let b = cleanBounds(n.bounds); if (n.rolled) b.height = ROLL_H;
   if (Number.isFinite(b.x) && Number.isFinite(b.y)) {   // a screen that is gone (or a note off screen) brings the note to a screen you can see
     const pl = placement.place(b, n.home, displayList(), screen.getPrimaryDisplay().id);
     if (pl.moved) { b = pl.bounds; relocated.add(n.id); } else relocated.delete(n.id);
   }
-  const w = new BrowserWindow({
-    ...b, minWidth: MIN_W, minHeight: n.rolled ? ROLL_H : MIN_H, frame: false, show: false, icon: iconPath,
-    maximizable: false, fullscreenable: false, skipTaskbar: !!settings.hideTaskbar, backgroundColor: solid ? '#00000000' : n.color, transparent: solid,
+  const make = bb => new BrowserWindow({
+    ...bb, minWidth: MIN_W, minHeight: n.rolled ? ROLL_H : MIN_H, frame: false, show: false, icon: iconPath,
+    maximizable: false, fullscreenable: false, skipTaskbar: !!settings.hideTaskbar, backgroundColor: solid ? '#00000000' : (/^#[0-9a-f]{6}$/i.test(n.color) ? n.color : '#FFF2A8'), transparent: solid,
     webPreferences: { preload, contextIsolation: true, nodeIntegration: false }
   });
+  let w;
+  try { w = make(b); }
+  catch { const p = screen.getPrimaryDisplay().workArea; w = make({ x: p.x + 80, y: p.y + 80, width: 300, height: n.rolled ? ROLL_H : 320 }); }   // whatever is wrong with the saved place, the note still opens
   if (n.rolled) w.setMaximumSize(10000, ROLL_H);
   if (!solid && Number.isFinite(n.opacity) && n.opacity < 1) { try { w.setOpacity(Math.min(1, Math.max(0.3, n.opacity))); } catch {} }   // whole note fades
   seeThrough.set(n.id, solid);
