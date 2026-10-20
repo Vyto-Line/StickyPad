@@ -1,0 +1,8 @@
+name = "stickypad-sync"
+main = "worker.js"
+compatibility_date = "2025-01-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "stickypad-sync"
+database_id = "PASTE-THE-ID-FROM-STEP-3-HERE"
