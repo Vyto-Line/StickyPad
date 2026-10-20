@@ -41,7 +41,7 @@ function fromMarkdown(text, fileName) {
   let i = 0; while (i < lines.length && !lines[i].trim()) i++;
   const h = i < lines.length && /^#{1}\s+(.+?)\s*#*\s*$/.exec(lines[i]);
   if (h) { title = h[1].trim(); lines.splice(0, i + 1); if (lines.length && !lines[0].trim()) lines.shift(); }
-  if (!title) title = String(fileName || '').replace(/^.*[\\/]/, '').replace(/\.(stickypad|md|markdown|txt)$/i, '').trim();
+  if (!title) title = String(fileName || '').replace(/^.*[\\/]/, '').replace(/\.(stickypad|md|markdown|txt|text)$/i, '').trim();
   title = title.slice(0, 60);
 
   const blocks = []; let buf = [];
@@ -80,4 +80,23 @@ function noteFileArgs(argv) {
   return (Array.isArray(argv) ? argv : []).filter(a => typeof a === 'string' && a.length > 9 && !a.startsWith('--') && NOTE_EXT.test(a));
 }
 
-module.exports = { slug, toMarkdown, toText, fromMarkdown, uniqueNames, noteFileArgs, NOTE_EXT };
+// The file types Import and drag-and-drop accept.
+const IMPORT_EXT = /\.(stickypad|md|markdown|txt|text)$/i;
+// Text file bytes -> text. Windows programs save text in several ways: UTF-8 (with or without a mark), UTF-16 (Notepad's "Unicode"), or the old
+// 8-bit Windows code page (Greek files from old programs are windows-1253). Reading those as UTF-8 would turn the letters into garbage.
+function decodeText(buf, greek) {
+  const b = Buffer.isBuffer(buf) ? buf : Buffer.from(buf || []);
+  if (b.length >= 3 && b[0] === 0xEF && b[1] === 0xBB && b[2] === 0xBF) return b.slice(3).toString('utf8');
+  if (b.length >= 2 && b[0] === 0xFF && b[1] === 0xFE) return b.slice(2).toString('utf16le');
+  if (b.length >= 2 && b[0] === 0xFE && b[1] === 0xFF) return new TextDecoder('utf-16be').decode(b.slice(2));
+  if (b.length >= 4) {   // UTF-16 without a mark: plain letters have a zero byte beside each one
+    let ev = 0, od = 0; const n = Math.min(b.length, 400);
+    for (let i = 0; i < n; i++) if (b[i] === 0) { if (i % 2) od++; else ev++; }
+    if (od > n / 5 && ev === 0) return b.toString('utf16le');
+    if (ev > n / 5 && od === 0) return new TextDecoder('utf-16be').decode(b);
+  }
+  try { return new TextDecoder('utf-8', { fatal: true }).decode(b); }
+  catch { return new TextDecoder(greek ? 'windows-1253' : 'windows-1252').decode(b); }
+}
+
+module.exports = { IMPORT_EXT, decodeText, slug, toMarkdown, toText, fromMarkdown, uniqueNames, noteFileArgs, NOTE_EXT };

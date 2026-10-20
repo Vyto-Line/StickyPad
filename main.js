@@ -552,7 +552,7 @@ function importFiles(files) {
   files.forEach((f, i) => {
     try {
       if (fs.statSync(f).size > MAX_IMPORT) { failed++; return; }
-      const c = convert.fromMarkdown(fs.readFileSync(f, 'utf8'), f);
+      const c = convert.fromMarkdown(convert.decodeText(fs.readFileSync(f), settings.lang === 'el'), f);
       let pics = 0;   // pictures written into the file by Export become picture files again (at most 100 per note)
       const blocks = sanitizeBlocks(c.blocks.map(b => b.t !== 'img' ? b : (pics++ < 100 && b.data ? { t: 'img', id: saveImgData(b.data) } : null)));
       const k = (Object.keys(notes).length + i) % 8;
@@ -563,9 +563,15 @@ function importFiles(files) {
   });
   save(); return { ok: count > 0, count, failed };
 }
+// Files dropped on a StickyPad window: only note, Markdown and text files, at most 50 at a time.
+ipcMain.handle('drop:import', (e, paths) => {
+  const list = (Array.isArray(paths) ? paths : []).filter(p => typeof p === 'string' && path.isAbsolute(p) && convert.IMPORT_EXT.test(p)).slice(0, 50);
+  if (!list.length) return { ok: false, count: 0, failed: 0, none: true };
+  return importFiles(list);
+});
 function importNotes(parent) {
   const r = dialog.showOpenDialogSync(parent || undefined, { title: 'Choose StickyPad, Markdown or text files to import', properties: ['openFile', 'multiSelections'],
-    filters: [{ name: 'StickyPad, Markdown and text', extensions: ['stickypad', 'md', 'markdown', 'txt'] }], defaultPath: app.getPath('documents') });
+    filters: [{ name: 'StickyPad, Markdown and text', extensions: ['stickypad', 'md', 'markdown', 'txt', 'text'] }], defaultPath: app.getPath('documents') });
   if (!r || !r.length) return { ok: false, cancelled: true };
   return importFiles(r);
 }

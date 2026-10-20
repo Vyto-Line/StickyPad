@@ -1,7 +1,7 @@
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, webUtils } = require('electron');
 const call = c => (...a) => ipcRenderer.invoke(c, ...a);
 contextBridge.exposeInMainWorld('api', {
-  get: call('note:get'), remind: call('note:remind'), aiWarmup: call('ai:warmup'), noteExport: call('note:export'), wordsGet: call('words:get'), searchQuery: call('search:query'), searchIds: call('search:ids'), searchShow: call('search:show'), searchClose: call('search:close'), histList: call('hist:list'), histRestore: call('hist:restore'), update: call('note:update'), pin: call('note:pin'), roll: call('note:roll'),
+  get: call('note:get'), remind: call('note:remind'), aiWarmup: call('ai:warmup'), noteExport: call('note:export'), wordsGet: call('words:get'), dropFiles: files => ipcRenderer.invoke('drop:import', Array.from(files || []).map(f => { try { return webUtils.getPathForFile(f); } catch { return ''; } })), searchQuery: call('search:query'), searchIds: call('search:ids'), searchShow: call('search:show'), searchClose: call('search:close'), histList: call('hist:list'), histRestore: call('hist:restore'), update: call('note:update'), pin: call('note:pin'), roll: call('note:roll'),
   newNote: call('note:new'), close: call('note:close'), remove: call('note:delete'),
   lock: call('note:lock'), unlock: call('note:unlock'), relock: call('note:relock'), removeLock: call('note:removeLock'),
   saveImage: call('img:save'),

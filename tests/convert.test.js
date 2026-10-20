@@ -46,6 +46,18 @@ assert.deepStrictEqual(pr.blocks.map(b => b.t), ['text', 'img', 'check', 'img', 
 assert.strictEqual(pr.blocks[1].data, PNG); assert.strictEqual(pr.blocks[3].data, JPG); assert.strictEqual(pr.blocks[0].v, 'Before', 'no extra blank lines around a picture'); assert.strictEqual(pr.blocks[4].v, 'After');
 const again = C.toMarkdown(pr.title, pr.blocks.map(b => b.t === 'img' ? { t: 'img', id: b.data === PNG ? 'a.png' : 'b.jpg' } : b), { image: imgOf }); assert.strictEqual(again, C.toMarkdown('Pics', pb.filter(b => b.id !== 'gone.png'), { image: imgOf }), 'export, import, export gives the same file');
 const evil = C.fromMarkdown('# T\n![x](data:image/svg+xml;base64,PHN2Zz4=)\n![y](https://example.com/a.png)\n![z](data:text/html;base64,AAAA)\n'); assert.ok(!evil.blocks.some(b => b.t === 'img'), 'only png, jpeg, webp and gif data addresses become pictures');
+// reading text files saved in different ways
+const GR = 'Καλημέρα κόσμε';
+assert.strictEqual(C.decodeText(Buffer.from(GR, 'utf8')), GR, 'UTF-8');
+assert.strictEqual(C.decodeText(Buffer.concat([Buffer.from([0xEF, 0xBB, 0xBF]), Buffer.from(GR)])), GR, 'UTF-8 with a mark');
+assert.strictEqual(C.decodeText(Buffer.concat([Buffer.from([0xFF, 0xFE]), Buffer.from(GR, 'utf16le')])), GR, 'UTF-16 (Notepad "Unicode")');
+const be = Buffer.from(GR, 'utf16le'); for (let i = 0; i < be.length; i += 2) { const t = be[i]; be[i] = be[i + 1]; be[i + 1] = t; }
+assert.strictEqual(C.decodeText(Buffer.concat([Buffer.from([0xFE, 0xFF]), be])), GR, 'UTF-16 big endian');
+assert.strictEqual(C.decodeText(Buffer.from('Hello world, plain', 'utf16le')), 'Hello world, plain', 'UTF-16 without a mark');
+const cp1253 = Buffer.from([0xCA, 0xE1, 0xEB, 0xE7, 0xEC, 0xDD, 0xF1, 0xE1]);   // "Καλημέρα" the old Windows Greek way
+assert.strictEqual(C.decodeText(cp1253, true), 'Καλημέρα', 'old Greek 8-bit text'); assert.notStrictEqual(C.decodeText(cp1253, false), 'Καλημέρα');
+assert.strictEqual(C.decodeText(Buffer.from([0x63, 0x61, 0x66, 0xE9]), false), 'café', 'old Western 8-bit text'); assert.strictEqual(C.decodeText(Buffer.alloc(0)), '');
+assert.ok(['a.stickypad', 'B.MD', 'c.markdown', 'd.txt', 'e.text'].every(f => C.IMPORT_EXT.test(f)) && !['a.exe', 'b.docx', 'c.txt.exe', 'stickypad'].some(f => C.IMPORT_EXT.test(f)));
 console.log('convert ok');
 // .stickypad files: Markdown inside, found in a command line
 assert.deepStrictEqual(C.noteFileArgs(['C:\\App\\StickyPad.exe', '--updated', 'C:\\n\\Plan.stickypad', 'x.txt', 'D:\\A.STICKYPAD', '--x.stickypad']), ['C:\\n\\Plan.stickypad', 'D:\\A.STICKYPAD']);

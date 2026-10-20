@@ -2,6 +2,8 @@
 
 ## 1.14.26
 - **Pictures are now exported with the note.** *Export…* writes the pictures inside the file: a **.stickypad** or Markdown file holds each picture right where it sits in the note (as a standard Markdown picture, so other Markdown programs show them too), and **opening or importing the file puts the pictures back** in the new note. *Export all notes* does the same for every note. Plain text (.txt) cannot hold pictures, and StickyPad says so when you save one. Files with pictures are bigger, so the size limit for importing a file is now 150 MB. Only normal pictures (PNG, JPEG, WebP, GIF) are read back from a file, at most 100 per note.
+- **Drag and drop a file onto StickyPad to add it as a note.** Drop a `.stickypad`, Markdown (`.md`) or text (`.txt`) file on a note, on Home or on any other StickyPad window and it becomes a new note (it shows in All notes too, and a small message says how many were added). You can drop several at once (up to 50). Other kinds of files are refused politely instead of being opened inside the window, and pictures dropped into a note still go into the note as before.
+- **Text files in any common format are read correctly.** Import and drag-and-drop now understand UTF-8, UTF-16 (what Notepad calls "Unicode") and the old 8-bit Windows text, including old Greek files (windows-1253), so the letters no longer turn into garbage. `.text` files are accepted too.
 - Not tried on a real Windows PC yet.
 
 ## 1.14.25

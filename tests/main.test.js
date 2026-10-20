@@ -154,6 +154,20 @@ const H = require('./fake-electron');
   // ---- search across all notes ----
   const mk = async (title, text) => { await h['note:new']({ sender: { id: 0 } }); const ww = wins[wins.length - 1], ee = H.ev(ww); await h['note:update'](ee, { title, blocks: [{ t: 'text', v: text }] }); return { ww, ee, id: (await h['note:get'](ee)).id }; };
   const sa = await mk('Trip', 'start ' + 'blah '.repeat(300) + 'Ακρόπολη at the end'), sb = await mk('Diary', 'my zebra secret');
+  // ---- files dropped on a window ----
+  const dd = path.join(tmp, 'drop'); fs.mkdirSync(dd, { recursive: true });
+  fs.writeFileSync(path.join(dd, 'Greek old.txt'), Buffer.concat([Buffer.from('Σημείωση\n'.length ? [0xD3, 0xE7, 0xEC, 0xE5, 0xDF, 0xF9, 0xF3, 0xE7, 0x0A] : []), Buffer.from([0xCA, 0xE1, 0xEB, 0xE7, 0xEC, 0xDD, 0xF1, 0xE1])]));   // "Σημείωση" + "Καλημέρα" in windows-1253
+  fs.writeFileSync(path.join(dd, 'notepad.txt'), Buffer.concat([Buffer.from([0xFF, 0xFE]), Buffer.from('Line one\nLine two', 'utf16le')]));
+  fs.writeFileSync(path.join(dd, 'plain.md'), '# From md\n- [ ] task\n'); fs.writeFileSync(path.join(dd, 'virus.exe'), 'x');
+  await h['app:prefs']({}, { lang: 'el' });
+  const dr = await h['drop:import']({}, [path.join(dd, 'Greek old.txt'), path.join(dd, 'notepad.txt'), path.join(dd, 'plain.md'), path.join(dd, 'virus.exe'), 'relative.txt', 42, path.join(dd, 'missing.txt')]);
+  assert.ok(dr.ok && dr.count === 3 && dr.failed === 1, JSON.stringify(dr) + ' (3 read, 1 missing, .exe and relative paths never tried)');
+  const dl = await h['all:list']({}); const dn = t => dl.notes.find(n => n.title === t);
+  assert.ok(dn('Greek old') && /Σημείωση/.test(dn('Greek old').text) && /Καλημέρα/.test(dn('Greek old').text), 'old Greek text file read correctly: ' + JSON.stringify(dn('Greek old')));
+  assert.ok(dn('notepad') && /Line one\nLine two/.test(dn('notepad').text), 'UTF-16 file'); assert.ok(dn('From md'));
+  assert.deepStrictEqual(await h['drop:import']({}, ['x.exe']), { ok: false, count: 0, failed: 0, none: true }); assert.strictEqual((await h['drop:import']({}, 'nope')).none, true);
+  assert.strictEqual((await h['drop:import']({}, Array.from({ length: 80 }, () => path.join(dd, 'plain.md')))).count, 50, 'at most 50 at a time');
+  await h['app:prefs']({}, { lang: 'en' });
   // ---- pictures travel inside exported notes ----
   const PNGB = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64');
   const pic = await mk('With picture', 'caption'); const pid = await h['img:save'](pic.ee, 'data:image/png;base64,' + PNGB.toString('base64')); assert.ok(pid, 'picture saved');
