@@ -17,6 +17,7 @@ with sync_playwright() as p:
     b = p.chromium.launch()
     # a normal note is untouched
     small = make(500); pg = page(b, [{'t': 'text', 'v': small}])
+    ok(pg.evaluate("innerWidth - ed.getBoundingClientRect().right") >= 6, 'ordinary notes keep the scroll bar away from the edge too')
     ok(pg.evaluate("document.querySelectorAll('#ed .chunk').length") == 0, 'a normal note is one piece, as before')
     # a huge one is cut into short blocks and still saves exactly the same text
     text = make(40000); expect = text.count('alpha'); ln = len(text)
@@ -24,6 +25,9 @@ with sync_playwright() as p:
     nch = pg.evaluate("document.querySelectorAll('#ed .chunk').length"); ok(nch > 100, 'a huge note is shown in many short blocks (%d)' % nch)
     pg.click('#ed'); pg.keyboard.press('Control+End'); pg.keyboard.press('Control+Home'); pg.keyboard.type('Q'); pg.wait_for_timeout(500)
     bl = saved(pg); ok(bl and bl[0]['t'] == 'text' and bl[0]['v'] == 'Q' + text and bl[1]['t'] == 'check' and bl[1]['v'] == 'after', 'the saved text is exactly the original plus the typed letter (%d vs %d chars)' % (len(bl[0]['v']) if bl else -1, ln + 1))
+    lay = pg.evaluate("() => { const b = note.blocks; const t0 = performance.now(); render(b); ed.getBoundingClientRect(); ed.scrollHeight; return performance.now() - t0; }")
+    ok(lay < 250, 'drawing the huge note takes %d ms (it was about 500)' % lay)
+    ok(pg.evaluate("innerWidth - ed.getBoundingClientRect().right") >= 6, 'the scroll bar is 6+ px inside the window edge (the window resize border no longer covers it)')
     # typing stays quick
     pg.keyboard.press('Control+End'); ts = []
     for _ in range(3):
@@ -39,8 +43,15 @@ with sync_playwright() as p:
     pg.keyboard.press('Enter'); pg.keyboard.press('Enter'); ok(pg.inner_text('#findCnt').startswith('3 /'), 'Enter walks through the matches: %s' % pg.inner_text('#findCnt'))
     pg.keyboard.press('Shift+Enter'); pg.keyboard.press('Shift+Enter'); pg.keyboard.press('Shift+Enter'); ok(pg.inner_text('#findCnt').startswith('{:,} /'.format(expect)), 'and backwards past the start wraps to the last: %s' % pg.inner_text('#findCnt'))
     ok(pg.evaluate("CSS.highlights.get('find') && CSS.highlights.get('find').size") <= 3001, 'only the matches near the current one are painted')
+    pg.wait_for_timeout(200); vis = pg.evaluate("() => { const r = rangeOf(finds[findAt]).getBoundingClientRect(), b = ed.getBoundingClientRect(); return r.top >= b.top - 2 && r.bottom <= b.bottom + 2 && r.height > 0; }")
+    ok(vis, 'the last match is scrolled into view even though it was far away')
+    pg.keyboard.press('Enter'); pg.wait_for_timeout(200); vis = pg.evaluate("() => { const r = rangeOf(finds[findAt]).getBoundingClientRect(), b = ed.getBoundingClientRect(); return r.top >= b.top - 2 && r.bottom <= b.bottom + 2 && r.height > 0 && ed.scrollTop < 400; }")
+    ok(vis, 'and the first match is scrolled to again')
     pg.fill('#findIn', 'ΚΑΛΗΜΕΡΑ'); pg.wait_for_timeout(1500); ok(pg.inner_text('#findCnt').endswith('/ ' + '{:,}'.format(text.count('καλημέρα'))), 'capitals and accents are ignored: %s' % pg.inner_text('#findCnt'))
     ok(not pg.errs, 'no errors %s' % pg.errs)
+    # scrolling to the end by dragging the bar / keys reaches the real end
+    pg.evaluate("ed.scrollTop = ed.scrollHeight"); pg.wait_for_timeout(300); pg.evaluate("ed.scrollTop = ed.scrollHeight"); pg.wait_for_timeout(300)
+    ok(pg.evaluate("ed.scrollTop + ed.clientHeight >= ed.scrollHeight - 3") and pg.evaluate("ed.scrollTop") > 100000, 'the scroll bar reaches the end of the note (%d px)' % pg.evaluate("ed.scrollTop"))
     # select all + delete still empties the whole note
     pg.keyboard.press('Escape'); pg.click('#ed'); pg.keyboard.press('Control+a'); pg.keyboard.press('Delete'); pg.wait_for_timeout(500)
     ok(saved(pg) == [], 'select all, Delete: the huge note is cleared (%s)' % str(saved(pg))[:60])
@@ -48,6 +59,6 @@ with sync_playwright() as p:
     # a text with a trailing line break and blank lines is kept
     odd = ('x\n' * 120000) + '\n\nend'
     pg = page(b, [{'t': 'text', 'v': odd}]); pg.click('#ed'); pg.keyboard.press('Control+End'); pg.keyboard.type('!'); pg.wait_for_timeout(500)
-    bl = saved(pg); ok(bl and bl[0]['v'] == odd + '!', 'blank lines and the end of the text are kept exactly')
+    bl = saved(pg); ok(bl and bl[0]['v'] == odd + '!', 'blank lines and the end of the text are kept exactly (%s)' % (repr(bl[0]['v'][-14:]) + ' len %d vs %d' % (len(bl[0]['v']), len(odd) + 1) if bl else bl))
     b.close()
 print('FAILS:', fails); sys.exit(1 if fails else 0)

@@ -167,7 +167,7 @@ function bigText(v) {
   const lines = v.split('\n'), last = lines.length - 1;
   for (let i = 0; i <= last; i += CHUNK_LINES) {
     const end = Math.min(last + 1, i + CHUNK_LINES), d = document.createElement('div');
-    d.className = end > last ? 'chunk last' : 'chunk';
+    d.className = end > last ? 'chunk last' : 'chunk'; d.style.setProperty('--l', end - i);   // --l: how many lines (the page guesses the height of blocks it has not drawn yet from it)
     d.textContent = lines.slice(i, end).join('\n') + (end > last ? '' : '\n');
     ed.appendChild(d);
   }
@@ -289,7 +289,17 @@ function clearNote() {   // empties the note completely and leaves a clean caret
   const r = document.createRange(); r.selectNodeContents(ed); r.collapse(true); placeCaret(r);
   mark(); queue();
 }
+// In a very long note the blocks far away are not drawn yet, and the browser cannot put the caret inside one: Ctrl+End goes there by itself.
+function bigEnd() {
+  const last = ed.lastElementChild; if (!last || !last.classList.contains('chunk')) return false;
+  ed.scrollTop = ed.scrollHeight;   // draws the last blocks (twice: the first guess of their height is corrected once they are drawn)
+  const r = document.createRange(); let n = last; while (n.lastChild) n = n.lastChild;
+  if (n.nodeType === 3) r.setStart(n, n.nodeValue.length); else r.selectNodeContents(last);
+  r.collapse(false); placeCaret(r);
+  ed.scrollTop = ed.scrollHeight; return true;
+}
 ed.addEventListener('keydown', e => {
+  if (e.ctrlKey && !e.altKey && !e.shiftKey && e.key === 'End' && bigEnd()) { e.preventDefault(); return; }
   if (e.ctrlKey && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'a') { e.preventDefault(); selectAllNote(); return; }
   if ((e.key === 'Delete' || e.key === 'Backspace') && !e.ctrlKey && !e.altKey && allSelected()) { e.preventDefault(); clearNote(); commitNow(); return; }
   if (e.ctrlKey && !e.altKey) {

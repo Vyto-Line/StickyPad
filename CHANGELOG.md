@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.14.33
+- **Opening a huge note is instant.** The parts of a very long note that are off screen are no longer laid out or drawn until you scroll to them: drawing a 1.4 MB note went from about half a second to a few milliseconds (a 4 MB note took a second or more). Ctrl+End, Find and the scroll bar still reach every part of the note; Ctrl+End now puts the cursor at the very end by itself.
+- **The scroll bar of a note can be grabbed again.** On Windows, the outer few pixels inside a frameless window are used for resizing it, and they covered the note's thin scroll bar, so clicking or dragging it did nothing. The scroll bar now sits a few pixels inside the edge.
+- **The AI recognises many more ways of asking "how many times…".** "How many times was the word Remove captured?", "Count the occurrences of Remove", "How many times was "Remove" used", and the Greek forms are all understood, so StickyPad counts the word itself and gives the AI the exact number (45,000 instead of a guess of 85). Pronouns such as "it" or "this" are never counted as a word.
+- Not tried on a real Windows PC yet.
+
 ## 1.14.32
 - **Huge notes no longer lag.** A note with millions of letters made every key press take about a third of a second, because the editor had to lay out the whole text again each time. A very long text (over 200,000 letters) is now shown as many short blocks of about 100 lines, so only the block you type in is redone: typing is about five times faster (about 0.03 s instead of 0.3 s for a 1.8 MB note). The text itself is exactly the same: saving, exporting, undo and select-all work as before, and ordinary notes are not affected at all.
 - **Find in note counts every match.** Ctrl+F showed "5000+" for a word that appears 46,511 times. It now counts all of them (up to half a million) and shows the exact number, and Next/Previous walk through all of them. Only the matches near the current one are highlighted, which keeps even a huge note fast.

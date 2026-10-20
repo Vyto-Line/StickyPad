@@ -3,20 +3,22 @@
 // and hands the AI the exact number. Pure functions: tests and main.js use them.
 const { fold } = require('./search');
 
-const ASKS = /(how\s+many|how\s+often|number\s+of|count\b|πόσες|πόσα|πόσοι|πόσο\s+συχνά|μέτρησε|αριθμός)/i;
-const ABOUT = /(times|occurrences?|appears?|appear|mentions?|used|repeat|words?\b|φορές|φορά|εμφανίζ|υπάρχ|αναφέρ|λέξη|λέξεις|φράση)/i;
+const ASKS = /(how\s+many|how\s+often|number\s+of|count\b|tally|πόσες|πόσα|πόσοι|πόσο\s+συχνά|μέτρησε|αριθμός)/i;
 const QUOTED = /["“”«»`]([^"“”«»`\n]{1,60})["“”«»`]/;
-const AFTER = /(?:\bword|\bphrase|\bterm|λέξη|λέξης|φράση|φράσης)\s+([^\s"“”«»`]{1,40})/i;
-const AFTER_TIMES = /(?:times\s+(?:does|do|is|are)\s+|φορές\s+(?:εμφανίζεται|υπάρχει|αναφέρεται|χρησιμοποιείται)\s+(?:η\s+λέξη\s+|το\s+|η\s+|ο\s+)?)([^\s"“”«»`?!.,;:]{1,40})/i;
+const WORD = /(?:\bword|\bphrase|\bterm|λέξη|λέξης|φράση|φράσης)\s+([^\s"“”«»`?!,;:]{1,40})/i;
+const TIMES = /(?:\btimes|\boccurrences?|\binstances?|\bmentions?|φορές|εμφανίσεις)\s+(?:of\s+)?(?:(?:does|do|is|are|was|were|has|have|εμφανίζεται|υπάρχει|αναφέρεται|χρησιμοποιείται)\s+)?(?:the\s+|η\s+|το\s+|ο\s+)?(?:word\s+|phrase\s+|λέξη\s+)?([^\s"“”«»`?!,;:]{1,40})/i;
+const STOP = new Set(['it', 'this', 'that', 'these', 'those', 'the', 'a', 'an', 'my', 'your', 'there', 'they', 'them', 'one', 'each', 'everything', 'anything', 'something', 'he', 'she', 'we', 'i', 'you', 'in', 'of', 'on', 'is', 'are', 'was', 'were', 'do', 'does', 'did', 'αυτό', 'αυτή', 'αυτός', 'το', 'η', 'ο', 'τι', 'στο', 'στη', 'στην']);
 const clean = s => String(s || '').replace(/^[\s'‘’(\[]+|[\s'‘’)\].,;:!?…]+$/g, '').trim();
 
 // The thing being counted, or '' when the question is not a counting question about a word or phrase.
 function target(question) {
   const q = String(question || '');
-  if (!ASKS.test(q) || !ABOUT.test(q)) return '';
-  const m = q.match(QUOTED) || q.match(AFTER) || q.match(AFTER_TIMES);
-  const t = m ? clean(m[1]) : '';
-  return t.length >= 1 && t.length <= 60 ? t : '';
+  if (!ASKS.test(q)) return '';
+  for (const re of [QUOTED, WORD, TIMES]) {
+    const m = q.match(re), t = m ? clean(m[1]) : '';
+    if (t && t.length <= 60 && !STOP.has(t.toLowerCase())) return t;
+  }
+  return '';
 }
 const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 // How many times `word` is in `text`: anywhere in the text (what Ctrl+F counts), and as a whole word only. Ignores capitals and accents.
