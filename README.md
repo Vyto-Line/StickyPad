@@ -109,6 +109,7 @@ StickyPad remembers which screen each note is on. Unplug a monitor and its notes
 ### Sync, backup and your data
 - **Use your notes on every PC**: *Settings > Data & backup > Choose folder…* moves the data into a folder kept in sync by OneDrive, Dropbox, Google Drive or Syncthing. Choose the same folder on your other PCs; changes appear within seconds. If two PCs edit at the same moment, the other version is saved in a `conflicts` folder, never lost.
 - **Automatic backups** once a day (the newest 7 are kept) and a *Back up now* button. **Restore from a backup** (same page) lists them and can add only the missing notes or replace everything (your current notes are kept first as `before-restore-…`).
+- **Ctrl+K** in any window opens search plus actions (type `>` for actions only).
 - **First-run welcome tour** with five short steps; open it again from *Settings > About*.
 - **SQLite export/import** (`tools/stickypad_db.py`) for other apps or a future Android version.
 - Saves are crash-safe: files are written atomically.

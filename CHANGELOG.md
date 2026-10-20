@@ -1,8 +1,11 @@
 # Changelog
 
-## 1.14.27
-- **Restore from a backup (Settings → Data).** StickyPad already made a daily backup; now you can use it without opening folders. A drop down (closed until you open it, so the page stays tidy) shows each backup with its date, how many notes (and trashed notes) it holds, plus the copy kept at the last start that went well. For each one you can **Add missing notes** (puts back only the notes you do not have now, with their pictures, and changes nothing else) or **Replace all…** (your notes become exactly like that backup; asks you to press twice, and first keeps what you had in the backups folder as `before-restore-…`). **Restore from a file…** adds the notes of a `notes.json` you pick. Settings are never changed by a restore. A backup that cannot be read is shown but cannot be used.
+## 1.14.28
+- **Ctrl+K: search and actions in one box.** In any StickyPad window press **Ctrl+K** (or the global **Ctrl+Alt+F**) and type. Notes are found as before; the things StickyPad can do now show up too, marked *action*: New note, New note from the clipboard, Open Home, Open the trash, AI chat, Settings, Set up the AI helper, Backups and restore, Back up now, Dark / Light / Match Windows, Show all notes, Tidy up notes and the Welcome tour. Type `>` first to see only actions (`>` alone lists them all). Enter runs the highlighted one.
+- **The backups list is a drop down** in Settings → Data, closed until you open it, so the page is calmer.
+- **Restore from a backup (Settings → Data).** StickyPad already made a daily backup; now you can use it without opening folders. A drop down shows each backup with its date, how many notes (and trashed notes) it holds, plus the copy kept at the last start that went well. For each one you can **Add missing notes** (puts back only the notes you do not have now, with their pictures, and changes nothing else) or **Replace all…** (your notes become exactly like that backup; asks you to press twice, and first keeps what you had in the backups folder as `before-restore-…`). **Restore from a file…** adds the notes of a `notes.json` you pick. Settings are never changed by a restore. A backup that cannot be read is shown but cannot be used.
 - **A short welcome tour the first time you run StickyPad.** Five quick steps: your first note, finding things (with your real shortcuts), making notes yours, the optional AI helper (with a button to set it up) and how your notes stay safe. Skip it any time with Esc; open it again from Settings → About → *Welcome tour*.
+- A checklist for trying a release on a real Windows PC is in `docs/WINDOWS_CHECKLIST.md`.
 - Not tried on a real Windows PC yet.
 
 ## 1.14.26

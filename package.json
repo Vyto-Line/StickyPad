@@ -1,7 +1,7 @@
 {
   "name": "stickypad",
   "productName": "StickyPad",
-  "version": "1.14.27",
+  "version": "1.14.28",
   "description": "Colourful sticky notes for Windows with a local AI helper (Ollama), Greek support and optional sync through any synced folder",
   "main": "main.js",
   "scripts": {
@@ -30,6 +30,8 @@
       "words.js",
       "search.js",
       "dropfiles.js",
+      "cmdk.js",
+      "commands.js",
       "safeload.js",
       "restore.js",
       "welcome.html",

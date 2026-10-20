@@ -19,6 +19,7 @@ const KEYS = require('./keys');
 const links = require('./links');
 const notesearch = require('./notesearch');
 const search = require('./search');
+const commands = require('./commands');
 const safeload = require('./safeload');
 const restore = require('./restore');
 const importers = require('./importers');
@@ -934,12 +935,14 @@ const titleOf = n => n.title || String(n.text || '').trim().split('\n')[0].slice
 ipcMain.handle('search:query', (e, q) => {
   q = String(q == null ? '' : q).slice(0, 200);
   const byId = id => notes[id];
-  return search.search(searchIx, allNotes(), q, { max: 40 }).map(r => {
+  const cmds = commands.match(q).map(c => ({ cmd: c.id, title: [{ t: c.label, h: false }], snippet: [{ t: c.hint, h: false }] }));
+  if (q.trim().startsWith('>')) return cmds;
+  return cmds.concat(search.search(searchIx, allNotes(), q, { max: 40 }).map(r => {
     const n = byId(r.id); if (!n) return null;
     const g = n.group && groups.find(x => x.id === n.group);
     return { id: n.id, title: r.title.length ? r.title : [{ t: n.lock ? 'Locked note' : (titleOf(n) || (imgIds(n).length ? 'Picture note' : '(empty note)')), h: false }],
              snippet: r.snippet, color: n.color, font: n.font, folder: g ? g.name : '', locked: !!n.lock, pinned: !!n.pinned, updated: n.updated || 0 };
-  }).filter(Boolean);
+  }).filter(Boolean));
 });
 ipcMain.handle('search:ids', (e, q) => search.matchIds(searchIx, allNotes(), String(q == null ? '' : q).slice(0, 200)));
 ipcMain.handle('search:show', (e, id) => {
@@ -947,6 +950,32 @@ ipcMain.handle('search:show', (e, id) => {
   closeQuick(); const w = openNote(n); if (w.isMinimized()) w.restore(); w.show(); w.focus(); return true;
 });
 ipcMain.handle('search:close', () => { closeQuick(); });
+ipcMain.handle('search:open', () => { if (!quickWin || quickWin.isDestroyed()) toggleQuick(); return true; });
+function runCommand(id) {
+  const mode = m => setPrefsFull({ mode: m });
+  switch (id) {
+    case 'new': makeNote(null); break;
+    case 'clip': newFromClipboard(); break;
+    case 'home': openAll(); break;
+    case 'trash': openAll('trash'); break;
+    case 'chat': openChat(); break;
+    case 'settings': openSettings(); break;
+    case 'settings-ai': openSettings('ai'); break;
+    case 'settings-data': openSettings('data'); break;
+    case 'backup': { const d = doBackup(); try { new Notification({ title: 'StickyPad', body: d ? 'Backup made.' : 'Nothing to back up yet.' }).show(); } catch {} break; }
+    case 'dark': case 'light': case 'system': mode(id); break;
+    case 'showall': showAll(); break;
+    case 'tidy': tidy(); break;
+    case 'welcome': openWelcome(); break;
+    default: return false;
+  }
+  return true;
+}
+ipcMain.handle('search:run', (e, id) => {
+  if (!commands.byId(id)) return false;
+  closeQuick(); setTimeout(() => { try { runCommand(id); } catch {} }, 60); return true;   // after the small window has gone, so the new window can take focus
+});
+function setPrefsFull(p) { if (['light', 'dark', 'system'].includes(p.mode)) { settings.mode = p.mode; applyMode(); themeChanged(); save(); } }
 function closeQuick() { if (quickWin && !quickWin.isDestroyed()) quickWin.close(); quickWin = null; }
 // The small search window (Ctrl+Alt+F): opens in the middle of the screen the mouse is on, closes when you click elsewhere.
 function toggleQuick() {

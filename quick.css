@@ -22,3 +22,5 @@ footer{display:flex;gap:14px;align-items:center;padding:7px 14px;border-top:1px 
 footer #count{margin-left:auto}
 kbd{font:inherit;font-size:10.5px;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:0 4px;margin-right:3px;background:var(--bg)}
 *::-webkit-scrollbar{width:9px}*::-webkit-scrollbar-thumb{background:var(--line);border-radius:8px}
+
+.dot.cmd{width:16px;height:16px;margin-top:2px;background:var(--line,#ccc);color:var(--fg,#333);display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;line-height:1}

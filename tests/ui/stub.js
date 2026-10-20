@@ -19,6 +19,8 @@
     welcomeClose: async o => { S.calls.push(['welcomeClose', o || {}]); },
     dropFiles: async files => { S.calls.push(['dropFiles', files.map(f => f.name)]); return window.__DROP || { ok: true, count: files.length, failed: 0 }; },
     searchClose: async () => { S.calls.push(['searchClose']); },
+    searchOpen: async () => { S.calls.push(['searchOpen']); },
+    searchRun: async id => { S.calls.push(['searchRun', id]); return true; },
     saveImage: async () => 'img' + Math.random().toString(36).slice(2, 8),
     histList: async () => ({ locked: false, items: S.hist || [{ t: Date.now() - 3600e3, words: 12, pics: 0, preview: 'old first line' }, { t: Date.now() - 86400e3, words: 3, pics: 1, preview: '' }] }),
     histRestore: async t => { S.calls.push(['histRestore', t]); S.note.blocks = [{ t: 'text', v: 'RESTORED' }]; return true; },

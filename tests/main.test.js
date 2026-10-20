@@ -219,6 +219,8 @@ const H = require('./fake-electron');
   await h['note:update'](sa.ee, { blocks: [{ t: 'text', v: 'now about giraffes' }] }); assert.deepStrictEqual(await h['search:ids']({}, 'giraffes'), [sa.id], 'edited text is searched at once'); assert.deepStrictEqual(await h['search:ids']({}, 'Ακρόπολη'), []);
   assert.ok((await h['search:query']({}, '')).length >= 2, 'no text: the newest notes');
   assert.deepStrictEqual(await h['search:query']({}, 'q'.repeat(5000)), [], 'a huge query is just cut, no crash');
+  { const cr = await h['search:query']({}, 'dark'); assert.ok(cr[0].cmd === 'dark' && cr[0].title[0].t === 'Dark mode', 'an action comes first'); const co = await h['search:query']({}, '>'); assert.ok(co.length >= 10 && co.every(r => r.cmd), 'only actions with ">"');
+    assert.strictEqual(await h['search:run']({}, 'nope'), false, 'unknown action refused'); assert.strictEqual(await h['search:run']({}, 'light'), true); await new Promise(r => setTimeout(r, 150)); }
   assert.strictEqual(await h['search:show']({}, 'nope'), false);
   // the shortcut opens the search window, pressing it again closes it
   assert.ok(electron.__reg['Control+Alt+F'], 'Ctrl+Alt+F is a global shortcut');
