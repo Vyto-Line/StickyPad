@@ -28,7 +28,9 @@
   ];
   function draw() {
     const steps = STEPS(), s = steps[at];
-    $('#icon').textContent = s.icon; $('#title').textContent = s.title;
+    document.querySelectorAll('#scene .sc').forEach((v, i) => v.classList.toggle('on', i === at));   // showing a scene again restarts its animation
+    const card = $('#card'); card.classList.remove('swap'); void card.offsetWidth; card.classList.add('swap');
+    $('#title').textContent = s.title;
     const t = $('#text'); t.textContent = ''; say(t, s.text);
     const ex = $('#extra'); ex.textContent = '';
     if (s.button) { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = s.button.label; b.onclick = () => window.api.welcomeClose({ go: s.button.go, section: s.button.section }); ex.appendChild(b); }

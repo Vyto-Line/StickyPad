@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.14.30
+- **A livelier welcome tour.** Each of the five steps now has its own small animated picture: sticky notes dropping onto the desktop and getting written on, a search box typing a word while results slide in, a note changing colour with a word being finished by **Tab**, a chat bubble answered by the AI "on your PC", and a shield with a tick next to your daily backups. The text slides in on every step and the dots glide between steps. If Windows is set to *reduce motion*, nothing moves.
+- Not tried on a real Windows PC yet.
+
 ## 1.14.29
 - **Fix: windows flickering on the screen until you closed one of them.** After an update, "What's new" and the Home window could open at the same moment and keep taking the keyboard focus from each other, so both flashed non-stop until you pressed *Got it*. A window now only takes the keyboard when it does not already have it, and if two windows start a fight over it the extra focus requests are simply ignored until it calms down. Notes use the same protection.
 - Not tried on a real Windows PC yet (the flicker itself could not be reproduced here; the fix removes the cause that matches what you saw, and the rule is tested).

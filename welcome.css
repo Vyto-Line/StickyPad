@@ -4,7 +4,79 @@ html,body{margin:0;height:100%}
 body{display:flex;flex-direction:column;background:var(--bg);color:var(--fg);font:14px/1.55 "Segoe UI Variable Text","Segoe UI",system-ui,sans-serif}
 main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 28px;overflow:auto}
 #card{width:100%;max-width:460px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:30px 28px 26px;text-align:center;box-shadow:0 6px 24px #0000000d}
-#icon{font-size:46px;line-height:1;margin-bottom:10px}
+#scene{height:150px;margin:-6px -6px 12px;position:relative}
+#scene .sc{display:none;width:100%;height:150px;overflow:visible}
+#scene .sc.on{display:block;animation:float 5s ease-in-out infinite alternate}
+@keyframes float{to{transform:translateY(-5px)}}
+.sc text{font:600 13px "Segoe UI Variable Text","Segoe UI",system-ui,sans-serif;fill:var(--fg)}
+.sc text.sm{font-size:12px}.sc text.wh{fill:#fff}.sc tspan.ghost{fill:var(--mute)}
+.sc .card{fill:var(--card);stroke:var(--line);stroke-width:1.2}
+/* 1: notes drop in and get written on */
+.n{transform-box:fill-box;transform-origin:50% 0;transform:rotate(var(--r,0deg));animation:drop .75s cubic-bezier(.3,1.5,.5,1) backwards;animation-delay:var(--d,0s);filter:drop-shadow(0 3px 4px #0000002e)}
+@keyframes drop{from{transform:translateY(-110px) rotate(calc(var(--r) * -4));opacity:0}}
+.ln{fill:none;stroke:#0000004d;stroke-width:4;stroke-linecap:round;stroke-dasharray:80;animation:write .6s ease-out backwards;animation-delay:var(--d,0s)}
+.ln.dk{stroke:var(--line);stroke-width:5}
+@keyframes write{from{stroke-dashoffset:80}}
+.tick{fill:none;stroke:#1d7a46;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:24;animation:write 2.4s ease-out backwards 1.6s}
+.tw{transform-box:fill-box;transform-origin:center;animation:twinkle 2.2s ease-in-out infinite;animation-delay:var(--d,0s)}
+@keyframes twinkle{0%,100%{transform:scale(.4);opacity:.3}50%{transform:scale(1.2);opacity:1}}
+/* 2: search typed, results slide in */
+.mag{fill:none;stroke:var(--mute);stroke-width:2.2;stroke-linecap:round}
+.typing{animation:typing 1s steps(6) backwards .3s}
+@keyframes typing{from{width:0}}
+.caret{fill:var(--accent);animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:0}}
+.res{animation:rise .5s cubic-bezier(.2,.8,.3,1) backwards;animation-delay:var(--d,0s)}
+@keyframes rise{from{transform:translateY(16px);opacity:0}}
+.mk{fill:#ffe27a;opacity:.9}
+.gr{fill:none;stroke:var(--line);stroke-width:5;stroke-linecap:round}
+.res .mk+.gr{stroke:var(--line)}
+/* 3: colours change, prediction, tab key */
+.n2{filter:drop-shadow(0 3px 4px #0000002e)}
+.recolor{animation:recolor 8s linear infinite}
+@keyframes recolor{0%,18%{fill:#FFE27A}25%,43%{fill:#FFB3C7}50%,68%{fill:#A9D6FF}75%,93%{fill:#B7EBA0}100%{fill:#FFE27A}}
+.pal{transform-box:fill-box;transform-origin:center;animation:pal 8s ease-in-out infinite;animation-delay:calc(var(--i) * 2s - 0.2s)}
+@keyframes pal{0%,4%,29%,100%{transform:scale(1)}12%{transform:scale(1.35)}}
+.sc tspan.ghost{animation:ghost 3s ease-in-out infinite}
+@keyframes ghost{0%,30%{fill-opacity:.15}45%,70%{fill-opacity:.8}100%{fill-opacity:.15}}
+.key{fill:var(--bg);stroke:var(--line);stroke-width:1.6}
+.tabkey{transform-box:fill-box;transform-origin:center;animation:press 3s ease-in-out infinite}
+@keyframes press{0%,60%,100%{transform:translateY(0)}68%{transform:translateY(3px)}76%{transform:translateY(0)}}
+.sl{stroke:var(--line);stroke-width:5;stroke-linecap:round}
+.knob{fill:var(--accent);animation:knob 4s ease-in-out infinite alternate}
+@keyframes knob{to{transform:translateX(62px)}}
+/* 4: chat */
+.bub{animation:rise .5s cubic-bezier(.2,.8,.3,1) backwards;animation-delay:var(--d,0s)}
+.bme{fill:var(--accent)}
+.dots3 circle{fill:var(--mute);animation:dot 1s ease-in-out 2 backwards .9s;transform-box:fill-box;transform-origin:center;opacity:0;animation-fill-mode:both}
+.dots3 circle:nth-child(2){animation-delay:1.05s}.dots3 circle:nth-child(3){animation-delay:1.2s}
+@keyframes dot{0%,100%{transform:translateY(0);opacity:.3}50%{transform:translateY(-4px);opacity:1}}
+.spin{transform-box:fill-box;transform-origin:center;animation:spin 6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.chip{animation:rise .5s ease backwards;animation-delay:var(--d,0s)}
+.chipbg{fill:#3bb27322;stroke:#3bb273;stroke-width:1.2}
+.lock{fill:#1d7a46}.lock.sh{fill:none;stroke:#1d7a46;stroke-width:1.6}
+/* 5: safe */
+.bk{animation:rise .5s cubic-bezier(.2,.8,.3,1) backwards;animation-delay:var(--d,0s)}
+.shield{transform-box:fill-box;transform-origin:center;animation:pop .7s cubic-bezier(.3,1.6,.5,1) backwards .3s}
+@keyframes pop{from{transform:scale(.3);opacity:0}}
+.sh-f{fill:color-mix(in srgb,var(--accent) 16%,transparent);stroke:var(--accent);stroke-width:3;stroke-linejoin:round}
+.tickb{fill:none;stroke:#1d9a5a;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:70;animation:tick 0.7s ease-out backwards 0.9s}
+@keyframes tick{from{stroke-dashoffset:70}}
+.rc{fill:var(--card);stroke:var(--line);stroke-width:1.4}
+.rarrow,.rhead{fill:none;stroke:var(--accent);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.restore{transform-box:fill-box;transform-origin:center;animation:turn 6s ease-in-out infinite}
+@keyframes turn{0%,55%{transform:rotate(0)}85%,100%{transform:rotate(-360deg)}}
+.cf{fill:var(--c);transform-box:fill-box;animation:conf 2.6s ease-out infinite backwards;animation-delay:var(--d,0s)}
+@keyframes conf{0%{transform:translate(0,0);opacity:0}15%{opacity:1}100%{transform:translate(var(--x),-70px) scale(.5);opacity:0}}
+/* text slides in on every step */
+#card.swap #title{animation:rise2 .45s ease backwards .08s}
+#card.swap #text{animation:rise2 .45s ease backwards .16s}
+#card.swap #extra{animation:rise2 .45s ease backwards .24s}
+@keyframes rise2{from{transform:translateY(10px);opacity:0}}
+#dots button{transition:width .25s ease,background .25s ease}
+@media (max-height:560px){#scene,#scene .sc{height:110px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 h1{margin:0 0 10px;font-size:22px;font-weight:700}
 #text p{margin:0 0 10px;color:var(--mute)}
 #text p b{color:var(--fg)}
