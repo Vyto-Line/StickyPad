@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.14.21
+- **Ctrl + mouse wheel changes the text size.** Hold Ctrl and scroll up for bigger text, down for smaller (10 to 48 px). It is the same size as the slider in the note's panel and each note remembers its own.
+- **Pasting from Excel gives the values, not a picture.** Excel puts both the text and a picture of the cells on the clipboard, and StickyPad used to pick the picture. Now the text wins (cells are separated by tabs, and the extra empty line Excel adds at the end is dropped). A picture is pasted only when there is no text, like a screenshot.
+- **Copying a checklist no longer brings the extras.** Selecting checklist items and pressing Ctrl+C (or Ctrl+X) copies just their words, one per line, without the tick box, the remove button (the "x") or anything else. *Copy note as text* does the same: no more `[ ]` and `[x]` in front of the items. (Exporting to a Markdown file still writes `- [ ]` and `- [x]`, because importing needs them.)
+- **Text prediction.** After you type three letters of a word you have written before, a small list offers it (up to five). **Tab** finishes the word, **Up and Down** move through the list, then **Enter** picks one, **Esc** closes it, and a click works too. Ctrl+Z takes back just the finished word. It learns from all your notes and from the note you are typing in, and a word needs to have been used at least twice. It works with Greek too, ignoring capitals and accents. Notes with a lock are never read. Switch it off in *Settings > General > Text prediction*.
+- **Exported notes open with a double-click.** *Export…* now saves a **StickyPad note (.stickypad)** by default (Markdown inside, so any text editor can still read it; Markdown and text are still offered). After installing this version, double-clicking a `.stickypad` file opens it as a new note, also when StickyPad is already running. *Import notes* accepts `.stickypad` files too. Pictures are still not included.
+- Not tried on a real Windows PC yet. The double-click part needs the installer: it only works after you install 1.14.21 (not with "npm start").
+
 ## 1.14.20
 - **Ctrl+Z now undoes "Apply to note".** After you put an AI answer into a note (*Replace the note* or *Add at the end*), Ctrl+Z brings back the text from before, and Ctrl+Y or Ctrl+Shift+Z applies it again. Before, applying an answer cleared the note's undo history, so Ctrl+Z did nothing.
 - Not tried on a real Windows PC yet.

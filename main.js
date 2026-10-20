@@ -8,6 +8,7 @@ const backup = require('./backup');
 const reminders = require('./reminders');
 const history = require('./history');
 const convert = require('./convert');
+const words = require('./words');
 const THEMES = require('./themes');
 const path = require('path');
 const fs = require('fs');
@@ -32,7 +33,7 @@ function takeLock() {
   return false;
 }
 if (!takeLock()) process.exit(0);
-let quitting = false, remTimer = null;
+let quitting = false, remTimer = null, wordsVer = 0, wordsCache = null;
 // Anything that goes wrong in the main process is written to crash.log (Windows would show a "JavaScript error" box otherwise);
 // while the app is closing for an update it is only logged.
 function crashLog(kind, err) {
@@ -174,7 +175,7 @@ const flush = () => {
     datadir.writeAtomic(file, serialize()); lastMtime = datadir.mtimeOf(file); dirty = false;
   } catch {}
 };
-function save() { dirty = true; clearTimeout(saveTimer); saveTimer = setTimeout(flush, 300); pingAll(); }
+function save() { dirty = true; wordsVer++; clearTimeout(saveTimer); saveTimer = setTimeout(flush, 300); pingAll(); }
 
 // Picks up changes made by another device through a synced data folder (OneDrive, Dropbox, Syncthing...).
 function reloadFromDisk() {
@@ -490,7 +491,7 @@ ipcMain.handle('note:get', e => {
   const n = notes[idOf(e)]; if (!n) return null;
   const { lock, ...rest } = n;
   const bs = canEditBody(n) ? blocksOf(n).map(b => b.t === 'img' ? { t: 'img', id: b.id, src: readImg(b.id) } : b).filter(b => b.t !== 'img' || b.src) : [];
-  return { ...rest, solidOk: GPU_OK, blocks: bs, locked: !!lock, unlocked: sessions.has(n.id), imgBase: imgBase(), keys: curKeys(), suggestDates: settings.suggestDates !== false };
+  return { ...rest, solidOk: GPU_OK, blocks: bs, locked: !!lock, unlocked: sessions.has(n.id), imgBase: imgBase(), keys: curKeys(), suggestDates: settings.suggestDates !== false, predict: settings.predictWords !== false };
 });
 
 /* ---------- export and import (Markdown / plain text files) ---------- */
@@ -501,8 +502,8 @@ ipcMain.handle('note:export', async e => {
   if (!isOpen(n)) return { ok: false, error: 'Unlock the note first.' };
   const w = winOf(e);
   const r = await dialog.showSaveDialog(w && !w.isDestroyed() ? w : undefined, {
-    title: 'Export this note', defaultPath: path.join(app.getPath('documents'), convert.slug(n.title) + '.md'),
-    filters: [{ name: 'Markdown', extensions: ['md'] }, { name: 'Plain text', extensions: ['txt'] }]
+    title: 'Export this note', defaultPath: path.join(app.getPath('documents'), convert.slug(n.title) + '.stickypad'),
+    filters: [{ name: 'StickyPad note (opens with a double-click)', extensions: ['stickypad'] }, { name: 'Markdown', extensions: ['md'] }, { name: 'Plain text', extensions: ['txt'] }]
   });
   if (r.canceled || !r.filePath) return { ok: false, cancelled: true };
   const txt = /\.txt$/i.test(r.filePath) ? convert.toText(n.title, noteBlocks(n)) : convert.toMarkdown(n.title, noteBlocks(n));
@@ -526,12 +527,10 @@ function exportAll(parent) {
   shell.openPath(root);
   return { ok: true, count: open.length, skipped, dir: root };
 }
-function importNotes(parent) {
-  const r = dialog.showOpenDialogSync(parent || undefined, { title: 'Choose Markdown or text files to import', properties: ['openFile', 'multiSelections'],
-    filters: [{ name: 'Markdown and text', extensions: ['md', 'markdown', 'txt'] }], defaultPath: app.getPath('documents') });
-  if (!r || !r.length) return { ok: false, cancelled: true };
+// Notes from Markdown / text / ".stickypad" files. Used by Import and when a .stickypad file is opened from Windows.
+function importFiles(files) {
   let count = 0, failed = 0;
-  r.forEach((f, i) => {
+  files.forEach((f, i) => {
     try {
       if (fs.statSync(f).size > MAX_TEXT) { failed++; return; }
       const c = convert.fromMarkdown(fs.readFileSync(f, 'utf8'), f);
@@ -544,6 +543,21 @@ function importNotes(parent) {
   });
   save(); return { ok: count > 0, count, failed };
 }
+function importNotes(parent) {
+  const r = dialog.showOpenDialogSync(parent || undefined, { title: 'Choose StickyPad, Markdown or text files to import', properties: ['openFile', 'multiSelections'],
+    filters: [{ name: 'StickyPad, Markdown and text', extensions: ['stickypad', 'md', 'markdown', 'txt'] }], defaultPath: app.getPath('documents') });
+  if (!r || !r.length) return { ok: false, cancelled: true };
+  return importFiles(r);
+}
+ipcMain.handle('words:get', () => {   // the words you use again and again in your notes (locked notes are never read)
+  if (settings.predictWords === false) return [];
+  if (!wordsCache || wordsCache.ver !== wordsVer) {
+    const m = words.newMap();
+    Object.values(notes).forEach(n => { if (n.lock) return; words.add(m, (n.title || '') + '\n' + textOf(blocksOf(n))); });
+    wordsCache = { ver: wordsVer, list: words.top(m, 4000) };
+  }
+  return wordsCache.list;
+});
 
 // Notes from other apps: Google Keep (Takeout .json files or a folder) and Windows Sticky Notes (plum.sqlite).
 function groupByName(name) {
@@ -1206,7 +1220,7 @@ function allSettings() {
   return {
     version: app.getVersion(), packaged: app.isPackaged, startup: startupOn(), dataPath: dataDir(), dataCustom: dataDir() !== app.getPath('userData'),
     hideTaskbar: !!settings.hideTaskbar, snap: !!settings.snap, snapDistance: settings.snapDistance, defaultSize: settings.defaultSize,
-    trashDays: settings.trashDays, trashCount: trash.length, shortcuts: !!settings.shortcuts, suggestDates: settings.suggestDates !== false, keys: curKeys(), keysFailed: settings.shortcuts ? keysFailed : [], chatHistory: !!settings.chatHistory,
+    trashDays: settings.trashDays, trashCount: trash.length, shortcuts: !!settings.shortcuts, suggestDates: settings.suggestDates !== false, predictWords: settings.predictWords !== false, keys: curKeys(), keysFailed: settings.shortcuts ? keysFailed : [], chatHistory: !!settings.chatHistory,
     autoBackup: !!settings.autoBackup, lastBackup: settings.lastBackup || 0, backupCount: backup.list(app.getPath('userData')).length,
     autoUpdate: settings.autoUpdate !== false, whatsNew: settings.whatsNew !== false, update: updater ? updater.get() : null,
     theme: settings.theme, mode: modeOf(), notesFollowMode: settings.notesFollowMode !== false, uiDark: uiDark(), prefs: prefs(), groups, notesCount: Object.keys(notes).length,
@@ -1228,6 +1242,7 @@ ipcMain.handle('settings:set', (e, p) => {
     if ('shortcuts' in p) { settings.shortcuts = !!p.shortcuts; if (settings.shortcuts) registerShortcuts(); else unregisterShortcuts(); }
     if ('chatHistory' in p) { settings.chatHistory = !!p.chatHistory; if (!settings.chatHistory) clearChat(); }
     if ('suggestDates' in p) settings.suggestDates = !!p.suggestDates;
+    if ('predictWords' in p) settings.predictWords = !!p.predictWords;
     if ('autoBackup' in p) settings.autoBackup = !!p.autoBackup;
     if ('autoUpdate' in p) settings.autoUpdate = !!p.autoUpdate;
     if ('whatsNew' in p) settings.whatsNew = !!p.whatsNew;
@@ -1283,7 +1298,11 @@ ipcMain.handle('settings:action', (e, name, arg) => {
 });
 
 /* ---------- lifecycle ---------- */
-app.on('second-instance', () => { if (quitting) return; if (settings.launch === 'all') openAll(); else showAll(); });
+app.on('second-instance', (e, argv) => {
+  if (quitting) return;
+  const files = convert.noteFileArgs(argv);   // a .stickypad file was double-clicked while StickyPad is already running
+  if (files.length) { importFiles(files); return; }
+  if (settings.launch === 'all') openAll(); else showAll(); });
 app.whenReady().then(async () => {
   DATA = datadir.resolve(app.getPath('userData'));
   file = path.join(DATA, 'notes.json');
@@ -1298,6 +1317,8 @@ app.whenReady().then(async () => {
   if (settings.shortcuts) registerShortcuts();
   if (settings.splash) await showSplash();
   openStartup();
+  const startFiles = convert.noteFileArgs(process.argv);   // StickyPad was started by double-clicking a .stickypad file
+  if (startFiles.length) importFiles(startFiles);
   maybeWhatsNew();
   save();
   initUpdater();

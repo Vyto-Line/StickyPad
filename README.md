@@ -43,6 +43,9 @@ The **sliders button** (*This note*) opens a panel **beside your text instead of
 
 A search bar appears with **every match highlighted** and the current one in orange. Press **Enter / Shift+Enter** (or F3) to jump between matches; the counter shows where you are. It ignores capital letters **and Greek accents**, so `συναντηση` finds `συνάντηση`, and it searches inside checklist items too. Searching never changes your text, and it copes with very long notes (it highlights up to 5,000 matches).
 
+### Text prediction
+After three letters of a word you have used before, a small list offers it. **Tab** finishes the word (Ctrl+Z takes back just that), **Up/Down** then **Enter** pick another, **Esc** closes it. It learns from your notes (never from locked ones) and works with Greek. Switch it off in *Settings > General*.
+
 ### Reminders
 <img align="right" width="300" src="docs/images/feature_reminder.png" alt="The Note tab showing a reminder set for 5:55 PM">
 
@@ -56,10 +59,10 @@ A small bar also appears when a note **mentions a date** ("tomorrow at 5pm", "α
 StickyPad quietly keeps **up to 30 older copies of each note** while you edit: at least one every 5 minutes, and always one right before a sudden big deletion (for example Ctrl+A then Delete). Open the sliders button (*This note*) and click **Earlier versions**, see each copy with its time, word count and a preview, and press **Restore** (it asks once more to be sure). Restoring keeps today's version in the list as well, so you can always go back. Locked notes keep no copies, so nothing readable is left behind.
 
 ### Export and import
-- **Copy or export > Export…** (in the note panel) saves the note as a **Markdown (.md)** or **text (.txt)** file. Checklist items become `- [x] done` and `- [ ] to do`.
+- **Copy or export > Export…** (in the note panel) saves the note as a **StickyPad note (.stickypad)**, a **Markdown (.md)** or a **text (.txt)** file. A `.stickypad` file is Markdown inside and **opens with a double-click** (it becomes a new note). Checklist items become `- [x] done` and `- [ ] to do`.
 - **Settings > Data & backup > Export all notes** writes one file per note, in folders that match your note folders.
 - **Import from other apps** reads **Google Keep** (the `.json` files from Google Takeout) and **Windows Sticky Notes**.
-- **Import notes** turns `.md` and `.txt` files into notes. A first line `# Title` becomes the note's topic and lines like `- [ ] item` become checklist items.
+- **Import notes** turns `.stickypad`, `.md` and `.txt` files into notes. A first line `# Title` becomes the note's topic and lines like `- [ ] item` become checklist items.
 - **Copy note as text** (Ctrl+Shift+T) puts the whole note on the clipboard.
 
 Pictures are not included in exported files.
@@ -144,6 +147,8 @@ Download **StickyPad-Setup-x.y.z.exe** from the [Releases](../../releases) page 
 | Ctrl+N | new note |
 | Ctrl+F | find in the note |
 | Ctrl+Shift+C | add a checklist item |
+| Ctrl + mouse wheel | bigger / smaller text |
+| Tab | finish the word offered by text prediction (Esc closes the list) |
 | Ctrl+Shift+E | live AI edit |
 | Ctrl+Shift+T | copy the note as plain text |
 | Ctrl+, | all settings |

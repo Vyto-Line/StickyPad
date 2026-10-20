@@ -38,7 +38,7 @@ function fromMarkdown(text, fileName) {
   let i = 0; while (i < lines.length && !lines[i].trim()) i++;
   const h = i < lines.length && /^#{1}\s+(.+?)\s*#*\s*$/.exec(lines[i]);
   if (h) { title = h[1].trim(); lines.splice(0, i + 1); if (lines.length && !lines[0].trim()) lines.shift(); }
-  if (!title) title = String(fileName || '').replace(/^.*[\\/]/, '').replace(/\.(md|markdown|txt)$/i, '').trim();
+  if (!title) title = String(fileName || '').replace(/^.*[\\/]/, '').replace(/\.(stickypad|md|markdown|txt)$/i, '').trim();
   title = title.slice(0, 60);
 
   const blocks = []; let buf = [];
@@ -64,4 +64,11 @@ function uniqueNames(titles, ext) {
   });
 }
 
-module.exports = { slug, toMarkdown, toText, fromMarkdown, uniqueNames };
+// Exported notes (".stickypad") are Markdown inside, so any text editor can read them too; Windows opens them with StickyPad.
+const NOTE_EXT = /\.stickypad$/i;
+// The note files in a command line (what Windows passes when you double-click one, or run StickyPad with a file name).
+function noteFileArgs(argv) {
+  return (Array.isArray(argv) ? argv : []).filter(a => typeof a === 'string' && a.length > 9 && !a.startsWith('--') && NOTE_EXT.test(a));
+}
+
+module.exports = { slug, toMarkdown, toText, fromMarkdown, uniqueNames, noteFileArgs, NOTE_EXT };

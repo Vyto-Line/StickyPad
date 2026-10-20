@@ -28,8 +28,22 @@ const H = require('./fake-electron');
   const f1 = path.join(tmp, 'in1.md'); fs.writeFileSync(f1, '# Imported\n\n- [ ] one\n- [x] two\nsome text\n');
   electron.__open = [f1, path.join(tmp, 'missing.md')]; const im = await h['settings:action']({}, 'importNotes'); assert.ok(im.ok && im.count === 1 && im.failed === 1, JSON.stringify(im));
   const list = await h['all:list']({}); const imp = JSON.stringify(list).includes('Imported'); assert.ok(imp, 'imported note appears');
+  // .stickypad export, opened from Windows with a double-click (the file name arrives on the command line)
+  electron.__save = path.join(tmp, 'My note.stickypad'); const exs = await h['note:export'](e); assert.ok(exs.ok, JSON.stringify(exs));
+  assert.ok(fs.readFileSync(electron.__save, 'utf8').startsWith('# Plan\n\n'), 'a .stickypad file holds Markdown');
+  const sf = path.join(tmp, 'From double click.stickypad'); fs.writeFileSync(sf, '# Double clicked\n\n- [ ] one\nhello\n');
+  assert.strictEqual(typeof electron.__appEv['second-instance'], 'function', 'second-instance handler is registered');
+  electron.__appEv['second-instance']({}, ['C:\\StickyPad.exe', '--flag', sf]);
+  assert.ok(JSON.stringify(await h['all:list']({})).includes('Double clicked'), 'a .stickypad file opened while StickyPad runs becomes a note');
+  // text prediction: the words used again and again, locked notes never read
+  await h['note:update'](e, { blocks: [{ t: 'text', v: 'zebrafish zebrafish zebrafish aquarium aquarium once' }] });
+  let wl = await h['words:get']({}); assert.ok(wl.some(x => x.w === 'zebrafish' && x.n === 3) && wl.some(x => x.w === 'aquarium') && !wl.some(x => x.w === 'once'), JSON.stringify(wl).slice(0, 200));
+  assert.strictEqual((await h['note:get'](e)).predict, true);
+  await h['settings:set']({}, { predictWords: false }); assert.deepStrictEqual(await h['words:get']({}), []); assert.strictEqual((await h['note:get'](e)).predict, false);
+  await h['settings:set']({}, { predictWords: true });
   // lock removes history and refuses export
   await h['note:lock'](e, 'secret1'); assert.deepStrictEqual((await h['hist:list'](e)).items, []);
+  assert.ok(!(await h['words:get']({})).some(x => x.w === 'zebrafish'), 'words of a locked note are not offered');
   assert.ok(!fs.existsSync(path.join(tmp, 'userData', 'history', n0.id + '.json')), 'history file removed on lock');
   const ex2 = await h['note:export'](e); assert.strictEqual(ex2.ok, false);
   const ul = await h['settings:action']({}, 'openUpdateLog'); assert.ok(ul.ok && fs.existsSync(path.join(tmp, 'userData', 'update.log')), 'update log can be opened');

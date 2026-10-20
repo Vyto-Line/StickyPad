@@ -323,13 +323,47 @@ ed.addEventListener('click', e => {
   if (x) { removeTodo(x.closest('.todo')); return; }
   clearSel(); if (e.target.tagName === 'IMG') e.target.classList.add('sel');
 });
+// What to paste as text: cells copied from Excel come with a trailing line break that would add an empty line.
+function pasteText(cd) {
+  let t = cd.getData('text/plain');
+  if (/\r?\n$/.test(t) && /<table|Excel\.Sheet|schemas-microsoft-com:office:excel/i.test(cd.getData('text/html'))) t = t.replace(/\r?\n$/, '');
+  return t;
+}
 ed.addEventListener('paste', e => {
   e.preventDefault();
+  const t = pasteText(e.clipboardData);
+  // Excel (and some other apps) put the text AND a picture of it on the clipboard: when there is text, the text wins.
+  // A picture is pasted only when there is nothing to read.
+  if (/\S/.test(t)) { insertText(t); mark(); queue(); schedule(); return; }
   const imgs = [...(e.clipboardData.files || [])].filter(f => f.type.startsWith('image/'));
   if (imgs.length) { addFiles(imgs); return; }
-  const t = e.clipboardData.getData('text/plain');
   if (t) { insertText(t); mark(); queue(); schedule(); }
 });
+// Copy and cut: a checklist item is copied as its words only (no tick box, no remove button, no [x]).
+function plainFrom(frag) {
+  let out = '', endNl = false;   // endNl: the line break at the very end was added after a checklist item, not typed
+  const add = t => { if (t) { out += t; endNl = false; } };
+  const nl = () => { if (out && !out.endsWith('\n')) { out += '\n'; endNl = true; } };
+  (function walk(n) {
+    for (const c of n.childNodes) {
+      if (c.nodeType === 3) add(c.nodeValue);
+      else if (c.nodeName === 'BR') add('\n');
+      else if (c.nodeType === 1) {
+        if (c.nodeName === 'INPUT' || c.nodeName === 'IMG' || c.classList.contains('x')) continue;
+        if (c.classList.contains('todo')) { nl(); walk(c); nl(); } else walk(c);
+      }
+    }
+  })(frag);
+  return endNl ? out.replace(/\n$/, '') : out;
+}
+function copyCut(e) {
+  const sel = getSelection(); if (!sel.rangeCount || sel.isCollapsed || !ed.contains(sel.anchorNode)) return;
+  const r = sel.getRangeAt(0);
+  if (![...ed.querySelectorAll('.todo')].some(t => r.intersectsNode(t))) return;   // no checklist in the selection: the normal copy
+  e.preventDefault(); e.clipboardData.setData('text/plain', plainFrom(r.cloneContents()));
+  if (e.type === 'cut') document.execCommand('delete');
+}
+ed.addEventListener('copy', copyCut); ed.addEventListener('cut', copyCut);
 ed.addEventListener('dragover', e => e.preventDefault());
 ed.addEventListener('drop', e => {
   e.preventDefault();
@@ -339,11 +373,92 @@ ed.addEventListener('drop', e => {
   if (t) { insertText(t); mark(); queue(); schedule(); }
 });
 
+/* ---------- Ctrl + mouse wheel: bigger or smaller text ---------- */
+let zoomAcc = 0, zoomAt = 0;
+document.addEventListener('wheel', e => {
+  if (!e.ctrlKey) return;
+  e.preventDefault();   // (also stops the page from zooming as a picture)
+  if (!note || bodyLocked()) return;
+  const now = Date.now(); if (now - zoomAt > 400) zoomAcc = 0; zoomAt = now;
+  zoomAcc += e.deltaMode === 1 ? e.deltaY * 40 : e.deltaY;   // a mouse notch is about 100; a touchpad sends many small ones
+  const n = Math.min(4, Math.floor(Math.abs(zoomAcc) / 40)); if (!n) return;
+  const step = (zoomAcc < 0 ? 1 : -1) * n; zoomAcc = 0;
+  const sz = Math.max(10, Math.min(48, Math.round(note.size || 15) + step));
+  if (sz !== note.size) set({ size: sz });
+}, { passive: false });
+
+/* ---------- text prediction: after a few letters, offers words you have used before ---------- */
+const SW = window.StickyWords, acBox = $('#ac');
+let wordsMain = [], ownWords = null, ownAt = 0, ownDirty = true, acList = [], acIdx = 0, acNav = false, acFor = '';
+const predictOn = () => !!(note && note.predict !== false && SW && !bodyLocked());
+async function loadWords() { try { wordsMain = (api.wordsGet ? await api.wordsGet() : []) || []; } catch (e) { wordsMain = []; } }
+function ownMap() {   // the words of this note (kept for 1.5 s while you type, so a long note stays quick)
+  if (!ownWords || (ownDirty && Date.now() - ownAt > 1500)) {
+    let t = ''; const tw = document.createTreeWalker(ed, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT);
+    for (let n = tw.nextNode(); n && t.length < 400000; n = tw.nextNode()) {
+      if (n.nodeType === 3) t += n.nodeValue;
+      else if (n.nodeName === 'BR' || n.nodeName === 'IMG' || n.classList.contains('todo') || n.classList.contains('x')) t += '\n';
+    }
+    ownWords = SW.add(SW.newMap(), t); ownAt = Date.now(); ownDirty = false;
+  }
+  return ownWords;
+}
+function acHide() { acBox.hidden = true; acList = []; acNav = false; acFor = ''; }
+function acPrefixNow() {
+  const s = getSelection();
+  if (!s.rangeCount || !s.isCollapsed || !ed.contains(s.anchorNode) || s.anchorNode.nodeType !== 3) return null;
+  return SW.prefixAt(s.anchorNode.nodeValue, s.anchorOffset);
+}
+function acPaint() {
+  acBox.replaceChildren();
+  acList.forEach((w, i) => {
+    const d = document.createElement('div'); d.className = 'acr' + (i === acIdx ? ' on' : ''); d.setAttribute('role', 'option'); d.setAttribute('aria-selected', i === acIdx ? 'true' : 'false');
+    const a = document.createElement('span'); a.className = 'pre'; a.textContent = w.slice(0, acFor.length);
+    const b = document.createElement('b'); b.textContent = w.slice(acFor.length); d.append(a, b);
+    if (i === acIdx) { const k = document.createElement('kbd'); k.textContent = 'Tab'; d.append(k); }
+    d.onmousedown = ev => { ev.preventDefault(); acAccept(i); };   // (mousedown, so the note keeps its caret)
+    acBox.appendChild(d);
+  });
+  acBox.hidden = false;
+  const r = getSelection().getRangeAt(0).cloneRange(); r.collapse(true);
+  let rc = r.getClientRects()[0];
+  if (!rc) { const el = r.startContainer.nodeType === 1 ? r.startContainer : r.startContainer.parentElement; rc = el.getBoundingClientRect(); }
+  const bw = acBox.offsetWidth, bh = acBox.offsetHeight;
+  const x = Math.max(4, Math.min(rc.left, innerWidth - bw - 4));
+  let y = rc.bottom + 3; if (y + bh > innerHeight - 4) y = Math.max(4, rc.top - bh - 3);
+  acBox.style.left = x + 'px'; acBox.style.top = y + 'px';
+}
+function acUpdate(e) {
+  if (!predictOn() || (e && (e.isComposing || /^(insertFromPaste|insertFromDrop|history)/.test(e.inputType || '')))) { acHide(); return; }
+  const p = acPrefixNow(); if (!p) { acHide(); return; }
+  ownDirty = true;
+  const list = SW.suggest(p, 5, [wordsMain], ownMap());
+  if (!list.length) { acHide(); return; }
+  acList = list; acIdx = 0; acNav = false; acFor = p; acPaint();
+}
+function acAccept(i) {
+  const w = acList[i], p = acFor; if (!w) return;
+  acHide(); commitNow();   // so Ctrl+Z takes back just the finished word
+  insertText(SW.rest(p, w)); mark(); queue(); commitNow(); ownDirty = true;
+}
+ed.addEventListener('input', acUpdate);
+ed.addEventListener('keydown', e => {
+  if (acBox.hidden || e.isComposing) return;
+  const plain = !e.ctrlKey && !e.altKey && !e.shiftKey && !e.metaKey;
+  if (plain && e.key === 'Tab') { e.preventDefault(); e.stopPropagation(); acAccept(acIdx); }
+  else if (plain && e.key === 'Enter' && acNav) { e.preventDefault(); e.stopPropagation(); acAccept(acIdx); }   // Enter finishes the word only after you picked one with the arrows
+  else if (plain && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) { e.preventDefault(); e.stopPropagation(); acIdx = (acIdx + (e.key === 'ArrowDown' ? 1 : acList.length - 1)) % acList.length; acNav = true; acPaint(); }
+  else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); acHide(); }
+}, true);
+document.addEventListener('selectionchange', () => { if (!acBox.hidden && acPrefixNow() !== acFor) acHide(); });
+ed.addEventListener('blur', acHide); ed.addEventListener('scroll', acHide);
+window.addEventListener('blur', acHide);
+
 /* ---------- startup ---------- */
 async function reload() {
   note = await api.get(); if (note && note.keys) KEYMAP = note.keys;
   render(note.blocks && note.blocks.length ? note.blocks : (note.text && !note.locked ? [{ t: 'text', v: note.text }] : []));
-  apply(); remindPaint(); undoS = []; redoS = []; undoChars = 0; cur = snap();
+  apply(); remindPaint(); undoS = []; redoS = []; undoChars = 0; cur = snap(); ownDirty = true; acHide(); loadWords();
 }
 /* ---------- find in note (Ctrl+F) ---------- */
 const FIND_MAX = 5000;
@@ -566,7 +681,7 @@ function noteForCopy() {
   let out = '';
   serialize().forEach(b => {
     if (b.t === 'text') out += b.v;
-    else if (b.t === 'check') out += (out && !out.endsWith('\n') ? '\n' : '') + (b.done ? '[x] ' : '[ ] ') + b.v + '\n';
+    else if (b.t === 'check') out += (out && !out.endsWith('\n') ? '\n' : '') + b.v + '\n';   // just the words: no [ ] or [x]
   });
   parts.push(out.replace(/\n{3,}/g, '\n\n').trim());
   return parts.join('\n').trim();

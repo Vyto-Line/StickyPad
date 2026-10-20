@@ -279,3 +279,12 @@ body.rolled #findbar{display:none}
 .pfoot .linkbtn{width:auto;flex:none;padding:6px 8px}
 .pfoot .linkbtn.danger{color:#b42318;opacity:1}body.dark .pfoot .linkbtn.danger{color:#ff9b8f}
 @media (prefers-reduced-motion:reduce){.prow>summary::after{transition:none}}
+
+/* text prediction list */
+.todo .x,.todo input{-webkit-user-select:none;user-select:none}
+#ac{position:fixed;z-index:30;min-width:120px;max-width:calc(100vw - 8px);padding:3px;border-radius:9px;background:linear-gradient(var(--tint),var(--tint)),var(--bg);border:1px solid var(--line);box-shadow:0 8px 22px rgba(0,0,0,.28);font-size:12.5px}
+#ac[hidden]{display:none}
+.acr{display:flex;align-items:center;gap:10px;padding:3px 8px;border-radius:6px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.acr .pre{opacity:.65}
+.acr kbd{margin-left:auto;font:600 10px "Segoe UI",system-ui,sans-serif;padding:0 5px;border-radius:4px;border:1px solid currentColor;opacity:.75}
+.acr.on{background:var(--accent);color:var(--on-accent,#fff)}

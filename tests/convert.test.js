@@ -35,3 +35,7 @@ assert.deepStrictEqual(rt.blocks, [{ t: 'text', v: 'Shopping for Friday' }, { t:
 // unique names
 assert.deepStrictEqual(C.uniqueNames(['A', 'a', 'A', ''], '.md'), ['A.md', 'a (2).md', 'A (3).md', 'Untitled.md']);
 console.log('convert ok');
+// .stickypad files: Markdown inside, found in a command line
+assert.deepStrictEqual(C.noteFileArgs(['C:\\App\\StickyPad.exe', '--updated', 'C:\\n\\Plan.stickypad', 'x.txt', 'D:\\A.STICKYPAD', '--x.stickypad']), ['C:\\n\\Plan.stickypad', 'D:\\A.STICKYPAD']);
+assert.deepStrictEqual(C.noteFileArgs(undefined), []);
+assert.strictEqual(C.fromMarkdown('hello', 'C:\\n\\Plan.stickypad').title, 'Plan');
