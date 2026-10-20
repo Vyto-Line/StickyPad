@@ -1,15 +1,5 @@
 # Changelog
 
-## 1.15.0-test.1
-- **Sync (test version).** A new **Sync** page in Settings keeps your notes in step between PCs through your own free Cloudflare server (set up from the `cloud` folder of the project). Off by default.
-  - Notes are **encrypted on your PC** with your passphrase before they are uploaded, so the server cannot read them. A forgotten passphrase cannot be recovered.
-  - **Start new** on the first PC, **Join existing** on the next one (it needs the account id shown in Settings > Sync). It syncs a few seconds after you stop typing, when the app starts, and every two minutes. **Sync now** does it at once.
-  - If two PCs changed the same note, **nothing is lost**: the newer text keeps the note and the older one is saved as a second note called "… (conflict copy)". A note deleted on one PC goes to the trash on the others; the old text of a note that was overwritten stays in *Earlier versions*.
-  - **Only text and checklists, folders, colour, font and size are synced.** Notes with pictures and locked notes stay on the PC they are on, and window positions and reminders are not shared.
-  - **Stop syncing** keeps every note on this PC.
-- Published as a pre-release, so the automatic update does not offer it to other people.
-- Not tried on two real Windows PCs yet.
-
 ## 1.14.22
 - **Font and transparency are now in a drop down.** In a note's panel, the font, the text size, *Transparency* and *Keep the text solid* sit under one line, **Font and transparency**, the same way *Model and connection* works in the AI section. It starts closed, so the colour swatches and the *This note* rows (Reminder, Folder, Lock…) fit without scrolling. The controls are the same as before.
 - Not tried on a real Windows PC yet.

@@ -28,7 +28,6 @@ function fill() {
   $('#backupInfo').textContent = (S.lastBackup ? 'Last backup: ' + new Date(S.lastBackup).toLocaleString() : 'No backup yet') + ` · ${S.backupCount} kept`;
   $('#dataPath').textContent = S.dataPath; $('#resetData').hidden = !S.dataCustom;
   $('#aboutVer').textContent = 'Version ' + S.version; showUpdate(S.update);
-  fillSync();
   $('#lowMemory').checked = !!S.lowMemory; $('#lowMemRestart').hidden = !!S.lowMemory === !!S.lowMemoryActive;
   if (S.aiKeep) $('#aiKeep').value = S.aiKeep;
   $('#aboutNotes').textContent = `${S.notesCount} note${S.notesCount === 1 ? '' : 's'}, ${S.groups.length} folder${S.groups.length === 1 ? '' : 's'}`;
@@ -216,50 +215,6 @@ $('#aiSave').onclick = async () => { await aiSave(); $('#aiMsg').textContent = '
 $('#aiTest').onclick = async () => { await aiSave(); $('#aiMsg').textContent = 'Testing…'; const r = await api.aiRun('ping'); $('#aiMsg').textContent = r.ok ? 'Connected ✓' : r.error; };
 $('#aiClear').onclick = async () => { await api.aiSet({ clearKey: true }); await aiLoad(); $('#aiMsg').textContent = 'Key removed.'; };
 
-
-/* ---------- sync (test feature) ---------- */
-let syncMode = 'new', syncForm = false, syncBusy = false;
-function syncWhen(t) {
-  if (!t) return 'Not synced yet';
-  const d = new Date(t), now = new Date(), hm = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  return d.toDateString() === now.toDateString() ? 'today at ' + hm : d.toLocaleDateString() + ' ' + hm;
-}
-function fillSync() {
-  const y = (S && S.sync) || { on: false };
-  $('#syncOn').checked = !!y.on || syncForm; $('#syncOn').disabled = syncBusy;
-  $('#syncForm').hidden = !!y.on || !syncForm; $('#syncRun').hidden = !y.on;
-  if (!y.on) return;
-  const st = $('#syncStatus');
-  st.className = 'status ' + (y.error ? 'warn' : 'ok');
-  st.textContent = y.error ? '⚠ ' + y.error : y.busy ? 'Syncing…' : (y.lastAt ? '● Synced ' + syncWhen(y.lastAt) + ' · ' + y.count + ' note' + (y.count === 1 ? '' : 's') : 'Waiting for the first sync…');
-  $('#syncConfRow').hidden = !y.conflicts;
-  $('#syncConf').textContent = y.conflicts ? y.conflicts + ' time' + (y.conflicts === 1 ? '' : 's') + ' a note was changed on two PCs at once. Both copies were kept: search "conflict copy" in Notes to find the other one.' : '';
-  $('#syncSrv').textContent = y.server; $('#syncAcctOut').textContent = y.acct;
-}
-function syncModeSet(m) {
-  syncMode = m; $('#syncNew').classList.toggle('primary', m === 'new'); $('#syncJoin').classList.toggle('primary', m === 'join');
-  $('#syncRegRow').hidden = m === 'join'; $('#syncAcctRow').hidden = m === 'new';
-}
-$('#syncNew').onclick = () => syncModeSet('new'); $('#syncJoin').onclick = () => syncModeSet('join');
-$('#syncOn').onchange = async e => {
-  const on = e.target.checked;
-  if (S && S.sync && S.sync.on) { if (!on) { const r = await api.settingsAction('syncStop'); if (r.info) { S = r.info; } syncForm = false; fillSync(); } return; }
-  syncForm = on; fillSync();
-};
-$('#syncGo').onclick = async () => {
-  if (syncBusy) return; syncBusy = true; const m = $('#syncMsg'), b = $('#syncGo'); b.disabled = true; m.className = 'status'; m.textContent = 'Connecting… (a few seconds)';
-  const r = await api.settingsAction('syncStart', { mode: syncMode, server: $('#syncServer').value, reg: $('#syncReg').value, acct: $('#syncAcctIn').value, pass: $('#syncPass').value });
-  syncBusy = false; b.disabled = false;
-  if (r.ok) { $('#syncPass').value = ''; $('#syncReg').value = ''; syncForm = false; if (r.info) S = r.info; fillSync(); }
-  else { m.className = 'status warn'; m.textContent = r.error || 'Could not turn on sync.'; }
-};
-$('#syncNowBtn').onclick = async () => { const b = $('#syncNowBtn'); b.disabled = true; b.textContent = 'Syncing…'; const r = await api.settingsAction('syncNow'); b.disabled = false; b.textContent = 'Sync now'; if (r.info) { S = r.info; fillSync(); } };
-$('#syncShow').onclick = () => api.settingsAction('openAllNotes');
-const copyText = async t => { try { await navigator.clipboard.writeText(t); } catch (e) {} };
-$('#syncCopySrv').onclick = () => copyText((S.sync || {}).server || ''); $('#syncCopyAcct').onclick = () => copyText((S.sync || {}).acct || '');
-arm($('#syncStop'), 'Stop syncing', 'Sure? Tap again', async () => { const r = await api.settingsAction('syncStop'); if (r.info) S = r.info; syncForm = false; fillSync(); });
-setInterval(() => { if (S && S.sync && S.sync.on && !document.hidden && !$('#cat-sync').hidden) load(); }, 4000);
-
 /* ---------- navigation and search ---------- */
 function showCat(id) {
   $$('.cat').forEach(c => { c.hidden = c.id !== 'cat-' + id; });
@@ -267,13 +222,13 @@ function showCat(id) {
   $('#noResults').hidden = true; $('#content').scrollTop = 0;
 }
 $$('#nav button').forEach(b => { b.onclick = () => { $('#sq').value = ''; filter(''); showCat(b.dataset.cat); }; });
-function filter(q) {   // (rows with data-keep show or hide by their own logic)
+function filter(q) {
   q = q.trim().toLowerCase();
-  if (!q) { $$('.row,.frow').forEach(r => { if (!r.dataset.keep) r.hidden = false; }); const on = ($('#nav button.on') || {}).dataset; showCat(on ? on.cat : 'general'); return; }
+  if (!q) { $$('.row,.frow').forEach(r => { r.hidden = false; }); const on = ($('#nav button.on') || {}).dataset; showCat(on ? on.cat : 'general'); return; }
   let any = false;
   $$('.cat').forEach(c => {
     let hit = 0;
-    c.querySelectorAll('.row').forEach(r => { if (r.dataset.keep) return; const m = r.textContent.toLowerCase().includes(q) || c.dataset.title.toLowerCase().includes(q); r.hidden = !m; if (m) hit++; });
+    c.querySelectorAll('.row').forEach(r => { const m = r.textContent.toLowerCase().includes(q) || c.dataset.title.toLowerCase().includes(q); r.hidden = !m; if (m) hit++; });
     c.hidden = !hit; if (hit) any = true;
   });
   $$('#nav button').forEach(b => b.classList.remove('on'));

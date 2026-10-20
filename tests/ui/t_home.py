@@ -46,7 +46,7 @@ with sync_playwright() as p:
     pg.screenshot(path=os.path.join(OUT,'home_chips.png')); ok(not errs,'chips: no errors %s'%errs)
     pg=page('settings.html')
     subs=pg.eval_on_selector_all('#homeNav .hsub','e=>e.map(x=>x.textContent)')
-    ok(len(subs)==9 and subs[0]=='General' and 'Shortcuts' in subs and 'Sync' in subs,'settings categories sit under Settings in the one sidebar %s'%subs)
+    ok(len(subs)==8 and subs[0]=='General' and 'Shortcuts' in subs,'settings categories sit under Settings in the one sidebar %s'%subs)
     ok(not pg.is_visible('aside'),"Settings' own menu is gone")
     ok(pg.is_visible('#content > .search #sq'),'search box moved to the top of the page')
     pg.click('#homeNav .hsub >> text=Shortcuts'); pg.wait_for_timeout(150)
