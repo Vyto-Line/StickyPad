@@ -23,9 +23,33 @@ function body(blocks, md, image) {
   return out.join('\n').replace(/\n{3,}/g, '\n\n').trim();
 }
 
+// The note's properties written as a small header (YAML front matter) at the top of a .stickypad file: any Markdown program can read or ignore it.
+const META_KEYS = ['color', 'font', 'size', 'opacity', 'solidText', 'pinned', 'folder', 'reminder', 'width', 'height', 'edited'];
+function frontMatter(meta) {
+  const lines = ['---', 'stickypad: 1'];
+  for (const k of META_KEYS) if (meta && meta[k] !== undefined && meta[k] !== null && meta[k] !== '') lines.push(k + ': ' + JSON.stringify(meta[k]));
+  return lines.join('\n') + '\n---\n\n';
+}
+// -> { meta, rest } : the properties header of a .stickypad file (only when it says "stickypad: 1"), and the text after it.
+function splitFrontMatter(lines) {
+  if (lines[0] !== '---') return { meta: null, lines };
+  const end = lines.indexOf('---', 1);
+  if (end < 0 || end > 40) return { meta: null, lines };
+  const meta = {}; let mine = false;
+  for (const ln of lines.slice(1, end)) {
+    const m = /^([A-Za-z]+):\s*(.*)$/.exec(ln); if (!m) continue;
+    if (m[1] === 'stickypad') { mine = true; continue; }
+    if (!META_KEYS.includes(m[1])) continue;
+    try { meta[m[1]] = JSON.parse(m[2]); } catch {}
+  }
+  if (!mine) return { meta: null, lines };
+  let rest = lines.slice(end + 1); if (rest.length && !rest[0].trim()) rest = rest.slice(1);
+  return { meta, lines: rest };
+}
+
 function toMarkdown(title, blocks, opts) {
   const t = String(title || '').trim(), b = body(blocks, true, opts && opts.image);
-  return (t ? '# ' + t + '\n' + (b ? '\n' : '') : '') + (b ? b + '\n' : '');
+  return (opts && opts.meta ? frontMatter(opts.meta) : '') + (t ? '# ' + t + '\n' + (b ? '\n' : '') : '') + (b ? b + '\n' : '');
 }
 function toText(title, blocks) {
   const t = String(title || '').trim(), b = body(blocks, false);
@@ -36,7 +60,8 @@ const IMG_LINE = /^\s*!\[[^\]]*\]\((data:image\/(?:png|jpeg|webp|gif);base64,[A-
 // A Markdown or plain text file -> { title, blocks }. "- [ ] item" / "- [x] item" (also * and +) become checklist items.
 function fromMarkdown(text, fileName) {
   let s = String(text || '').replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
-  const lines = s.split('\n');
+  let lines = s.split('\n');
+  const fm = splitFrontMatter(lines); lines = fm.lines;   // the properties of a .stickypad file
   let title = '';
   let i = 0; while (i < lines.length && !lines[i].trim()) i++;
   const h = i < lines.length && /^#{1}\s+(.+?)\s*#*\s*$/.exec(lines[i]);
@@ -60,7 +85,7 @@ function fromMarkdown(text, fileName) {
   flush();
   if (blocks.length && blocks[blocks.length - 1].t === 'text') blocks[blocks.length - 1].v = blocks[blocks.length - 1].v.replace(/\s+$/, '');
   if (blocks.length && blocks[0].t === 'text') blocks[0].v = blocks[0].v.replace(/^\n+/, '');
-  return { title, blocks };
+  return { title, blocks, meta: fm.meta };
 }
 
 // Names for a batch of files in one folder, never repeating (case-insensitive, as Windows is).
@@ -99,4 +124,4 @@ function decodeText(buf, greek) {
   catch { return new TextDecoder(greek ? 'windows-1253' : 'windows-1252').decode(b); }
 }
 
-module.exports = { IMPORT_EXT, decodeText, slug, toMarkdown, toText, fromMarkdown, uniqueNames, noteFileArgs, NOTE_EXT };
+module.exports = { META_KEYS, IMPORT_EXT, decodeText, slug, toMarkdown, toText, fromMarkdown, uniqueNames, noteFileArgs, NOTE_EXT };

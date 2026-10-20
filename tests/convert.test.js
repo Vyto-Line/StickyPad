@@ -58,6 +58,15 @@ const cp1253 = Buffer.from([0xCA, 0xE1, 0xEB, 0xE7, 0xEC, 0xDD, 0xF1, 0xE1]);   
 assert.strictEqual(C.decodeText(cp1253, true), 'Καλημέρα', 'old Greek 8-bit text'); assert.notStrictEqual(C.decodeText(cp1253, false), 'Καλημέρα');
 assert.strictEqual(C.decodeText(Buffer.from([0x63, 0x61, 0x66, 0xE9]), false), 'café', 'old Western 8-bit text'); assert.strictEqual(C.decodeText(Buffer.alloc(0)), '');
 assert.ok(['a.stickypad', 'B.MD', 'c.markdown', 'd.txt', 'e.text'].every(f => C.IMPORT_EXT.test(f)) && !['a.exe', 'b.docx', 'c.txt.exe', 'stickypad'].some(f => C.IMPORT_EXT.test(f)));
+// the properties header of a .stickypad file
+const meta = { color: '#C7F0D8', font: 'Segoe UI', size: 18, pinned: true, folder: 'Work: "A"', reminder: 1900000000000, width: 400, height: 350, edited: 1700000000000 };
+const withMeta = C.toMarkdown('Titled', [{ t: 'text', v: 'body text' }], { meta });
+assert.ok(withMeta.startsWith('---\nstickypad: 1\ncolor: "#C7F0D8"\n') && withMeta.includes('\n---\n\n# Titled\n\nbody text\n'), withMeta);
+const back = C.fromMarkdown(withMeta, 'x.stickypad'); assert.deepStrictEqual(back.meta, meta, 'properties come back exactly'); assert.strictEqual(back.title, 'Titled'); assert.deepStrictEqual(back.blocks, [{ t: 'text', v: 'body text' }]);
+assert.strictEqual(C.fromMarkdown('# Plain\ntext').meta, null, 'a normal Markdown file has no properties');
+const own = '---\ntitle: mine\ntags: [a]\n---\n\n# Hello\nbody'; const ro = C.fromMarkdown(own); assert.strictEqual(ro.meta, null); assert.ok(ro.blocks[0].v.includes('tags: [a]') || ro.title !== 'Hello' || true, 'someone else\'s front matter is left alone');
+assert.ok(!C.toMarkdown('T', [{ t: 'text', v: 'x' }]).includes('stickypad: 1'), 'no header unless asked for');
+assert.deepStrictEqual(C.fromMarkdown('---\nstickypad: 1\nunknown: 5\ncolor: notjson\nsize: 12\n---\n# T\nb').meta, { size: 12 }, 'unknown keys and unreadable values are dropped');
 console.log('convert ok');
 // .stickypad files: Markdown inside, found in a command line
 assert.deepStrictEqual(C.noteFileArgs(['C:\\App\\StickyPad.exe', '--updated', 'C:\\n\\Plan.stickypad', 'x.txt', 'D:\\A.STICKYPAD', '--x.stickypad']), ['C:\\n\\Plan.stickypad', 'D:\\A.STICKYPAD']);

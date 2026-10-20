@@ -539,11 +539,33 @@ ipcMain.handle('note:export', async e => {
     filters: [{ name: 'StickyPad note (opens with a double-click)', extensions: ['stickypad'] }, { name: 'Markdown', extensions: ['md'] }, { name: 'Plain text', extensions: ['txt'] }]
   });
   if (r.canceled || !r.filePath) return { ok: false, cancelled: true };
-  const plain = /\.txt$/i.test(r.filePath), pics = noteBlocks(n).filter(b => b.t === 'img').length;
-  const txt = plain ? convert.toText(n.title, noteBlocks(n)) : convert.toMarkdown(n.title, noteBlocks(n), { image: imgDataUri });   // pictures travel inside the file (plain text cannot hold them)
+  const plain = /\.txt$/i.test(r.filePath), isNoteFile = /\.stickypad$/i.test(r.filePath), pics = noteBlocks(n).filter(b => b.t === 'img').length;
+  const txt = plain ? convert.toText(n.title, noteBlocks(n)) : convert.toMarkdown(n.title, noteBlocks(n), { image: imgDataUri, meta: isNoteFile ? noteMeta(n) : null });   // pictures and (in .stickypad files) the note's properties travel inside the file (plain text cannot hold them)
   fs.writeFileSync(r.filePath, txt, 'utf8');
   return { ok: true, file: r.filePath, pics, picsLeftOut: plain ? pics : 0 };
 });
+// What a .stickypad file remembers about a note besides its text: colour, font, size, see-through level, pin, folder, reminder, size and edit time.
+function noteMeta(n) {
+  const g = n.group && groups.find(x => x.id === n.group), b = n.bounds || {};
+  return { color: n.color, font: n.font, size: n.size, opacity: Number.isFinite(n.opacity) && n.opacity < 1 ? n.opacity : undefined, solidText: n.solidText ? true : undefined, pinned: n.pinned ? true : undefined,
+           folder: g ? g.name : undefined, reminder: Number.isFinite(n.remind) && n.remind > Date.now() ? n.remind : undefined,
+           width: Number.isFinite(b.width) ? Math.round(b.width) : undefined, height: Number.isFinite(b.height) ? Math.round(b.height) : undefined, edited: n.updated || undefined };
+}
+// The reverse, from a file we do not trust: only valid values, clamped, for newNote().
+function metaToNote(m) {
+  const o = {}; if (!m || typeof m !== 'object') return o;
+  if (typeof m.color === 'string' && /^#[0-9a-f]{6}$/i.test(m.color)) o.color = m.color;
+  if (typeof m.font === 'string') { const f = m.font.replace(/["'\\;{}]/g, '').slice(0, 60); if (f) o.font = f; }
+  if (typeof m.size === 'number' && Number.isFinite(m.size)) o.size = Math.min(72, Math.max(8, Math.round(m.size)));
+  if (typeof m.opacity === 'number' && Number.isFinite(m.opacity)) o.opacity = Math.min(1, Math.max(0.3, Math.round(m.opacity * 100) / 100));
+  if (m.solidText === true) o.solidText = true;
+  if (m.pinned === true) o.pinned = true;
+  if (typeof m.folder === 'string') { const g = groupByName(m.folder); if (g) o.group = g; }
+  if (typeof m.reminder === 'number' && Number.isFinite(m.reminder) && m.reminder > Date.now() && m.reminder < Date.now() + 864e5 * 365 * 5) o.remind = Math.round(m.reminder);
+  if (typeof m.edited === 'number' && Number.isFinite(m.edited) && m.edited > 0 && m.edited <= Date.now()) o.updated = Math.round(m.edited);
+  o.size_wh = { width: m.width, height: m.height };
+  return o;
+}
 function exportAll(parent) {
   const r = dialog.showOpenDialogSync(parent || undefined, { title: 'Choose a folder for the exported notes', properties: ['openDirectory', 'createDirectory'], defaultPath: app.getPath('documents') });
   if (!r || !r[0]) return { ok: false, cancelled: true };
@@ -571,7 +593,8 @@ function importFiles(files) {
       let pics = 0;   // pictures written into the file by Export become picture files again (at most 100 per note)
       const blocks = sanitizeBlocks(c.blocks.map(b => b.t !== 'img' ? b : (pics++ < 100 && b.data ? { t: 'img', id: saveImgData(b.data) } : null)));
       const k = (Object.keys(notes).length + i) % 8;
-      const n = newNote({ title: c.title, blocks, text: textOf(blocks), bounds: { x: 80 + k * 28, y: 80 + k * 28, width: 300, height: 320 } });
+      const { size_wh: wh, ...props } = metaToNote(c.meta);   // a .stickypad file also brings the note's colour, font, folder...
+      const n = newNote({ ...props, title: c.title, blocks, text: textOf(blocks), bounds: cleanBounds({ x: 80 + k * 28, y: 80 + k * 28, width: wh && wh.width || 300, height: wh && wh.height || 320 }) });
       notes[n.id] = n; count++;
       if (count <= 5) openNote(n);   // a big import does not flood the screen: the rest are in All notes
     } catch { failed++; }

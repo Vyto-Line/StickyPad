@@ -65,7 +65,7 @@ StickyPad quietly keeps **up to 30 older copies of each note** while you edit: a
 - **Import notes** turns `.stickypad`, `.md` and `.txt` files into notes. A first line `# Title` becomes the note's topic and lines like `- [ ] item` become checklist items.
 - **Copy note as text** (Ctrl+Shift+T) puts the whole note on the clipboard.
 
-**Drag and drop** works too: drop `.stickypad`, `.md` or `.txt` files on any StickyPad window to add them as notes. Text files saved as UTF-8, UTF-16 or the old Windows 8-bit format (including old Greek files) are read correctly. Pictures are included: **.stickypad** and Markdown files carry them inside the file, and importing puts them back. Plain text (.txt) files cannot hold pictures.
+A **.stickypad** file also keeps the note's look and settings (colour, font, size, transparency, pin, folder, reminder, window size). **Drag and drop** works too: drop `.stickypad`, `.md` or `.txt` files on any StickyPad window to add them as notes. Text files saved as UTF-8, UTF-16 or the old Windows 8-bit format (including old Greek files) are read correctly. Pictures are included: **.stickypad** and Markdown files carry them inside the file, and importing puts them back. Plain text (.txt) files cannot hold pictures.
 
 ### Home: notes, trash, AI chat and settings in one window
 <img align="right" width="300" src="docs/images/feature_all.png" alt="The All notes window with folders and coloured cards">

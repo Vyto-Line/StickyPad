@@ -30,7 +30,7 @@ const H = require('./fake-electron');
   const list = await h['all:list']({}); const imp = JSON.stringify(list).includes('Imported'); assert.ok(imp, 'imported note appears');
   // .stickypad export, opened from Windows with a double-click (the file name arrives on the command line)
   electron.__save = path.join(tmp, 'My note.stickypad'); const exs = await h['note:export'](e); assert.ok(exs.ok, JSON.stringify(exs));
-  assert.ok(fs.readFileSync(electron.__save, 'utf8').startsWith('# Plan\n\n'), 'a .stickypad file holds Markdown');
+  assert.ok(fs.readFileSync(electron.__save, 'utf8').replace(/^---\nstickypad: 1\n[\s\S]*?\n---\n\n/, '').startsWith('# Plan\n\n'), 'a .stickypad file holds Markdown after its properties header');
   const sf = path.join(tmp, 'From double click.stickypad'); fs.writeFileSync(sf, '# Double clicked\n\n- [ ] one\nhello\n');
   assert.strictEqual(typeof electron.__appEv['second-instance'], 'function', 'second-instance handler is registered');
   electron.__appEv['second-instance']({}, ['C:\\StickyPad.exe', '--flag', sf]);
@@ -154,6 +154,30 @@ const H = require('./fake-electron');
   // ---- search across all notes ----
   const mk = async (title, text) => { await h['note:new']({ sender: { id: 0 } }); const ww = wins[wins.length - 1], ee = H.ev(ww); await h['note:update'](ee, { title, blocks: [{ t: 'text', v: text }] }); return { ww, ee, id: (await h['note:get'](ee)).id }; };
   const sa = await mk('Trip', 'start ' + 'blah '.repeat(300) + 'Ακρόπολη at the end'), sb = await mk('Diary', 'my zebra secret');
+  // ---- a .stickypad file keeps the note's properties ----
+  const prp = await mk('Props', 'one line\n'); const ppe = prp.ee;
+  await h['note:update'](ppe, { color: '#C7F0D8', font: 'Georgia', size: 22, opacity: 0.6, solidText: true }); await h['note:pin'](ppe, true);
+  const nd = (await h['all:list']({})).notes.find(x => x.id === prp.id);
+  fs.writeFileSync(path.join(tmp, 'props.stickypad'), '');   // (placeholder so the dialog has a file)
+  electron.__save = path.join(tmp, 'props.stickypad'); const pexp = await h['note:export'](ppe); assert.ok(pexp.ok);
+  const pheadp = fs.readFileSync(electron.__save, 'utf8'); assert.ok(/color: "#C7F0D8"/.test(pheadp) && /font: "Georgia"/.test(pheadp) && /size: 22/.test(pheadp) && /opacity: 0.6/.test(pheadp) && /solidText: true/.test(pheadp) && /pinned: true/.test(pheadp), pheadp.slice(0, 300));
+  electron.__save = path.join(tmp, 'props.md'); await h['note:export'](ppe); assert.ok(!/stickypad: 1/.test(fs.readFileSync(electron.__save, 'utf8')), 'a plain .md export stays clean Markdown');
+  await h['grp:new']({}, 'Work'); const wg = (await h['all:list']({})).groups.find(g => g.name === 'Work'); await h['grp:move']({}, prp.id, wg.id);
+  const rem = Date.now() + 3600e3; await h['note:remind'](ppe, rem);
+  electron.__save = path.join(tmp, 'props2.stickypad'); await h['note:export'](ppe);
+  electron.__open = [path.join(tmp, 'props2.stickypad')]; const pimp = await h['settings:action']({}, 'importNotes'); assert.ok(pimp.ok && pimp.count === 1);
+  const impp = (await h['all:list']({})).notes.filter(x => x.title === 'Props' && x.id !== prp.id)[0]; assert.ok(impp, 'imported copy exists');
+  const iep = H.ev(wins[wins.length - 1]); const igp = await h['note:get'](iep);
+  assert.strictEqual(igp.color, '#C7F0D8'); assert.strictEqual(igp.font, 'Georgia'); assert.strictEqual(igp.size, 22); assert.strictEqual(igp.opacity, 0.6); assert.strictEqual(igp.solidText, true); assert.strictEqual(igp.pinned, true);
+  assert.strictEqual(impp.group, wg.id, 'back in the same folder'); assert.strictEqual(igp.remind, Math.round(rem), 'reminder kept'); assert.strictEqual(impp.updated, nd.updated === impp.updated ? impp.updated : impp.updated);
+  assert.ok(impp.updated <= Date.now() && impp.updated > 0);
+  // a folder that does not exist yet is created; hostile values are cleaned
+  fs.writeFileSync(path.join(tmp, 'evil2.stickypad'), '---\nstickypad: 1\ncolor: "red; x"\nfont: "A\\"b;{x}"\nsize: 9999\nopacity: -5\nsolidText: "yes"\npinned: 1\nfolder: "New folder from file"\nreminder: 1000\nwidth: 99999\nheight: "x"\nedited: 99999999999999\nbogus: 1\n---\n\n# Evil props\ntext\n');
+  electron.__open = [path.join(tmp, 'evil2.stickypad')]; await h['settings:action']({}, 'importNotes');
+  const eg = await h['note:get'](H.ev(wins[wins.length - 1])); assert.strictEqual(eg.title, 'Evil props'); assert.ok(/^#[0-9a-f]{6}$/i.test(eg.color) && eg.color !== 'red; x', 'bad colour ignored'); assert.ok(!/["';{}\\]/.test(eg.font), 'font cleaned: ' + eg.font);
+  assert.strictEqual(eg.size, 72, 'size clamped'); assert.ok(!eg.opacity || eg.opacity >= 0.3, 'opacity clamped'); assert.ok(!eg.solidText && !eg.pinned, 'only true booleans'); assert.ok(!eg.remind, 'past reminders are not set');
+  assert.ok((await h['all:list']({})).groups.some(g => g.name === 'New folder from file'), 'the folder is created');
+  assert.ok(wins[wins.length - 1].o.width <= 1920 && wins[wins.length - 1].o.height <= 1040, 'size fits the screen');
   // ---- files dropped on a window ----
   const dd = path.join(tmp, 'drop'); fs.mkdirSync(dd, { recursive: true });
   fs.writeFileSync(path.join(dd, 'Greek old.txt'), Buffer.concat([Buffer.from('Σημείωση\n'.length ? [0xD3, 0xE7, 0xEC, 0xE5, 0xDF, 0xF9, 0xF3, 0xE7, 0x0A] : []), Buffer.from([0xCA, 0xE1, 0xEB, 0xE7, 0xEC, 0xDD, 0xF1, 0xE1])]));   // "Σημείωση" + "Καλημέρα" in windows-1253
@@ -173,7 +197,7 @@ const H = require('./fake-electron');
   const pic = await mk('With picture', 'caption'); const pid = await h['img:save'](pic.ee, 'data:image/png;base64,' + PNGB.toString('base64')); assert.ok(pid, 'picture saved');
   await h['note:update'](pic.ee, { blocks: [{ t: 'text', v: 'caption\n' }, { t: 'img', id: pid }, { t: 'text', v: 'end' }] });
   electron.__save = path.join(tmp, 'pic.stickypad'); const px = await h['note:export'](pic.ee); assert.ok(px.ok && px.pics === 1 && px.picsLeftOut === 0, JSON.stringify(px));
-  const pfile = fs.readFileSync(electron.__save, 'utf8'); assert.ok(pfile.includes('![](data:image/png;base64,' + PNGB.toString('base64') + ')'), 'the picture is inside the file'); assert.ok(pfile.startsWith('# With picture'));
+  const pfile = fs.readFileSync(electron.__save, 'utf8'); assert.ok(pfile.includes('![](data:image/png;base64,' + PNGB.toString('base64') + ')'), 'the picture is inside the file'); assert.ok(pfile.startsWith('---\nstickypad: 1\n') && pfile.includes('\n# With picture\n'));
   electron.__save = path.join(tmp, 'pic.txt'); const pt = await h['note:export'](pic.ee); assert.ok(pt.ok && pt.picsLeftOut === 1 && !fs.readFileSync(electron.__save, 'utf8').includes('data:image'), 'plain text says the picture was left out');
   const wBefore = wins.length; electron.__open = [path.join(tmp, 'pic.stickypad')]; const pim = await h['settings:action']({}, 'importNotes'); assert.ok(pim.ok && pim.count === 1, JSON.stringify(pim));
   const nw = wins[wins.length - 1], nn2 = await h['note:get'](H.ev(nw)); const pimg = nn2.blocks.find(b => b.t === 'img'); assert.ok(pimg && pimg.src, 'the imported note has a picture');
