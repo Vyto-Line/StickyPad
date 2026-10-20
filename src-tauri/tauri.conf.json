@@ -1,6 +1,6 @@
 {
   "productName": "StickyPad",
-  "version": "1.14.30",
+  "version": "1.14.31",
   "identifier": "com.stickypad.app",
   "build": {
     "frontendDist": "./ui"

@@ -526,7 +526,7 @@ function openWelcome() {
   welcomeWin.setMinimumSize(420, 480);
   welcomeWin.on('closed', () => { welcomeWin = null; });
 }
-ipcMain.handle('welcome:get', () => ({ keys: curKeys(), name: settings.name || '' }));
+ipcMain.handle('welcome:get', () => ({ keys: curKeys(), name: settings.name || '', fresh: !settings.welcomeSeen }));
 ipcMain.handle('welcome:close', (e, o) => {
   settings.welcomeSeen = true; save();
   if (o && o.go === 'settings') openSettings(typeof o.section === 'string' ? o.section : undefined);

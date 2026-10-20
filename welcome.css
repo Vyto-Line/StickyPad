@@ -93,3 +93,24 @@ footer{display:flex;align-items:center;gap:10px;padding:12px 22px;border-top:1px
 .btn.quiet{border-color:transparent;background:none;color:var(--mute)}
 .btn[hidden]{display:none}
 .btn:focus-visible,#dots button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* optional name field */
+.field{display:flex;align-items:center;gap:10px;border:1.5px solid var(--line);border-radius:12px;padding:6px 14px;background:var(--bg);margin:14px auto 4px;max-width:300px;text-align:left}
+.field:focus-within{border-color:var(--accent)}
+.field label{color:var(--mute);font-size:12px;white-space:nowrap}
+.field input{flex:1;min-width:0;border:0;outline:0;background:none;color:var(--fg);font:600 16px "Segoe UI Variable Text","Segoe UI",system-ui,sans-serif;padding:4px 0}
+.hint{font-size:12px;color:var(--mute)}
+/* look picker */
+#card.wide{max-width:490px}
+#scene.none{display:none}
+.themes{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0 12px}
+.th{border:2px solid var(--line);border-radius:12px;padding:8px 6px 7px;background:var(--card);color:var(--fg);font:inherit;font-size:12px;cursor:pointer;transition:transform .15s ease,border-color .15s ease}
+.th:hover{transform:translateY(-2px)}
+.th[aria-pressed=true]{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 25%,transparent)}
+.th .sw{display:flex;gap:3px;justify-content:center;margin-bottom:5px}
+.th .sw i{width:15px;height:20px;border-radius:3px;box-shadow:0 1px 2px #0003}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{border:0;background:none;color:var(--fg);font:inherit;font-size:13px;padding:6px 15px;cursor:pointer}
+.seg button[aria-pressed=true]{background:var(--accent);color:var(--on-accent);font-weight:600}
+.th:focus-visible,.seg button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (max-width:460px){.themes{grid-template-columns:repeat(2,1fr)}}

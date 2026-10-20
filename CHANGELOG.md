@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.14.31
+- **Pick your look in the welcome tour.** The second step shows the eight themes as colour swatches with a *Light / Dark / Match Windows* switch, and the whole app changes the moment you click. On a first run the choice is also applied to your first (blank) note. If you open the tour again later from Settings → About, only the app's look changes and your notes keep their colours.
+- **An optional name.** The first step has a small *Call me* field: the title becomes "Welcome, Alex!" as you type, and the name is used in the greeting. It is optional, stays on your PC, can be changed in Settings, and is saved even if you close the tour straight away.
+- The tour is still five steps: Welcome, Pick your look, Find anything, AI helper, Your notes are safe. (The "Make it yours" step was replaced by the picker.)
+- Not tried on a real Windows PC yet.
+
 ## 1.14.30
 - **A livelier welcome tour.** Each of the five steps now has its own small animated picture: sticky notes dropping onto the desktop and getting written on, a search box typing a word while results slide in, a note changing colour with a word being finished by **Tab**, a chat bubble answered by the AI "on your PC", and a shield with a tick next to your daily backups. The text slides in on every step and the dots glide between steps. If Windows is set to *reduce motion*, nothing moves.
 - Not tried on a real Windows PC yet.
