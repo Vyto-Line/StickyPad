@@ -20,4 +20,9 @@ assert.deepStrictEqual(W.suggest('sta', 5, [top], own), [], 'used once only');
 assert.deepStrictEqual(W.suggest('ele', 5, [[{ k: 'elephant', w: 'elephant', n: 2 }, { k: 'elevator', w: 'elevator', n: 9 }]]), ['elevator', 'elephant'], 'most used first');
 // limits
 const big = W.newMap(); W.add(big, ('x'.repeat(40) + ' ').repeat(10)); assert.strictEqual(big.size, 0, 'very long strings are not words');
+// merging small maps gives the same answer as counting everything at once (this is how each note is counted only when it changed)
+const t1 = 'Athens athens ΑΘΗΝΑ athens plan plan', t2 = 'Athens Αθηνα plan elephant elephant', all1 = W.newMap(); W.add(all1, t1 + '\n' + t2);
+const all2 = W.merge(W.merge(W.newMap(), W.add(W.newMap(), t1)), W.add(W.newMap(), t2));
+assert.deepStrictEqual(W.top(all2), W.top(all1)); assert.strictEqual(W.merge(W.newMap(), W.newMap()).size, 0);
+for (const w of ['Ωραία', 'ΜΕΡΑ', 'abc', 'İstanbul']) assert.strictEqual(W.fold(w), W.fold(w), 'stable'), assert.strictEqual(W.fold(w).length, w.length);
 console.log('words ok');

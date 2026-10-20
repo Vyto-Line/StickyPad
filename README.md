@@ -72,6 +72,9 @@ Pictures are not included in exported files.
 
 Ctrl+Alt+A, the tray icon, or the **house button** at the left of any note's title bar opens the **Home** window. A sidebar switches between **Notes** (every note as a card, with search, *Open all* per folder and *Tidy up*; **folder chips** show one folder at a time, and dropping a card on a chip moves the note there), **Trash**, **Ask the AI** (the chat) and **Settings**. It is always the same one window, so nothing gets lost behind others. Closed notes are greyed out; click one to open it.
 
+### Search all notes
+Press **Ctrl+Alt+F** (or *Search notes…* in the tray menu) from anywhere: a small search window opens in the middle of your screen. Type a few letters and the notes that contain **all** your words appear at once, best match first, each with a short piece of its text and the matching words marked. **Up and Down** choose, **Enter** opens the note, **Esc** (or a click elsewhere) closes it. It reads the **whole text** of every note, ignores capitals and accents (so *καλημερα* finds *Καλημέρα*), and notes with a lock are found by their title only. The search box in the Home window uses the same search.
+
 ### Lock
 Give a note a password (4+ characters) and its text is stored **encrypted (AES-256-GCM)**. It shows a lock screen until you enter the password. A forgotten password cannot be recovered. Pictures stay on disk unencrypted, but are hidden in the app.
 
@@ -165,6 +168,7 @@ Every shortcut below can be changed in **Settings > Shortcuts**: press *Change*,
 | Ctrl+Alt+C | AI chat |
 | Ctrl+Alt+S | settings |
 | Ctrl+Alt+V | new note from the clipboard |
+| Ctrl+Alt+F | **search all notes** (small search window) |
 
 ## Your data
 Stored in `%APPDATA%\StickyPad` (`notes.json`, `images/`, `history/`, `chat.json`). Move it with *Settings > Data & backup > Choose folder*. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the data format and how the pieces fit together.

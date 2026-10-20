@@ -3,7 +3,7 @@
 (function (root, factory) { if (typeof module === 'object' && module.exports) module.exports = factory(); else root.StickyKeys = factory(); })(typeof self !== 'undefined' ? self : this, function () {
   const GLOBAL = {
     g_new: ['New note', 'Ctrl+Alt+N'], g_all: ['All notes', 'Ctrl+Alt+A'], g_chat: ['AI chat', 'Ctrl+Alt+C'],
-    g_settings: ['Settings', 'Ctrl+Alt+S'], g_clip: ['New note from the clipboard', 'Ctrl+Alt+V']
+    g_settings: ['Settings', 'Ctrl+Alt+S'], g_clip: ['New note from the clipboard', 'Ctrl+Alt+V'], g_find: ['Search all notes', 'Ctrl+Alt+F']
   };
   const NOTE = {
     n_new: ['New note', 'Ctrl+N'], n_todo: ['Add a checklist item', 'Ctrl+Shift+C'], n_find: ['Find in the note', 'Ctrl+F'],

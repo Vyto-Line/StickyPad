@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.14.23
+- **Search all notes (Ctrl+Alt+F).** A small search window opens from anywhere in Windows (also in the tray menu as *Search notes…*). Type and the notes that contain all your words are listed at once, best match first (a title hit counts more), each with a piece of its text and the matching words marked. Up and Down choose, Enter opens the note, Esc or a click elsewhere closes it. Capitals and accents are ignored, Greek included (*καλημερα* finds *Καλημέρα*). Notes with a lock are found by title only, and their text is never read. You can change the shortcut in *Settings > Shortcuts*.
+- **The search box in Home now finds words anywhere in a note.** It used to look only at the first 240 letters of each note, so a word further down was never found. It uses the same search as the new window.
+- **Faster with many notes.** The word list for text prediction is no longer rebuilt from every note after each edit: only the note you changed is counted again (with 3000 notes: from about 1.6 s to about 8 ms, and the very first build is about three times faster). Folding capitals and accents is faster too.
+- Not tried on a real Windows PC yet.
+
 ## 1.14.22
 - **Font and transparency are now in a drop down.** In a note's panel, the font, the text size, *Transparency* and *Keep the text solid* sit under one line, **Font and transparency**, the same way *Model and connection* works in the AI section. It starts closed, so the colour swatches and the *This note* rows (Reminder, Folder, Lock…) fit without scrolling. The controls are the same as before.
 - Not tried on a real Windows PC yet.

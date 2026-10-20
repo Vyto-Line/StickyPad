@@ -9,7 +9,7 @@ assert.strictEqual(K.norm('Shift+Alt+Ctrl+f12'), 'Ctrl+Alt+Shift+F12');
 assert.ok(K.matches(ev('KeyF', { c: 1 }), 'Ctrl+F') && !K.matches(ev('KeyF', { c: 1, s: 1 }), 'Ctrl+F'));
 assert.ok(K.problem('g_new', 'Shift+N') && K.problem('g_new', 'N') && !K.problem('g_new', 'Ctrl+Alt+Q'));
 assert.ok(K.problem('n_find', 'Ctrl+Z') && K.problem('n_find', 'Ctrl+A') && !K.problem('n_find', 'F3') && K.problem('g_new', 'F3'));
-const d = K.merge({}); assert.deepStrictEqual(d, K.DEFAULTS); assert.strictEqual(d.g_clip, 'Ctrl+Alt+V');
+const d = K.merge({}); assert.deepStrictEqual(d, K.DEFAULTS); assert.strictEqual(d.g_clip, 'Ctrl+Alt+V'); assert.strictEqual(d.g_find, 'Ctrl+Alt+F');
 const m = K.merge({ g_new: 'ctrl+alt+q', g_all: 'Ctrl+Alt+Q', n_find: 'Ctrl+Z', g_chat: 'junk' });
 assert.strictEqual(m.g_new, 'Ctrl+Alt+Q'); assert.strictEqual(m.g_all, K.DEFAULTS.g_all, 'duplicate goes back to default'); assert.strictEqual(m.n_find, 'Ctrl+F'); assert.strictEqual(m.g_chat, 'Ctrl+Alt+C');
 assert.strictEqual(K.clash(m, 'g_all', 'Ctrl+Alt+Q'), 'g_new'); assert.strictEqual(K.clash(m, 'n_new', 'Ctrl+Alt+Q'), '', 'global and in-note keys are separate');

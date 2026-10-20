@@ -12,13 +12,22 @@
   const MIN_PREFIX = 3;
 
   // One letter in -> one letter out (same length), ignoring case and Greek/Latin accents: "Καλημέρα" and "καλημερα" are the same word.
+  const MEMO = new Map();   // each letter is worked out once
   const fold1 = ch => {
-    const f = ch.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
-    const c = f === 'ς' ? 'σ' : f;
-    return c.length === ch.length ? c : (ch.toLowerCase().length === ch.length ? ch.toLowerCase() : ch);
+    let r = MEMO.get(ch);
+    if (r === undefined) {
+      const f = ch.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+      const c = f === 'ς' ? 'σ' : f;
+      r = c.length === ch.length ? c : (ch.toLowerCase().length === ch.length ? ch.toLowerCase() : ch);
+      if (MEMO.size < 5000) MEMO.set(ch, r);
+    }
+    return r;
   };
-  const fold = s => { let o = ''; for (const ch of String(s)) o += fold1(ch); return o; };
+  const ASCII = /^[\x00-\x7f]*$/;
+  const fold = s => { s = String(s); if (ASCII.test(s)) return s.toLowerCase(); let o = ''; for (const ch of s) o += fold1(ch); return o; };
 
+  const WMEMO = new Map();   // whole words are repeated all the time, so each different word is folded once
+  const foldWord = w => { let k = WMEMO.get(w); if (k === undefined) { k = fold(w); if (WMEMO.size < 100000) WMEMO.set(w, k); } return k; };
   const newMap = () => new Map();
   // Adds the words of one text to a count map: key (folded word) -> { n, forms: Map(form -> count) }
   function add(map, text) {
@@ -26,13 +35,23 @@
     for (const m of s.matchAll(WORD)) {
       const w = m[0];
       if (w.length < MIN_LEN || w.length > MAX_LEN || /^[\p{N}_]+$/u.test(w)) continue;
-      const k = fold(w);
+      const k = foldWord(w);
       let e = map.get(k);
       if (!e) { if (map.size >= MAX_KEYS) continue; e = { n: 0, forms: new Map() }; map.set(k, e); }
       e.n++;
       if (e.forms.size < 6 || e.forms.has(w)) e.forms.set(w, (e.forms.get(w) || 0) + 1);
     }
     return map;
+  }
+  // Adds the counts of `from` (a map made by add()) to `into`: lets each note keep its own small map, and only the changed notes are counted again.
+  function merge(into, from) {
+    for (const [k, e] of from) {
+      let d = into.get(k);
+      if (!d) { if (into.size >= MAX_KEYS) continue; d = { n: 0, forms: new Map() }; into.set(k, d); }
+      d.n += e.n;
+      for (const [f, c] of e.forms) if (d.forms.size < 6 || d.forms.has(f)) d.forms.set(f, (d.forms.get(f) || 0) + c);
+    }
+    return into;
   }
   // The form you write most often ("Athens" or "athens"); on a tie the accented one, then the one with fewer capitals.
   const accents = w => w.normalize('NFD').replace(/[^\u0300-\u036f]/g, '').length;
@@ -77,5 +96,5 @@
   // What to type to finish the word: the rest of it, as written in the suggestion.
   const rest = (prefix, word) => word.slice(prefix.length);
 
-  return { MIN_LEN, MIN_PREFIX, fold, newMap, add, top, prefixAt, suggest, rest };
+  return { MIN_LEN, MIN_PREFIX, fold, newMap, add, merge, top, prefixAt, suggest, rest };
 });

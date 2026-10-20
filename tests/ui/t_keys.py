@@ -7,7 +7,7 @@ def ok(c,m):
 with sync_playwright() as p:
     b=p.chromium.launch(); q=b.new_page(viewport={'width':900,'height':700}); errs=[]; q.on('pageerror',lambda e:errs.append(str(e))); q.add_init_script(STUB)
     q.goto('file://'+ROOT+'settings.html'); q.wait_for_timeout(300); q.click('[data-cat=shortcuts]'); q.wait_for_timeout(100)
-    ok(q.locator('.kbtn').count()==11,'11 shortcuts listed (%s)'%q.locator('.kbtn').count())
+    ok(q.locator('.kbtn').count()==12,'12 shortcuts listed (%s)'%q.locator('.kbtn').count())
     ok(q.inner_text('[data-key=g_clip]')=='Ctrl + Alt + V','clipboard shortcut default shown (%s)'%q.inner_text('[data-key=g_clip]'))
     q.click('[data-key=g_new]'); ok('Press the keys' in q.inner_text('[data-key=g_new]'),'click starts recording')
     q.keyboard.press('Control+Alt+Q'); q.wait_for_timeout(200)

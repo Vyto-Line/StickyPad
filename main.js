@@ -18,6 +18,7 @@ const launchcfg = require('./launchcfg');
 const KEYS = require('./keys');
 const links = require('./links');
 const notesearch = require('./notesearch');
+const search = require('./search');
 const importers = require('./importers');
 const placement = require('./placement');
 const changelog = require('./changelog');
@@ -67,7 +68,7 @@ const DEFAULT_SETTINGS = {
   ai: { provider: 'off', model: '', url: 'http://localhost:11434', keyEnc: '', keepAlive: '5m' }
 };
 let notes = {}, trash = [], groups = [], settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
-let allWin = null, settingsWin = null, tray = null, splashWin = null, whatsWin = null, whatsFrom = null, whatsMax = 3, memKey = null, chatWin = null, chatState = null;
+let quickWin = null, allWin = null, settingsWin = null, tray = null, splashWin = null, whatsWin = null, whatsFrom = null, whatsMax = 3, memKey = null, chatWin = null, chatState = null;
 const chatJobs = new Map();
 const wins = new Map();       // noteId -> BrowserWindow
 const byContents = new Map(); // webContents.id -> noteId
@@ -457,6 +458,7 @@ function setStartup(v) {
 function buildMenu() {
   const launch = (label, v) => ({ label, type: 'radio', checked: settings.launch === v, click: () => setPrefs({ launch: v }) });
   return Menu.buildFromTemplate([
+    { label: 'Search notes…  (' + curKeys().g_find + ')', click: () => toggleQuick() },
     { label: 'All notes…  (Ctrl+Alt+A)', click: () => openAll() },
     { label: 'Settings…  (Ctrl+Alt+S)', click: () => openSettings() },
     { label: 'AI chat…  (Ctrl+Alt+C)', click: () => openChat() },
@@ -549,12 +551,21 @@ function importNotes(parent) {
   if (!r || !r.length) return { ok: false, cancelled: true };
   return importFiles(r);
 }
+const wordsByNote = new Map();   // note id -> { key, map }: the words of one note, counted again only when that note changed
 ipcMain.handle('words:get', () => {   // the words you use again and again in your notes (locked notes are never read)
   if (settings.predictWords === false) return [];
   if (!wordsCache || wordsCache.ver !== wordsVer) {
-    const m = words.newMap();
-    Object.values(notes).forEach(n => { if (n.lock) return; words.add(m, (n.title || '') + '\n' + textOf(blocksOf(n))); });
-    wordsCache = { ver: wordsVer, list: words.top(m, 4000) };
+    const all = words.newMap(), live = new Set();
+    for (const n of Object.values(notes)) {
+      if (n.lock) continue;
+      live.add(n.id);
+      const text = String(n.text || ''), key = (n.updated || 0) + ':' + text.length + ':' + String(n.title || '').length;
+      let e = wordsByNote.get(n.id);
+      if (!e || e.key !== key) { e = { key, map: words.add(words.newMap(), (n.title || '') + '\n' + text) }; wordsByNote.set(n.id, e); }
+      words.merge(all, e.map);
+    }
+    for (const id of wordsByNote.keys()) if (!live.has(id)) wordsByNote.delete(id);
+    wordsCache = { ver: wordsVer, list: words.top(all, 4000) };
   }
   return wordsCache.list;
 });
@@ -786,6 +797,43 @@ ipcMain.handle('all:show', (e, id) => {
 ipcMain.handle('all:openGroup', (e, gid) => {
   Object.values(notes).filter(n => (n.group || null) === (gid || null)).forEach(n => { const w = openNote(n); w.show(); });
 });
+
+/* ---------- search across all notes ---------- */
+const searchIx = search.createIndex();
+const allNotes = () => Object.values(notes);
+const titleOf = n => n.title || String(n.text || '').trim().split('\n')[0].slice(0, 60) || '';
+ipcMain.handle('search:query', (e, q) => {
+  q = String(q == null ? '' : q).slice(0, 200);
+  const byId = id => notes[id];
+  return search.search(searchIx, allNotes(), q, { max: 40 }).map(r => {
+    const n = byId(r.id); if (!n) return null;
+    const g = n.group && groups.find(x => x.id === n.group);
+    return { id: n.id, title: r.title.length ? r.title : [{ t: n.lock ? 'Locked note' : (titleOf(n) || (imgIds(n).length ? 'Picture note' : '(empty note)')), h: false }],
+             snippet: r.snippet, color: n.color, font: n.font, folder: g ? g.name : '', locked: !!n.lock, pinned: !!n.pinned, updated: n.updated || 0 };
+  }).filter(Boolean);
+});
+ipcMain.handle('search:ids', (e, q) => search.matchIds(searchIx, allNotes(), String(q == null ? '' : q).slice(0, 200)));
+ipcMain.handle('search:show', (e, id) => {
+  const n = notes[id]; if (!n) return false;
+  closeQuick(); const w = openNote(n); if (w.isMinimized()) w.restore(); w.show(); w.focus(); return true;
+});
+ipcMain.handle('search:close', () => { closeQuick(); });
+function closeQuick() { if (quickWin && !quickWin.isDestroyed()) quickWin.close(); quickWin = null; }
+// The small search window (Ctrl+Alt+F): opens in the middle of the screen the mouse is on, closes when you click elsewhere.
+function toggleQuick() {
+  if (quickWin && !quickWin.isDestroyed()) { closeQuick(); return; }
+  let d; try { d = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()); } catch { d = screen.getPrimaryDisplay(); }
+  const wa = d.workArea, W = 640, H = 460;
+  const win = new BrowserWindow({
+    width: W, height: H, x: Math.round(wa.x + (wa.width - W) / 2), y: Math.round(wa.y + Math.min(120, (wa.height - H) / 3)),
+    frame: false, resizable: false, minimizable: false, maximizable: false, skipTaskbar: true, alwaysOnTop: true, show: false, title: 'Search notes', icon: iconPath,
+    webPreferences: { preload, contextIsolation: true, nodeIntegration: false }
+  });
+  quickWin = win; win.setMenu(null); win.loadFile('quick.html');
+  win.once('ready-to-show', () => { if (win.isDestroyed()) return; win.show(); win.focus(); win.webContents.focus(); });
+  win.on('blur', () => { setTimeout(() => { if (!win.isDestroyed() && !win.isFocused()) closeQuick(); }, 120); });   // a short wait, so the window is not closed while it is still being focused
+  win.on('closed', () => { if (quickWin === win) quickWin = null; });
+}
 
 /* ---------- IPC: trash ---------- */
 ipcMain.handle('trash:open', () => openAll('trash'));
@@ -1175,6 +1223,7 @@ function registerShortcuts() {
   reg('g_chat', () => openChat());
   reg('g_settings', () => openSettings());
   reg('g_clip', () => newFromClipboard());
+  reg('g_find', () => toggleQuick());
 }
 // A new note holding whatever text you last copied.
 function newFromClipboard() {

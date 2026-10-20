@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'">
+<title>Search notes</title>
+<link rel="stylesheet" href="quick.css">
+<script src="apptheme.js"></script>
+</head>
+<body>
+<div class="box">
+  <div class="bar">
+    <svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
+    <input id="q" type="text" placeholder="Search all your notes" aria-label="Search all your notes" autocomplete="off" spellcheck="false" role="combobox" aria-expanded="true" aria-controls="list">
+  </div>
+  <div id="list" role="listbox" aria-label="Matching notes"></div>
+  <div id="empty" hidden></div>
+  <footer><span><kbd>↑</kbd><kbd>↓</kbd> choose</span><span><kbd>Enter</kbd> open</span><span><kbd>Esc</kbd> close</span><span id="count"></span></footer>
+</div>
+<script src="quick.js"></script>
+</body>
+</html>

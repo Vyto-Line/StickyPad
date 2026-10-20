@@ -112,8 +112,10 @@ function draw() {
     $('#empty').hidden = data.trash.length > 0; $('#empty').textContent = 'The trash is empty.';
     return;
   }
-  const q = $('#q').value.trim().toLowerCase();
-  const match = n => !q || (n.title + ' ' + n.text).toLowerCase().includes(q);
+  const raw = $('#q').value.trim(), q = raw.toLowerCase();
+  // The list only carries the first letters of each note, so the real search runs in the app (whole text, ignores capitals and accents);
+  // until its answer arrives, the cards are filtered by what they show.
+  const match = n => !q || (hits && hitsFor === raw ? hits.has(n.id) : (n.title + ' ' + n.text).toLowerCase().includes(q));
   const shown = data.notes.filter(match).length;
   $('#count').textContent = total ? (q ? shown + ' of ' + total + ' notes' : total + (total === 1 ? ' note' : ' notes')) + ' · right-click for more' : 'No notes yet';
   if (folder !== '*' && folder !== '-' && !data.groups.some(g => g.id === folder)) folder = '*';   // that folder was deleted
@@ -144,13 +146,22 @@ function drawChips(match) {
   data.groups.forEach(g => chip(g.id, g.name, data.notes.filter(n => n.group === g.id && match(n)).length));
   const loose = data.notes.filter(n => !n.group && match(n)).length; if (loose) chip('-', 'No folder', loose);
 }
-async function refresh() { data = await api.allList(); draw(); }
+let hits = null, hitsFor = '', hitsSeq = 0, hitsTimer = null;
+function runSearch(now) {
+  clearTimeout(hitsTimer);
+  const raw = $('#q').value.trim();
+  if (!raw || !api.searchIds) { hits = null; hitsFor = ''; return Promise.resolve(); }
+  const go = async () => { const mine = ++hitsSeq, ids = await api.searchIds(raw); if (mine !== hitsSeq) return; hits = new Set(ids); hitsFor = raw; draw(); };
+  if (now) return go();
+  hitsTimer = setTimeout(go, 80); return Promise.resolve();
+}
+async function refresh() { data = await api.allList(); await runSearch(true); draw(); }
 
 /* ---------- wiring ---------- */
 $('#tabNotes').onclick = () => setView('notes');
 $('#tabTrash').onclick = () => setView('trash');
 arm($('#emptyBtn'), 'Empty trash', 'Sure? Cannot undo', () => api.trashEmpty());
-$('#q').addEventListener('input', draw);
+$('#q').addEventListener('input', () => { draw(); runSearch(); });
 $('#new').onclick = () => api.allNew();
 $('#tidy').onclick = () => api.tidy();
 function folderRow(show) { $('#folderRow').hidden = !show; if (show) { $('#fname').value = ''; $('#fname').focus(); } }

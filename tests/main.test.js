@@ -151,6 +151,32 @@ const H = require('./fake-electron');
   assert.strictEqual((await h['whatsnew:get']({})).off, true, 'the window shows the choice');
   await h['whatsnew:close']({}, { off: false }); assert.strictEqual((await h['settings:get']({})).whatsNew, true, 'the checkbox in the window changes the setting');
   const wo = await h['settings:action']({}, 'openWhatsNew'); assert.ok(wo && wo.ok, 'the button in Settings opens it: ' + JSON.stringify(wo));
+  // ---- search across all notes ----
+  const mk = async (title, text) => { await h['note:new']({ sender: { id: 0 } }); const ww = wins[wins.length - 1], ee = H.ev(ww); await h['note:update'](ee, { title, blocks: [{ t: 'text', v: text }] }); return { ww, ee, id: (await h['note:get'](ee)).id }; };
+  const sa = await mk('Trip', 'start ' + 'blah '.repeat(300) + 'Ακρόπολη at the end'), sb = await mk('Diary', 'my zebra secret');
+  // the word list follows edits and deleted notes (each note is counted again only when it changed)
+  const wn1 = await mk('Words', 'quokka quokka quokka'); assert.ok((await h['words:get']({})).some(x => x.w === 'quokka' && x.n === 3));
+  await h['note:update'](wn1.ee, { blocks: [{ t: 'text', v: 'numbat numbat' }] }); const wl3 = await h['words:get']({}); assert.ok(wl3.some(x => x.w === 'numbat' && x.n === 2) && !wl3.some(x => x.w === 'quokka'), 'an edited note is counted again');
+  await h['note:delete'](wn1.ee); assert.ok(!(await h['words:get']({})).some(x => x.w === 'numbat'), 'a deleted note no longer counts');
+  const ids = async q => (await h['search:query']({}, q)).map(r => r.id);
+  assert.ok((await ids('ΑΚΡΟΠΟΛΗ')).includes(sa.id), 'a word far inside a long note is found, capitals and accents ignored');
+  assert.deepStrictEqual(await h['search:ids']({}, 'zebra'), [sb.id]);
+  const rr = (await h['search:query']({}, 'zebra'))[0]; assert.ok(rr.snippet.some(x => x.h && x.t === 'zebra') && rr.color && rr.title[0].t === 'Diary', JSON.stringify(rr));
+  await h['note:lock'](sb.ee, 'pass1234'); assert.deepStrictEqual(await h['search:ids']({}, 'zebra'), [], 'the text of a locked note is not searched');
+  assert.deepStrictEqual(await h['search:ids']({}, 'diary'), [sb.id], 'its title still is');
+  assert.ok((await h['search:query']({}, 'diary'))[0].snippet.length === 0, 'and no text of it is shown');
+  await h['note:update'](sa.ee, { blocks: [{ t: 'text', v: 'now about giraffes' }] }); assert.deepStrictEqual(await h['search:ids']({}, 'giraffes'), [sa.id], 'edited text is searched at once'); assert.deepStrictEqual(await h['search:ids']({}, 'Ακρόπολη'), []);
+  assert.ok((await h['search:query']({}, '')).length >= 2, 'no text: the newest notes');
+  assert.deepStrictEqual(await h['search:query']({}, 'q'.repeat(5000)), [], 'a huge query is just cut, no crash');
+  assert.strictEqual(await h['search:show']({}, 'nope'), false);
+  // the shortcut opens the search window, pressing it again closes it
+  assert.ok(electron.__reg['Control+Alt+F'], 'Ctrl+Alt+F is a global shortcut');
+  const w0 = wins.length; electron.__reg['Control+Alt+F'](); assert.strictEqual(wins.length, w0 + 1, 'search window opened'); const qw = wins[wins.length - 1];
+  assert.ok(qw.o.frame === false && qw.o.alwaysOnTop && qw.o.skipTaskbar, 'a small floating window');
+  electron.__reg['Control+Alt+F'](); assert.strictEqual(wins.length, w0 + 1, 'second press does not open another');
+  electron.__reg['Control+Alt+F'](); assert.strictEqual(wins.length, w0 + 2, 'and after closing it opens again'); 
+  assert.strictEqual(await h['search:show']({}, sa.id), true, 'choosing a result opens the note')
+  electron.__reg['Control+Alt+F'](); assert.strictEqual(wins.length, w0 + 3, 'choosing a result closed the search window, so the next press opens a fresh one');
   // a crash in the main process is written to crash.log instead of a Windows error box
   process.emit('uncaughtException', new Error('boom test'));
   const cl = path.join(electron.app.getPath('userData'), 'crash.log'); assert.ok(fs.existsSync(cl) && /boom test/.test(fs.readFileSync(cl, 'utf8')), 'crash.log written');
