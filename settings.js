@@ -213,6 +213,7 @@ $('#aiKeep').onchange = () => save({ aiKeep: $('#aiKeep').value });
 $('#lowMemRestart').onclick = () => api.settingsAction('restartApp');
 $('#whatsBtn').onclick = () => api.settingsAction('openWhatsNew');
 $('#welcomeBtn').onclick = () => api.settingsAction('openWelcome');
+$('#aiLog').onclick = () => api.settingsAction('openAiLog');
 $('#updLog').onclick = () => api.settingsAction('openUpdateLog');
 $('#updPage').onclick = () => api.settingsAction('openReleases');
 api.onUpdateEvent(showUpdate);

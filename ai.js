@@ -83,6 +83,13 @@ const ctxFor = (chars, predict = 0) => Math.min(16384, Math.max(4096, Math.ceil(
 // some reasoning models put their thinking in <think> tags: never show it
 const stripThink = t => String(t).replace(/<think>[\s\S]*?<\/think>/gi, '').replace(/^\s+/, '');
 
+// Optional log sink (main.js writes it to ai.log). Never throws.
+let sink = null;
+const setLogger = fn => { sink = typeof fn === 'function' ? fn : null; };
+const note = msg => { try { if (sink) sink(msg); } catch { /* logging must never break the AI */ } };
+const secs = ms => (ms / 1000).toFixed(1) + ' s';
+const where = cfg => (cfg.provider === 'ollama' ? 'ollama ' + (cfg.model || '?') + ' @ ' + String(cfg.url || DEFAULT_OLLAMA_URL) : String(cfg.provider) + ' ' + (cfg.model || DEFAULT_CLAUDE_MODEL));
+
 const fail = msg => { const e = new Error(msg); e.friendly = true; return e; };
 
 function httpMessage(provider, status, data, cfg) {
@@ -108,7 +115,15 @@ async function post(url, headers, body, fetchImpl, timeoutMs) {
   return { res, data };
 }
 
-async function callModel(cfg, system, user, { json = false, predict = 0 } = {}, fetchImpl = fetch) {
+async function callModel(cfg, system, user, o = {}, fetchImpl = fetch) {
+  const t0 = Date.now(), what = 'request  ' + where(cfg) + '  prompt ' + (system.length + user.length) + ' chars' + (o.json ? ' json' : '');
+  try {
+    const out = await callModelRaw(cfg, system, user, o, fetchImpl);
+    note('OK      ' + what + '  answer ' + out.length + ' chars  ' + secs(Date.now() - t0));
+    return out;
+  } catch (e) { note('FAILED  ' + what + '  after ' + secs(Date.now() - t0) + '  ' + (e && e.message)); throw e; }
+}
+async function callModelRaw(cfg, system, user, { json = false, predict = 0 } = {}, fetchImpl = fetch) {
   const provider = cfg.provider;
   if (provider === 'ollama') {
     const base = String(cfg.url || DEFAULT_OLLAMA_URL).trim().replace(/\/+$/, '');
@@ -254,7 +269,7 @@ async function toChecklist(cfg, text, fetchImpl = fetch) {
 }
 
 // Streaming chat. Calls onChunk(text) as the answer arrives and returns the full answer.
-async function chatStream(cfg, system, messages, onChunk, signal, fetchImpl = fetch, opts = {}) {
+async function chatOnce(cfg, system, messages, onChunk, signal, fetchImpl, opts, st) {
   const ctl = new AbortController(), link = () => ctl.abort();
   if (signal) { if (signal.aborted) ctl.abort(); else signal.addEventListener('abort', link, { once: true }); }
   let timedOut = false;
@@ -278,21 +293,22 @@ async function chatStream(cfg, system, messages, onChunk, signal, fetchImpl = fe
     try { res = await fetchImpl(url, { method: 'POST', headers, body: JSON.stringify(body), signal: ctl.signal }); }
     catch (e) {
       if (signal && signal.aborted) throw e;
-      if (timedOut) throw fail('The AI took too long to answer.');
+      if (timedOut) { st.timeout = true; throw fail('The AI took too long to answer.'); }
       throw fail(cfg.provider === 'ollama' ? `Could not reach Ollama at ${String(cfg.url || DEFAULT_OLLAMA_URL).replace(/\/+$/, '')}. Is it running?` : 'Could not reach the Claude API. Check your internet connection.');
     }
     if (!res.ok) { let d = null; try { d = await res.json(); } catch { /* not json */ } throw fail(httpMessage(cfg.provider, res.status, d, cfg)); }
 
     const reader = res.body.getReader(), dec = new TextDecoder();
     let buf = '', full = '';
-    const add = t => { if (t) { full += t; onChunk(t); } };
+    const add = t => { if (t) { if (st.first == null) st.first = Date.now() - st.t0; st.chunks++; full += t; onChunk(t); } };
     const line = raw => {
       raw = raw.trim(); if (!raw) return;
       if (cfg.provider === 'claude') { if (!raw.startsWith('data:')) return; raw = raw.slice(5).trim(); }
-      let o; try { o = JSON.parse(raw); } catch { return; }
+      let o; try { o = JSON.parse(raw); } catch { st.bad++; if (!st.badSample) st.badSample = raw.slice(0, 120); return; }
       if (cfg.provider === 'ollama') {
         if (o.error) throw fail('Ollama said: ' + o.error);
         add(o.message && o.message.content);
+        if (o.done) { st.done = true; st.reason = o.done_reason || ''; st.evalCount = o.eval_count || 0; st.loadMs = Math.round((o.load_duration || 0) / 1e6); }
       } else {
         if (o.type === 'error') throw fail('Claude said: ' + ((o.error && o.error.message) || 'unknown error'));
         if (o.type === 'content_block_delta' && o.delta && o.delta.type === 'text_delta') add(o.delta.text);
@@ -307,12 +323,39 @@ async function chatStream(cfg, system, messages, onChunk, signal, fetchImpl = fe
       if (buf.trim()) line(buf);
     } catch (e) {
       if (signal && signal.aborted) throw e;
-      if (timedOut) throw fail('The AI took too long to answer.');
+      if (timedOut) { st.timeout = true; throw fail('The AI took too long to answer.'); }
       if (e && e.friendly) throw e;
       throw fail('The connection to the AI was interrupted.');
     }
+    if (cfg.provider !== 'ollama') st.done = true;
     return full;
   } finally { clearTimeout(timer); if (signal) signal.removeEventListener('abort', link); }
+}
+
+// Streaming chat with logging. If the model sends back nothing at all, it is asked once more (a model that was still loading often does this).
+async function chatStream(cfg, system, messages, onChunk, signal, fetchImpl = fetch, opts = {}) {
+  const t0 = Date.now(), size = system.length + messages.reduce((n, m) => n + String(m.content || '').length, 0);
+  const what = 'chat     ' + where(cfg) + '  prompt ' + size + ' chars, ' + messages.length + ' msgs, ctx ' + ctxFor(size, opts.predict);
+  for (let attempt = 1; ; attempt++) {
+    const st = { t0: Date.now(), chunks: 0, bad: 0 };
+    let full = '';
+    try { full = await chatOnce(cfg, system, messages, onChunk, signal, fetchImpl, opts, st); }
+    catch (e) {
+      const stopped = signal && signal.aborted;
+      note((stopped ? 'STOPPED ' : 'FAILED  ') + what + '  after ' + secs(Date.now() - t0) + (st.chunks ? ', ' + st.chunks + ' chunks had arrived' : ', nothing had arrived') + (st.timeout ? ' (timeout)' : '') + '  ' + (stopped ? 'stopped by you' : (e && e.message)));
+      throw e;
+    }
+    const seen = stripThink(full).trim();
+    const tail = (st.bad ? ', ' + st.bad + ' unreadable lines (first: ' + JSON.stringify(st.badSample) + ')' : '') + (cfg.provider === 'ollama' && !st.done ? ', stream ended WITHOUT a finish signal' : '') + (st.reason && st.reason !== 'stop' ? ', finish=' + st.reason : '');
+    if (seen) {
+      note((cfg.provider === 'ollama' && !st.done ? 'WARNING ' : 'OK      ') + what + '  answer ' + full.length + ' chars, ' + st.chunks + ' chunks, first text after ' + secs(st.first || 0) + ', total ' + secs(Date.now() - t0) + (st.loadMs ? ', model load ' + secs(st.loadMs) : '') + tail);
+      return full;
+    }
+    note('EMPTY   ' + what + '  the AI sent ' + (full ? 'only thinking (' + full.length + ' chars)' : 'nothing') + ' after ' + secs(Date.now() - t0) + (st.loadMs ? ', model load ' + secs(st.loadMs) : '') + tail + (attempt === 1 && !full && !opts.noRetry ? '  -> asking again' : ''));
+    if (attempt === 1 && !full && !opts.noRetry && !(signal && signal.aborted)) continue;
+    if (opts.allowEmpty) return full;
+    throw fail('The AI sent no answer' + (cfg.provider === 'ollama' ? ' (Ollama gave an empty reply: try again, or pick a different model in Settings > AI)' : '') + '. Details are in the AI log (Settings > AI > Open AI log).');
+  }
 }
 
 // ---- live edit: the answer streams straight into the note ----
@@ -384,7 +427,7 @@ async function translateStream(cfg, text, onChunk, signal, fetchImpl) {
     for (let attempt = 0; attempt < 2; attempt++) {
       const predict = Math.min(3000, Math.round(core.length * 1.2) + 200);
       const extra = attempt ? ' Your previous answer was not a translation into ' + to + '. Answer with the ' + to + ' translation only.' : '';
-      out = clean1(await chatStream(cfg, sys + extra, [...shots, { role: 'user', content: '<text>' + core + '</text>' }], () => {}, signal, fetchImpl, { temperature: attempt ? 0 : 0.2, predict }));
+      out = clean1(await chatStream(cfg, sys + extra, [...shots, { role: 'user', content: '<text>' + core + '</text>' }], () => {}, signal, fetchImpl, { temperature: attempt ? 0 : 0.2, predict, allowEmpty: true, noRetry: true }));
       why = translationProblem(core, out, to);
       if (!why) break;
     }
@@ -404,7 +447,7 @@ async function editStream(cfg, mode, text, onChunk, signal, fetchImpl = fetch) {
   }
   const predict = Math.min(3000, mode === 'translate' ? Math.round(text.length * 1.2) + 200 : Math.round(text.length / 2) + 200);   // Greek takes many more tokens per character
   const tags = tagFilter(onChunk);
-  const full = await chatStream(cfg, editSystem(mode, text) + NOTE_RULE + ' Do not write the <note> tags in your answer.', [{ role: 'user', content: wrapNote(text, EDIT_TASK[mode]) }], tags.push, signal, fetchImpl, { temperature: 0.2, predict });
+  const full = await chatStream(cfg, editSystem(mode, text) + NOTE_RULE + ' Do not write the <note> tags in your answer.', [{ role: 'user', content: wrapNote(text, EDIT_TASK[mode]) }], tags.push, signal, fetchImpl, { temperature: 0.2, predict, allowEmpty: true });
   tags.end();
   const out = cleanEdit(unwrap(full));
   if (!out.trim()) throw fail('The AI returned nothing.');
@@ -425,4 +468,4 @@ async function ping(cfg, fetchImpl = fetch) {
   return r.trim().slice(0, 40);
 }
 
-module.exports = { thinkOff, wrapNote, tagFilter, NOTE_RULE, GREEK_STYLE, translationProblem, suggestTitle, cleanTitle, keepOf, translateTarget, splitPieces, isGreek, greekShare, ctxFor, GREEK_RULES, editStream, editSystem, EDIT_MODES, warmup, summarize, fixGrammar, toChecklist, parseChecklist, chatStream, SYS_CHAT, ping, parseItems, callModel, DEFAULT_CLAUDE_MODEL, DEFAULT_OLLAMA_URL };
+module.exports = { setLogger, thinkOff, wrapNote, tagFilter, NOTE_RULE, GREEK_STYLE, translationProblem, suggestTitle, cleanTitle, keepOf, translateTarget, splitPieces, isGreek, greekShare, ctxFor, GREEK_RULES, editStream, editSystem, EDIT_MODES, warmup, summarize, fixGrammar, toChecklist, parseChecklist, chatStream, SYS_CHAT, ping, parseItems, callModel, DEFAULT_CLAUDE_MODEL, DEFAULT_OLLAMA_URL };

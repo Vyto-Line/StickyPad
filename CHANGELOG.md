@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.14.34
+- **An AI log: Settings > AI > Open AI log.** Every AI request (chat, summarize, fix grammar, translate…) and every problem is written to a small text file: which model, how big the request was, how long it took, how much came back, and what went wrong (Ollama not running, too slow, an empty reply, a stream that stopped half way). It holds only sizes and timings, never your notes or the answers, so you can send it to me.
+- **The AI no longer goes silent.** If the local model sends back nothing, StickyPad now asks it once more automatically (a model that is still loading often does this). If it is still empty you get a clear message that points to the log, instead of an empty chat bubble.
+- Not tried on a real Windows PC yet.
+
 ## 1.14.33
 - **Opening a huge note is instant.** The parts of a very long note that are off screen are no longer laid out or drawn until you scroll to them: drawing a 1.4 MB note went from about half a second to a few milliseconds (a 4 MB note took a second or more). Ctrl+End, Find and the scroll bar still reach every part of the note; Ctrl+End now puts the cursor at the very end by itself.
 - **The scroll bar of a note can be grabbed again.** On Windows, the outer few pixels inside a frameless window are used for resizing it, and they covered the note's thin scroll bar, so clicking or dragging it did nothing. The scroll bar now sits a few pixels inside the edge.

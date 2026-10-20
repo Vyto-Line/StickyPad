@@ -1076,6 +1076,7 @@ ipcMain.handle('ai:run', async (e, task, payload) => {
     if (task === 'ping') return { ok: true, text: await ai.ping(cfg) };
     return { ok: false, error: 'Unknown task.' };
   } catch (err) {
+    if (!(err && err.friendly)) aiLog('ERROR   task ' + task + '  ' + (err && err.stack ? err.stack.split('\n').slice(0, 3).join(' | ') : err));
     return { ok: false, error: err && err.friendly ? err.message : 'Something went wrong: ' + (err && err.message ? err.message : err) };
   }
 });
@@ -1091,7 +1092,7 @@ ipcMain.handle('ai:edit', async (e, p) => {
     send({ type: 'done', text: full });
   } catch (err) {
     if (ac.signal.aborted) send({ type: 'done', stopped: true });
-    else send({ type: 'error', error: err && err.friendly ? err.message : 'Something went wrong: ' + (err && err.message ? err.message : err) });
+    else { if (!(err && err.friendly)) aiLog('ERROR   edit  ' + (err && err.stack ? err.stack.split('\n').slice(0, 3).join(' | ') : err)); send({ type: 'error', error: err && err.friendly ? err.message : 'Something went wrong: ' + (err && err.message ? err.message : err) }); }
   } finally { editJobs.delete(id); }
   return true;
 });
@@ -1289,7 +1290,7 @@ ipcMain.handle('chat:send', async (e, p) => {
     send({ type: 'done', text: full });
   } catch (err) {
     if (ac.signal.aborted) send({ type: 'done', stopped: true });
-    else send({ type: 'error', error: err && err.friendly ? err.message : 'Something went wrong: ' + (err && err.message ? err.message : err) });
+    else { if (!(err && err.friendly)) aiLog('ERROR   chat  ' + (err && err.stack ? err.stack.split('\n').slice(0, 3).join(' | ') : err)); send({ type: 'error', error: err && err.friendly ? err.message : 'Something went wrong: ' + (err && err.message ? err.message : err) }); }
   } finally { chatJobs.delete(id); }
   return true;
 });
@@ -1318,6 +1319,18 @@ function updateLog(line) {
     fs.writeFileSync(f, old + head + new Date().toISOString() + '  v' + app.getVersion() + '  ' + line + '\n');
   } catch {}
 }
+// What the AI did and what went wrong (Settings > AI > Open AI log). Prompts and answers are never written here, only sizes and timings.
+const aiLogFile = () => path.join(app.getPath('userData'), 'ai.log');
+function aiLog(line) {
+  try {
+    const f = aiLogFile(); let old = '';
+    try { old = fs.readFileSync(f, 'utf8'); } catch {}
+    if (old.length > 150000) old = old.slice(-100000);
+    const head = old ? '' : `StickyPad AI log. Only sizes and timings are saved here, never your notes or the answers.\nStickyPad ${app.getVersion()} on ${process.platform} ${process.arch}\n`;
+    fs.writeFileSync(f, old + head + new Date().toISOString() + '  v' + app.getVersion() + '  ' + line + '\n');
+  } catch {}
+}
+ai.setLogger(aiLog);
 ipcMain.handle('update:check', () => updater ? updater.check() : null);
 ipcMain.handle('update:download', () => updater ? updater.download() : null);
 ipcMain.handle('whatsnew:get', () => whatsNewData(whatsFrom));
@@ -1488,6 +1501,10 @@ ipcMain.handle('settings:action', (e, name, arg) => {
     if (name === 'restartApp') { flush(); app.relaunch(); setTimeout(() => app.exit(0), 200); return { ok: true }; }
     if (name === 'openUpdateLog') {
       const f = updateLogFile(); if (!fs.existsSync(f)) fs.writeFileSync(f, 'No update check has run yet. Press "Check now" in Settings > About, then open this file again.\n');
+      shell.openPath(f); return { ok: true };
+    }
+    if (name === 'openAiLog') {
+      const f = aiLogFile(); if (!fs.existsSync(f)) fs.writeFileSync(f, 'Nothing has been recorded yet. Use the AI (chat, summarize, fix grammar...) and open this file again: every request and every problem is listed here.\n');
       shell.openPath(f); return { ok: true };
     }
     if (name === 'openReleases') { shell.openExternal('https://github.com/Vyto-Line/StickyPad/releases'); return { ok: true }; }
