@@ -1,10 +1,5 @@
 # Changelog
 
-## 1.14.23
-- **A direct "Uninstall StickyPad" in the Start menu.** It runs the uninstaller straight away instead of opening Settings > Apps. (The Uninstall on the normal StickyPad entry still opens Apps; that is Windows and cannot be changed.)
-- **The uninstaller asks if your notes should be deleted too.** After StickyPad is removed, a question appears: *Yes* deletes your notes, pictures, settings and backups, *No* keeps them for a later reinstall (the default answer). Updates never ask and never delete anything. If you moved your data folder (OneDrive, Dropbox...), that folder is never deleted, only the normal one.
-- Not tried on a real Windows PC yet. It only shows up after you install 1.14.23 once and then uninstall.
-
 ## 1.14.22
 - **Font and transparency are now in a drop down.** In a note's panel, the font, the text size, *Transparency* and *Keep the text solid* sit under one line, **Font and transparency**, the same way *Model and connection* works in the AI section. It starts closed, so the colour swatches and the *This note* rows (Reminder, Folder, Lock…) fit without scrolling. The controls are the same as before.
 - Not tried on a real Windows PC yet.
