@@ -10,19 +10,21 @@ function slug(s, fallback = 'Untitled') {
 
 const lineOf = (b, md) => (md ? (b.done ? '- [x] ' : '- [ ] ') : (b.done ? '[x] ' : '[ ] ')) + b.v.replace(/\n/g, ' ');
 
-function body(blocks, md) {
+// image(id) gives a data address for a picture (or '' when its file is gone). Without it, pictures are left out (plain text can not hold them).
+function body(blocks, md, image) {
   const out = [];
   (blocks || []).forEach((b, i) => {
     if (b.t === 'text') {
       const next = blocks[i + 1];
       out.push(next && next.t !== 'text' ? b.v.replace(/\n$/, '') : b.v);
     } else if (b.t === 'check') out.push(lineOf(b, md));
+    else if (b.t === 'img' && md && image) { const u = image(b.id); if (u) out.push('', '![](' + u + ')', ''); }
   });
   return out.join('\n').replace(/\n{3,}/g, '\n\n').trim();
 }
 
-function toMarkdown(title, blocks) {
-  const t = String(title || '').trim(), b = body(blocks, true);
+function toMarkdown(title, blocks, opts) {
+  const t = String(title || '').trim(), b = body(blocks, true, opts && opts.image);
   return (t ? '# ' + t + '\n' + (b ? '\n' : '') : '') + (b ? b + '\n' : '');
 }
 function toText(title, blocks) {
@@ -30,6 +32,7 @@ function toText(title, blocks) {
   return (t ? t + '\n' + (b ? '\n' : '') : '') + (b ? b + '\n' : '');
 }
 
+const IMG_LINE = /^\s*!\[[^\]]*\]\((data:image\/(?:png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+)\)\s*$/;
 // A Markdown or plain text file -> { title, blocks }. "- [ ] item" / "- [x] item" (also * and +) become checklist items.
 function fromMarkdown(text, fileName) {
   let s = String(text || '').replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
@@ -43,7 +46,13 @@ function fromMarkdown(text, fileName) {
 
   const blocks = []; let buf = [];
   const flush = () => { const v = buf.join('\n'); buf = []; if (v.trim()) blocks.push({ t: 'text', v }); };
+  let afterImg = false;
   for (const ln of lines) {
+    const wasImg = afterImg; afterImg = false;
+    // a picture written as ![](data:image/png;base64,...) (what Export writes) -> a picture block; main saves the file
+    const im = IMG_LINE.exec(ln);
+    if (im) { if (buf.length && !buf[buf.length - 1].trim()) buf.pop(); flush(); blocks.push({ t: 'img', data: im[1] }); afterImg = true; continue; }
+    if (wasImg && !ln.trim()) continue;   // the blank line Export puts after a picture
     const m = /^\s*[-*+]\s+\[([ xX])\]\s+(.*)$/.exec(ln) || /^\s*\[([ xX])\]\s+(.*)$/.exec(ln);
     if (m && m[2].trim()) { flush(); blocks.push({ t: 'check', v: m[2].trim(), done: m[1] !== ' ' }); }
     else buf.push(ln);

@@ -154,6 +154,19 @@ const H = require('./fake-electron');
   // ---- search across all notes ----
   const mk = async (title, text) => { await h['note:new']({ sender: { id: 0 } }); const ww = wins[wins.length - 1], ee = H.ev(ww); await h['note:update'](ee, { title, blocks: [{ t: 'text', v: text }] }); return { ww, ee, id: (await h['note:get'](ee)).id }; };
   const sa = await mk('Trip', 'start ' + 'blah '.repeat(300) + 'Ακρόπολη at the end'), sb = await mk('Diary', 'my zebra secret');
+  // ---- pictures travel inside exported notes ----
+  const PNGB = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64');
+  const pic = await mk('With picture', 'caption'); const pid = await h['img:save'](pic.ee, 'data:image/png;base64,' + PNGB.toString('base64')); assert.ok(pid, 'picture saved');
+  await h['note:update'](pic.ee, { blocks: [{ t: 'text', v: 'caption\n' }, { t: 'img', id: pid }, { t: 'text', v: 'end' }] });
+  electron.__save = path.join(tmp, 'pic.stickypad'); const px = await h['note:export'](pic.ee); assert.ok(px.ok && px.pics === 1 && px.picsLeftOut === 0, JSON.stringify(px));
+  const pfile = fs.readFileSync(electron.__save, 'utf8'); assert.ok(pfile.includes('![](data:image/png;base64,' + PNGB.toString('base64') + ')'), 'the picture is inside the file'); assert.ok(pfile.startsWith('# With picture'));
+  electron.__save = path.join(tmp, 'pic.txt'); const pt = await h['note:export'](pic.ee); assert.ok(pt.ok && pt.picsLeftOut === 1 && !fs.readFileSync(electron.__save, 'utf8').includes('data:image'), 'plain text says the picture was left out');
+  const wBefore = wins.length; electron.__open = [path.join(tmp, 'pic.stickypad')]; const pim = await h['settings:action']({}, 'importNotes'); assert.ok(pim.ok && pim.count === 1, JSON.stringify(pim));
+  const nw = wins[wins.length - 1], nn2 = await h['note:get'](H.ev(nw)); const pimg = nn2.blocks.find(b => b.t === 'img'); assert.ok(pimg && pimg.src, 'the imported note has a picture');
+  const newId = decodeURIComponent(pimg.src.split('/').pop()); assert.ok(newId !== pid && fs.readFileSync(path.join(tmp, 'userData', 'images', newId)).equals(PNGB), 'a new picture file with the same bytes: ' + newId);
+  assert.deepStrictEqual(nn2.blocks.map(b => b.t), ['text', 'img', 'text'], 'same layout');
+  fs.writeFileSync(path.join(tmp, 'evil.stickypad'), '# Evil\n![x](data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=)\n![y](data:image/png;base64,@@@)\ntext\n'); electron.__open = [path.join(tmp, 'evil.stickypad')]; await h['settings:action']({}, 'importNotes');
+  const en = await h['note:get'](H.ev(wins[wins.length - 1])); assert.ok(!en.blocks.some(b => b.t === 'img'), 'no picture from a bad data address');
   // the word list follows edits and deleted notes (each note is counted again only when it changed)
   const wn1 = await mk('Words', 'quokka quokka quokka'); assert.ok((await h['words:get']({})).some(x => x.w === 'quokka' && x.n === 3));
   await h['note:update'](wn1.ee, { blocks: [{ t: 'text', v: 'numbat numbat' }] }); const wl3 = await h['words:get']({}); assert.ok(wl3.some(x => x.w === 'numbat' && x.n === 2) && !wl3.some(x => x.w === 'quokka'), 'an edited note is counted again');

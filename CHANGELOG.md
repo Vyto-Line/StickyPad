@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.14.26
+- **Pictures are now exported with the note.** *Export…* writes the pictures inside the file: a **.stickypad** or Markdown file holds each picture right where it sits in the note (as a standard Markdown picture, so other Markdown programs show them too), and **opening or importing the file puts the pictures back** in the new note. *Export all notes* does the same for every note. Plain text (.txt) cannot hold pictures, and StickyPad says so when you save one. Files with pictures are bigger, so the size limit for importing a file is now 150 MB. Only normal pictures (PNG, JPEG, WebP, GIF) are read back from a file, at most 100 per note.
+- Not tried on a real Windows PC yet.
+
 ## 1.14.25
 - **Your notes can no longer be lost when the notes file cannot be read (important fix).** If the notes file was busy or unreadable for a moment while StickyPad started (an update, antivirus, OneDrive or Dropbox holding it), older versions started with *no notes* and then saved that empty set over the real file. Now: a busy file is tried again for a few seconds; a file that stays unreadable is **kept as it is** (and copied to `notes.unreadable-….json`), the notes are **restored from the newest good copy** (the copy made at the last good start, then your daily backups) with a notification, and if there is no copy at all StickyPad explains what happened, opens the folder and **writes nothing**. A change made by another PC while its copy is half written is ignored instead of closing your notes. Empty days no longer push real backups out of the newest seven.
 - **A moved notes folder that is not available no longer starts you with an empty set.** If your notes live in a folder on OneDrive, Dropbox or another drive and it cannot be reached at start, StickyPad waits up to 10 seconds, then asks whether to quit (the default, so you can start it again once the folder is connected) or start with an empty set for now.

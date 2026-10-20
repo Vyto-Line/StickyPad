@@ -34,6 +34,18 @@ assert.deepStrictEqual(rt.blocks, [{ t: 'text', v: 'Shopping for Friday' }, { t:
 
 // unique names
 assert.deepStrictEqual(C.uniqueNames(['A', 'a', 'A', ''], '.md'), ['A.md', 'a (2).md', 'A (3).md', 'Untitled.md']);
+// pictures travel inside the file as data addresses and come back as picture blocks
+const PNG = 'data:image/png;base64,iVBORw0KGgo=', JPG = 'data:image/jpeg;base64,/9j/4AAQ';
+const pb = [{ t: 'text', v: 'Before\n' }, { t: 'img', id: 'a.png' }, { t: 'check', v: 'milk', done: false }, { t: 'img', id: 'gone.png' }, { t: 'img', id: 'b.jpg' }, { t: 'text', v: 'After' }];
+const imgOf = id => ({ 'a.png': PNG, 'b.jpg': JPG }[id] || '');
+const pm = C.toMarkdown('Pics', pb, { image: imgOf });
+assert.ok(pm.includes('![](' + PNG + ')') && pm.includes('![](' + JPG + ')') && !pm.includes('gone'), 'pictures are written, a missing file is skipped');
+assert.ok(!C.toMarkdown('Pics', pb).includes('data:image'), 'without the option pictures are left out as before'); assert.ok(!C.toText('Pics', pb).includes('data:image'), 'plain text never has pictures');
+const pr = C.fromMarkdown(pm, 'x.stickypad');
+assert.deepStrictEqual(pr.blocks.map(b => b.t), ['text', 'img', 'check', 'img', 'text'], JSON.stringify(pr.blocks.map(b => b.t)));
+assert.strictEqual(pr.blocks[1].data, PNG); assert.strictEqual(pr.blocks[3].data, JPG); assert.strictEqual(pr.blocks[0].v, 'Before', 'no extra blank lines around a picture'); assert.strictEqual(pr.blocks[4].v, 'After');
+const again = C.toMarkdown(pr.title, pr.blocks.map(b => b.t === 'img' ? { t: 'img', id: b.data === PNG ? 'a.png' : 'b.jpg' } : b), { image: imgOf }); assert.strictEqual(again, C.toMarkdown('Pics', pb.filter(b => b.id !== 'gone.png'), { image: imgOf }), 'export, import, export gives the same file');
+const evil = C.fromMarkdown('# T\n![x](data:image/svg+xml;base64,PHN2Zz4=)\n![y](https://example.com/a.png)\n![z](data:text/html;base64,AAAA)\n'); assert.ok(!evil.blocks.some(b => b.t === 'img'), 'only png, jpeg, webp and gif data addresses become pictures');
 console.log('convert ok');
 // .stickypad files: Markdown inside, found in a command line
 assert.deepStrictEqual(C.noteFileArgs(['C:\\App\\StickyPad.exe', '--updated', 'C:\\n\\Plan.stickypad', 'x.txt', 'D:\\A.STICKYPAD', '--x.stickypad']), ['C:\\n\\Plan.stickypad', 'D:\\A.STICKYPAD']);

@@ -697,7 +697,7 @@ $('#exportBtn').onclick = async () => {
   if (bodyLocked()) { $('#exportMsg').textContent = 'Unlock the note first.'; return; }
   if (timer) saveNow();
   const r = await api.noteExport(); const m = $('#exportMsg');
-  m.textContent = r && r.ok ? 'Saved' + (r.pics ? ' (pictures are not included in the file)' : '') + '.' : r && r.error ? r.error : '';
+  m.textContent = r && r.ok ? 'Saved' + (r.picsLeftOut ? ' (plain text files cannot hold pictures: use .stickypad or Markdown to keep them)' : '') + '.' : r && r.error ? r.error : '';
 };
 document.addEventListener('keydown', e => { if (KEY(e, 'n_copy')) { e.preventDefault(); copyNote(); } });
 

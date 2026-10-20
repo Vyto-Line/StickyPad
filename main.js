@@ -58,6 +58,7 @@ const GPU_OK = !LAUNCH.lowMemory;   // a see-through background with solid text 
   plan.switches.forEach(([k, v]) => { if (v === undefined) app.commandLine.appendSwitch(k); else app.commandLine.appendSwitch(k, v); });
 }
 
+const MAX_IMPORT = 150e6;   // an exported note with pictures is bigger than plain text
 const DAY = 864e5, MAX_BLOCKS = 50000, MAX_TEXT = 5000000;   // generous limits: a long note must never lose its last lines
 const MIN_W = 260, MIN_H = 180, ROLL_H = 40, SNAP = 10, GAP = 4;
 const IMG_ID = /^[a-z0-9]{6,40}\.(png|jpe?g|webp|gif)$/;
@@ -523,9 +524,10 @@ ipcMain.handle('note:export', async e => {
     filters: [{ name: 'StickyPad note (opens with a double-click)', extensions: ['stickypad'] }, { name: 'Markdown', extensions: ['md'] }, { name: 'Plain text', extensions: ['txt'] }]
   });
   if (r.canceled || !r.filePath) return { ok: false, cancelled: true };
-  const txt = /\.txt$/i.test(r.filePath) ? convert.toText(n.title, noteBlocks(n)) : convert.toMarkdown(n.title, noteBlocks(n));
+  const plain = /\.txt$/i.test(r.filePath), pics = noteBlocks(n).filter(b => b.t === 'img').length;
+  const txt = plain ? convert.toText(n.title, noteBlocks(n)) : convert.toMarkdown(n.title, noteBlocks(n), { image: imgDataUri });   // pictures travel inside the file (plain text cannot hold them)
   fs.writeFileSync(r.filePath, txt, 'utf8');
-  return { ok: true, file: r.filePath, pics: noteBlocks(n).filter(b => b.t === 'img').length };
+  return { ok: true, file: r.filePath, pics, picsLeftOut: plain ? pics : 0 };
 });
 function exportAll(parent) {
   const r = dialog.showOpenDialogSync(parent || undefined, { title: 'Choose a folder for the exported notes', properties: ['openDirectory', 'createDirectory'], defaultPath: app.getPath('documents') });
@@ -539,7 +541,7 @@ function exportAll(parent) {
   byDir.forEach((list, d) => {
     const dir = path.join(root, d); fs.mkdirSync(dir, { recursive: true });
     const names = convert.uniqueNames(list.map(n => n.title || textOf(noteBlocks(n)).split('\n').find(x => x.trim()) || ''), '.md');
-    list.forEach((n, i) => fs.writeFileSync(path.join(dir, names[i]), convert.toMarkdown(n.title, noteBlocks(n)), 'utf8'));
+    list.forEach((n, i) => fs.writeFileSync(path.join(dir, names[i]), convert.toMarkdown(n.title, noteBlocks(n), { image: imgDataUri }), 'utf8'));
   });
   shell.openPath(root);
   return { ok: true, count: open.length, skipped, dir: root };
@@ -549,9 +551,10 @@ function importFiles(files) {
   let count = 0, failed = 0;
   files.forEach((f, i) => {
     try {
-      if (fs.statSync(f).size > MAX_TEXT) { failed++; return; }
+      if (fs.statSync(f).size > MAX_IMPORT) { failed++; return; }
       const c = convert.fromMarkdown(fs.readFileSync(f, 'utf8'), f);
-      const blocks = sanitizeBlocks(c.blocks);
+      let pics = 0;   // pictures written into the file by Export become picture files again (at most 100 per note)
+      const blocks = sanitizeBlocks(c.blocks.map(b => b.t !== 'img' ? b : (pics++ < 100 && b.data ? { t: 'img', id: saveImgData(b.data) } : null)));
       const k = (Object.keys(notes).length + i) % 8;
       const n = newNote({ title: c.title, blocks, text: textOf(blocks), bounds: { x: 80 + k * 28, y: 80 + k * 28, width: 300, height: 320 } });
       notes[n.id] = n; count++;
@@ -690,13 +693,20 @@ ipcMain.handle('note:update', (e, p) => {
   save();
 });
 
-ipcMain.handle('img:save', (e, dataUrl) => {
+// A picture as a data address -> a file in the pictures folder -> its id (null when it is not a normal picture or is too big).
+function saveImgData(dataUrl) {
   const m = /^data:image\/(png|jpeg|webp|gif);base64,([A-Za-z0-9+/=]+)$/.exec(String(dataUrl));
   if (!m || m[2].length > 14e6) return null;
   const id = rid() + '.' + (m[1] === 'jpeg' ? 'jpg' : m[1]);
   try { fs.mkdirSync(imgDir(), { recursive: true }); fs.writeFileSync(path.join(imgDir(), id), Buffer.from(m[2], 'base64')); return id; }
   catch { return null; }
-});
+}
+ipcMain.handle('img:save', (e, dataUrl) => saveImgData(dataUrl));
+// The other way: a picture file as a data address, to put inside an exported note ('' when the file is gone).
+function imgDataUri(id) {
+  if (!IMG_ID.test(id)) return '';
+  try { const ext = id.split('.').pop().toLowerCase(); return 'data:image/' + (ext === 'jpg' ? 'jpeg' : ext) + ';base64,' + fs.readFileSync(path.join(imgDir(), id)).toString('base64'); } catch { return ''; }
+}
 
 ipcMain.handle('note:pin', (e, v) => {
   const n = notes[idOf(e)], w = winOf(e); if (!n || !w) return false;
