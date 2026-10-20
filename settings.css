@@ -117,3 +117,13 @@ h2{font-size:17px;margin-bottom:9px}
 #updDownload,#updInstall{background:linear-gradient(100deg,#ff2bd6,#a855ff 50%,#00e5ff);color:#0b0b14;font-weight:700;border:0;box-shadow:0 0 10px rgba(168,85,255,.45)}
 #updDownload:hover,#updInstall:hover{filter:brightness(1.1)}
 #updDownload:disabled{opacity:.6}
+
+.row.col .rtop{display:flex;align-items:center;justify-content:space-between;gap:18px}
+.blist{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.bitem{display:flex;align-items:center;gap:10px;padding:7px 10px;border:1px solid var(--line);border-radius:10px}
+.bitem .bt{flex:1;min-width:0;font-weight:600}
+.bitem .bn{color:var(--mute);font-size:12.5px;white-space:nowrap}
+.bitem.bad{opacity:.6}
+.btn.warn.armed{background:#d9372b;color:#fff;border-color:transparent}
+.rmsg{margin-top:8px;font-size:12.5px;color:var(--mute)}
+.rmsg:empty{display:none}

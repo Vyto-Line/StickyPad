@@ -1,0 +1,39 @@
+import sys, os
+HERE=os.path.dirname(os.path.abspath(__file__)); OUT=os.path.join(HERE,'out'); os.makedirs(OUT,exist_ok=True)
+from playwright.sync_api import sync_playwright
+ROOT=os.path.abspath(os.path.join(HERE,'..','..'))+'/'; STUB=open(os.path.join(HERE,'stub.js')).read()
+fails=[]
+def ok(c,m):
+    print(('PASS ' if c else 'FAIL ')+m)
+    if not c: fails.append(m)
+with sync_playwright() as p:
+    b=p.chromium.launch()
+    def page(init='',w=560,h=600):
+        pg=b.new_page(viewport={'width':w,'height':h}); errs=[]
+        pg.on('pageerror',lambda e:errs.append(str(e))); pg.on('console',lambda m: errs.append(m.text) if m.type=='error' else None)
+        pg.add_init_script(STUB); pg.add_init_script(init); pg.goto('file://'+ROOT+'welcome.html'); pg.wait_for_timeout(400); pg.errs=errs; return pg
+    calls=lambda pg: pg.evaluate("__S.calls.filter(c=>c[0]=='welcomeClose').map(c=>c[1])")
+    pg=page()
+    ok(pg.inner_text('#title')=='Welcome to StickyPad','starts with a welcome')
+    ok(pg.eval_on_selector_all('#text kbd','e=>e.map(x=>x.textContent)')==['Ctrl + Alt + N'],'the new-note shortcut comes from the app (%s)'%pg.eval_on_selector_all('#text kbd','e=>e.map(x=>x.textContent)'))
+    ok(not pg.is_visible('#back') and pg.is_visible('#skip'),'no Back on the first step, Skip is there')
+    ok(pg.locator('#dots button').count()==5,'five steps')
+    pg.screenshot(path=os.path.join(OUT,'welcome1.png'))
+    pg.click('#next'); ok('Find anything'==pg.inner_text('#title'),'Next goes on')
+    ok(pg.eval_on_selector_all('#text kbd','e=>e.map(x=>x.textContent)')==['Ctrl + Alt + A','Ctrl + Alt + F'],'search and Home shortcuts shown')
+    pg.keyboard.press('ArrowRight'); ok(pg.inner_text('#title')=='Make it yours','arrow keys work too')
+    pg.keyboard.press('ArrowLeft'); ok(pg.inner_text('#title')=='Find anything','and back')
+    pg.click('#dots button:nth-child(4)'); ok('AI helper' in pg.inner_text('#title'),'a dot jumps to a step')
+    pg.click('#extra .btn'); pg.wait_for_timeout(100)
+    ok(calls(pg)==[{'go':'settings','section':'ai'}],'the AI step opens the AI settings (%s)'%calls(pg))
+    pg.screenshot(path=os.path.join(OUT,'welcome4.png'))
+    pg.click('#dots button:nth-child(5)'); ok('safe' in pg.inner_text('#title') and pg.inner_text('#next')=='Start with a note' and not pg.is_visible('#skip'),'last step: Start with a note, no Skip')
+    pg.click('#next'); pg.wait_for_timeout(100); ok(calls(pg)[-1]=={'go':'note'},'the last button starts with a note')
+    pg2=page(); pg2.click('#skip'); pg2.wait_for_timeout(100); ok(calls(pg2)==[{}],'Skip closes without doing anything')
+    pg3=page(); pg3.keyboard.press('Escape'); pg3.wait_for_timeout(100); ok(calls(pg3)==[{}],'Esc closes')
+    pg4=page("window.__NAME='Alex';"); ok(pg4.inner_text('#title')=='Welcome, Alex!','uses the name when there is one')
+    pg5=page("window.__NAME='<img src=x onerror=alert(1)>';"); ok(pg5.eval_on_selector('#title','e=>e.querySelector("img")')==None,'a name is text, never HTML')
+    pg6=page(w=420,h=480); ok(pg6.eval_on_selector('main','e=>e.scrollWidth<=e.clientWidth+1') and pg6.is_visible('#next'),'fits the smallest window')
+    for q in (pg,pg2,pg3,pg4,pg5,pg6): ok(not q.errs,'no page errors (%s)'%q.errs)
+    b.close()
+print('FAILED: %s'%fails if fails else 'ALL PASS'); sys.exit(1 if fails else 0)

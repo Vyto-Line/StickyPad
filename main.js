@@ -20,6 +20,7 @@ const links = require('./links');
 const notesearch = require('./notesearch');
 const search = require('./search');
 const safeload = require('./safeload');
+const restore = require('./restore');
 const importers = require('./importers');
 const placement = require('./placement');
 const changelog = require('./changelog');
@@ -71,7 +72,7 @@ const DEFAULT_SETTINGS = {
   ai: { provider: 'off', model: '', url: 'http://localhost:11434', keyEnc: '', keepAlive: '5m' }
 };
 let notes = {}, trash = [], groups = [], settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
-let quickWin = null, allWin = null, settingsWin = null, tray = null, splashWin = null, whatsWin = null, whatsFrom = null, whatsMax = 3, memKey = null, chatWin = null, chatState = null;
+let welcomeWin = null, quickWin = null, allWin = null, settingsWin = null, tray = null, splashWin = null, whatsWin = null, whatsFrom = null, whatsMax = 3, memKey = null, chatWin = null, chatState = null;
 const chatJobs = new Map();
 const wins = new Map();       // noteId -> BrowserWindow
 const byContents = new Map(); // webContents.id -> noteId
@@ -471,6 +472,65 @@ function openStartup() {
   if (mode !== 'all' || !any) Object.values(notes).forEach((n, i) => setTimeout(() => { if (notes[n.id]) openNote(n); }, i * 60));
   if (mode === 'all' || mode === 'both') openAll();
 }
+
+/* ---------- restore from a backup ---------- */
+const NOTE_ID = /^[A-Za-z0-9_-]{1,40}$/;
+const dataOf = loc => { const r = safeload.readJson(loc.file, 2); return r.ok ? r.data : null; };
+const notesIn = d => (d && d.version === 2 ? d.notes : d) || {};
+// "Add missing notes": notes that are in the backup but not here (not in the trash either) come back; nothing that exists now is touched.
+function restoreAdd(data, imagesDir) {
+  let added = 0; const ids = new Set();
+  for (const [id, raw] of Object.entries(notesIn(data))) {
+    if (!NOTE_ID.test(id) || !raw || typeof raw !== 'object' || notes[id] || trash.some(t => t && t.id === id)) continue;
+    const n = { ...raw, id };
+    if (!n.lock && Array.isArray(n.blocks)) { n.blocks = sanitizeBlocks(n.blocks); n.text = textOf(n.blocks); }
+    if (!hasContent(n)) continue;
+    n.bounds = cleanBounds(n.bounds);
+    if (n.group && !groups.some(g => g.id === n.group)) {
+      const bg = Array.isArray(data.groups) ? data.groups.find(g => g && g.id === n.group && typeof g.name === 'string') : null;
+      if (bg && NOTE_ID.test(String(bg.id))) groups.push({ id: bg.id, name: bg.name.slice(0, 40), collapsed: false }); else n.group = null;
+    }
+    imgIds(n).forEach(i => ids.add(i)); notes[id] = n; added++;
+  }
+  const images = restore.copyImages(imagesDir, imgDir(), ids, IMG_ID);
+  if (added) { save(); }
+  return { added, images };
+}
+// "Replace everything": what there is now is copied aside first, then the backup becomes the notes. Settings of this PC are kept.
+function restoreReplace(data, imagesDir) {
+  flush();
+  const safety = restore.safetyCopy(app.getPath('userData'), dataDir());
+  const mine = settings; applyData(data); settings = mine;
+  const ids = new Set(); Object.values(notes).concat(trash).forEach(n => imgIds(n).forEach(i => ids.add(i)));
+  const images = restore.copyImages(imagesDir, imgDir(), ids, IMG_ID);
+  sessions.clear(); wordsVer++;
+  save(); flush();
+  wins.forEach((w, id) => { if (w.isDestroyed()) return; if (notes[id]) w.webContents.send('note:reload'); else w.close(); });
+  pingAll(); refreshTray();
+  return { added: Object.keys(notes).length, images, safety: path.basename(safety) };
+}
+function runRestore(loc, mode) {
+  if (!loc) return { ok: false, error: 'That backup is gone.' };
+  const data = dataOf(loc);
+  if (!data || (data.version === 2 ? typeof data.notes !== 'object' : typeof data !== 'object')) return { ok: false, error: 'That backup could not be read.' };
+  if (writeBlocked) return { ok: false, error: 'StickyPad cannot save right now (the notes file could not be read at start).' };
+  const r = mode === 'replace' ? restoreReplace(data, loc.images) : restoreAdd(data, loc.images);
+  return { ok: true, mode: mode === 'replace' ? 'replace' : 'add', ...r };
+}
+
+/* ---------- the welcome tour (first start only, and from Settings > About) ---------- */
+function openWelcome() {
+  welcomeWin = utilWindow(welcomeWin, 'Welcome to StickyPad', 'welcome.html', 560, 600);
+  welcomeWin.setMinimumSize(420, 480);
+  welcomeWin.on('closed', () => { welcomeWin = null; });
+}
+ipcMain.handle('welcome:get', () => ({ keys: curKeys(), name: settings.name || '' }));
+ipcMain.handle('welcome:close', (e, o) => {
+  settings.welcomeSeen = true; save();
+  if (o && o.go === 'settings') openSettings(typeof o.section === 'string' ? o.section : undefined);
+  else if (o && o.go === 'note') makeNote(null);
+  if (welcomeWin && !welcomeWin.isDestroyed()) welcomeWin.close();
+});
 
 /* ---------- settings ---------- */
 function setHide(v) {
@@ -1233,6 +1293,7 @@ ipcMain.handle('whatsnew:get', () => whatsNewData(whatsFrom));
 ipcMain.handle('whatsnew:close', (e, o) => {
   if (o && typeof o.off === 'boolean') { settings.whatsNew = !o.off; save(); }
   if (whatsWin && !whatsWin.isDestroyed()) whatsWin.close();
+  if (welcomeWin && !welcomeWin.isDestroyed()) welcomeWin.close();
 });
 ipcMain.handle('update:state', () => updater ? updater.get() : null);
 ipcMain.handle('update:install', () => {
@@ -1381,6 +1442,14 @@ ipcMain.handle('settings:set', (e, p) => {
 ipcMain.handle('settings:action', (e, name, arg) => {
   try {
     if (name === 'backupNow') { doBackup(); return { ok: true, info: allSettings() }; }
+    if (name === 'listBackups') return { ok: true, items: restore.entries(app.getPath('userData'), dataDir()) };
+    if (name === 'restoreBackup') return runRestore(restore.locate(app.getPath('userData'), dataDir(), arg && arg.id), arg && arg.mode);
+    if (name === 'restoreFromFile') {
+      const r = dialog.showOpenDialogSync(settingsWin || undefined, { title: 'Choose a notes file to restore from', properties: ['openFile'], filters: [{ name: 'StickyPad notes file', extensions: ['json'] }], defaultPath: dataDir() });
+      if (!r || !r[0]) return { ok: false, cancelled: true };
+      return runRestore({ file: r[0], images: path.join(path.dirname(r[0]), 'images') }, 'add');   // from a file only the missing notes are added: nothing is replaced
+    }
+    if (name === 'openWelcome') { openWelcome(); return { ok: true }; }
     if (name === 'exportAll') return exportAll(settingsWin);
     if (name === 'importNotes') return importNotes(settingsWin);
     if (name === 'importOther') return importOther(settingsWin, arg);
@@ -1458,6 +1527,7 @@ app.whenReady().then(async () => {
   if (settings.shortcuts) registerShortcuts();
   if (settings.splash) await showSplash();
   openStartup();
+  if (firstRun && !settings.welcomeSeen) setTimeout(() => { try { openWelcome(); } catch {} }, 600);   // a brand-new install gets a short tour
   const startFiles = convert.noteFileArgs(process.argv);   // StickyPad was started by double-clicking a .stickypad file
   if (startFiles.length) importFiles(startFiles);
   maybeWhatsNew();

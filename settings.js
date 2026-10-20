@@ -129,8 +129,48 @@ $$('[data-range]').forEach(el => {
 });
 $('#applyAll').onclick = async () => { await api.themeApplyAll(S.theme); const m = $('#applyMsg'); flash(m, 'Applied to all your notes ✓'); };
 arm($('#emptyTrash'), 'Empty trash', 'Sure? Cannot undo', async () => { const r = await api.settingsAction('emptyTrash'); if (r.info) { S = r.info; fill(); } });
-$('#backupNow').onclick = async () => { const b = $('#backupNow'); b.disabled = true; const r = await api.settingsAction('backupNow'); b.disabled = false; if (r.ok) { S = r.info; fill(); b.textContent = 'Done ✓'; setTimeout(() => b.textContent = 'Back up now', 1800); } else $('#backupInfo').textContent = r.error || 'Backup failed.'; };
+$('#backupNow').onclick = async () => { const b = $('#backupNow'); b.disabled = true; const r = await api.settingsAction('backupNow'); b.disabled = false; if (r.ok) { S = r.info; fill(); loadBackups(); b.textContent = 'Done ✓'; setTimeout(() => b.textContent = 'Back up now', 1800); } else $('#backupInfo').textContent = r.error || 'Backup failed.'; };
 $('#openBackups').onclick = () => api.settingsAction('openBackups');
+
+/* ---------- restore from a backup ---------- */
+const say = t => { $('#restoreMsg').textContent = t; };
+const when = ts => { if (!ts) return 'Backup'; const d = new Date(ts); return d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) + ', ' + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }); };
+function restoreResult(r) {
+  if (!r) return;
+  if (r.cancelled) return;
+  if (!r.ok) { say(r.error || 'The restore did not work.'); return; }
+  if (r.mode === 'replace') say('Done: your notes are now exactly like that backup' + (r.images ? ' (' + r.images + ' picture' + (r.images === 1 ? '' : 's') + ' brought back)' : '') + '. What you had before was kept in the backups folder as ' + r.safety + '.');
+  else say(r.added ? 'Added ' + r.added + ' note' + (r.added === 1 ? '' : 's') + (r.images ? ' and ' + r.images + ' picture' + (r.images === 1 ? '' : 's') : '') + ' that were missing. Nothing else was changed.' : 'Nothing was missing: every note in that backup is already here.');
+  loadBackups();
+}
+async function loadBackups() {
+  const box = $('#restoreList'); if (!box) return;
+  let r; try { r = await api.settingsAction('listBackups'); } catch { r = null; }
+  box.textContent = '';
+  const items = r && r.ok && Array.isArray(r.items) ? r.items : [];
+  if (!items.length) { const e = document.createElement('div'); e.className = 'rmsg'; e.textContent = 'No backups yet. Press “Back up now” above to make one.'; box.appendChild(e); return; }
+  items.forEach(it => {
+    const row = document.createElement('div'); row.className = 'bitem' + (it.ok ? '' : ' bad');
+    const t = document.createElement('span'); t.className = 'bt'; t.textContent = it.kind === 'lastgood' ? 'Copy from the last start that went well' : when(it.when);
+    const n = document.createElement('span'); n.className = 'bn'; n.textContent = it.ok ? it.notes + (it.notes === 1 ? ' note' : ' notes') + (it.trash ? ' · ' + it.trash + ' in trash' : '') : 'cannot be read';
+    row.append(t, n);
+    if (it.ok) {
+      const add = document.createElement('button'); add.type = 'button'; add.className = 'btn'; add.textContent = 'Add missing notes';
+      add.onclick = async () => { add.disabled = true; say('Restoring…'); restoreResult(await api.settingsAction('restoreBackup', { id: it.id, mode: 'add' })); add.disabled = false; };
+      const rep = document.createElement('button'); rep.type = 'button'; rep.className = 'btn warn'; rep.textContent = 'Replace all…';
+      let timer = null;
+      rep.onclick = async () => {
+        if (!timer) { rep.textContent = 'Sure? Replaces all'; rep.classList.add('armed'); timer = setTimeout(() => { timer = null; rep.textContent = 'Replace all…'; rep.classList.remove('armed'); }, 3500); return; }
+        clearTimeout(timer); timer = null; rep.disabled = true; say('Restoring…');
+        restoreResult(await api.settingsAction('restoreBackup', { id: it.id, mode: 'replace' })); rep.disabled = false; rep.textContent = 'Replace all…'; rep.classList.remove('armed');
+      };
+      row.append(add, rep);
+    }
+    box.appendChild(row);
+  });
+}
+$('#restoreFile').onclick = async () => { say(''); restoreResult(await api.settingsAction('restoreFromFile')); };
+loadBackups();
 $('#openData').onclick = () => api.settingsAction('openData');
 $('#exportAll').onclick = async () => {
   const r = await api.settingsAction('exportAll'), m = $('#exportInfo');
@@ -171,6 +211,7 @@ $('#memBtn').onclick = async () => {
 $('#aiKeep').onchange = () => save({ aiKeep: $('#aiKeep').value });
 $('#lowMemRestart').onclick = () => api.settingsAction('restartApp');
 $('#whatsBtn').onclick = () => api.settingsAction('openWhatsNew');
+$('#welcomeBtn').onclick = () => api.settingsAction('openWelcome');
 $('#updLog').onclick = () => api.settingsAction('openUpdateLog');
 $('#updPage').onclick = () => api.settingsAction('openReleases');
 api.onUpdateEvent(showUpdate);
