@@ -20,6 +20,7 @@ const links = require('./links');
 const notesearch = require('./notesearch');
 const search = require('./search');
 const commands = require('./commands');
+const focusguard = require('./focusguard');
 const safeload = require('./safeload');
 const restore = require('./restore');
 const importers = require('./importers');
@@ -324,7 +325,7 @@ function openNote(n) {
     const nb = w.getBounds(), p = snapPos(w, nb);
     if (p.x !== nb.x || p.y !== nb.y) w.setPosition(p.x, p.y);
   });
-  w.on('focus', () => { if (!w.isDestroyed()) w.webContents.focus(); });
+  w.on('focus', focusguard.guard(w));
   const cid = w.webContents.id;
   w.on('closed', () => { panelGrow.delete(n.id); wins.delete(n.id); byContents.delete(cid); if (!reopening.has(n.id)) relock(notes[n.id]); pingAll(); });
   return w;
@@ -353,14 +354,14 @@ function showAll() {   // brings every note to the front, reopening any that wer
 }
 
 function utilWindow(ref, title, htmlFile, w, h, query) {
-  if (ref && !ref.isDestroyed()) { ref.show(); ref.focus(); ref.webContents.focus(); return ref; }
+  if (ref && !ref.isDestroyed()) { ref.show(); ref.focus(); return ref; }
   const win = new BrowserWindow({
     width: w, height: h, minWidth: 320, minHeight: 300, title, autoHideMenuBar: true, icon: iconPath, show: false,
     webPreferences: { preload, contextIsolation: true, nodeIntegration: false }
   });
   win.setMenu(null); win.loadFile(htmlFile, query ? { query } : undefined);
-  win.once('ready-to-show', () => { win.show(); win.focus(); win.webContents.focus(); });
-  win.on('focus', () => { if (!win.isDestroyed()) win.webContents.focus(); });   // makes sure text boxes receive typing
+  win.once('ready-to-show', () => { win.show(); win.focus(); });
+  win.on('focus', focusguard.guard(win));   // makes sure text boxes receive typing (and never starts a focus fight between two windows)
   return win;
 }
 /* One "Home" window holds All notes, Trash, the AI chat and Settings, switched from a sidebar (home.js). It is one window that loads one page at a time. */
