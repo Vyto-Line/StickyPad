@@ -148,6 +148,7 @@ async function loadBackups() {
   let r; try { r = await api.settingsAction('listBackups'); } catch { r = null; }
   box.textContent = '';
   const items = r && r.ok && Array.isArray(r.items) ? r.items : [];
+  const sum = $('#restoreSum'); if (sum) sum.textContent = items.length ? 'Choose a backup (' + items.length + ')…' : 'No backups yet';
   if (!items.length) { const e = document.createElement('div'); e.className = 'rmsg'; e.textContent = 'No backups yet. Press “Back up now” above to make one.'; box.appendChild(e); return; }
   items.forEach(it => {
     const row = document.createElement('div'); row.className = 'bitem' + (it.ok ? '' : ' bad');

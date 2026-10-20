@@ -127,3 +127,10 @@ h2{font-size:17px;margin-bottom:9px}
 .btn.warn.armed{background:#d9372b;color:#fff;border-color:transparent}
 .rmsg{margin-top:8px;font-size:12.5px;color:var(--mute)}
 .rmsg:empty{display:none}
+
+.bdet{margin-top:10px}
+.bdet>summary{cursor:pointer;padding:7px 10px;border:1px solid var(--line);border-radius:10px;font-weight:600;list-style:none}
+.bdet>summary::-webkit-details-marker{display:none}
+.bdet>summary::after{content:'▾';float:right;color:var(--mute)}
+.bdet[open]>summary::after{content:'▴'}
+.bdet .blist{max-height:230px;overflow:auto}

@@ -21,9 +21,11 @@ with sync_playwright() as p:
         pg=b.new_page(viewport={'width':900,'height':700}); errs=[]
         pg.on('pageerror',lambda e:errs.append(str(e))); pg.on('console',lambda m: errs.append(m.text) if m.type=='error' else None)
         pg.add_init_script(STUB); pg.add_init_script(SA); pg.add_init_script(init); pg.goto('file://'+ROOT+'settings.html'); pg.wait_for_timeout(400); pg.errs=errs
-        pg.click('[data-cat=data]'); pg.wait_for_timeout(150); return pg
+        pg.click('[data-cat=data]'); pg.wait_for_timeout(150); pg.click('#restoreSum'); pg.wait_for_timeout(100); return pg
     calls=lambda pg,n: pg.evaluate("__S.calls.filter(c=>c[0]=='settingsAction'&&c[1]=='%s')"%n)
     pg=page()
+    ok('(3)' in pg.inner_text('#restoreSum') and pg.eval_on_selector('#restoreDet','e=>e.open'),'the backups sit in a drop down that says how many (%s)'%pg.inner_text('#restoreSum'))
+    pg.click('#restoreSum'); ok(not pg.is_visible('.bitem'),'closed by default view hides the list'); pg.click('#restoreSum'); pg.wait_for_timeout(100)
     rows=pg.locator('.bitem'); ok(rows.count()==3,'three entries listed (%d)'%rows.count())
     ok('12 notes' in rows.nth(0).inner_text() and '2 in trash' in rows.nth(0).inner_text(),'notes and trash counted: '+rows.nth(0).inner_text().replace('\n',' | '))
     ok('cannot be read' in rows.nth(1).inner_text() and rows.nth(1).locator('button').count()==0,'a damaged backup is shown and has no buttons')

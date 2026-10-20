@@ -96,7 +96,7 @@
     <div class="row"><div class="lbl"><b>Open the backups folder</b><span>Each backup is a dated folder you can copy back into the data folder to restore.</span></div><div class="ctl"><button id="openBackups" class="btn">Open folder</button></div></div>
     <div class="row col" id="restoreRow">
       <div class="rtop"><div class="lbl"><b>Restore from a backup</b><span id="restoreInfo">Bring notes back from one of your backups. <i>Add missing notes</i> only adds notes that are not here now. <i>Replace all</i> makes your notes exactly like that backup (a copy of what you have now is kept first).</span></div><div class="ctl"><button id="restoreFile" class="btn">From a file…</button></div></div>
-      <div id="restoreList" class="blist"></div>
+      <details id="restoreDet" class="bdet"><summary id="restoreSum">Choose a backup…</summary><div id="restoreList" class="blist"></div></details>
       <div id="restoreMsg" class="rmsg" role="status" aria-live="polite"></div>
     </div>
     <div class="row"><div class="lbl"><b>Export all notes</b><span id="exportInfo">Saves every note as a Markdown file (one file each, in folders like yours), with the pictures inside each file.</span></div><div class="ctl"><button id="exportAll" class="btn">Export…</button></div></div>
