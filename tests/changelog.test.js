@@ -40,3 +40,10 @@ const cur = require('../package.json').version;
 assert.ok(real.length > 5, 'real changelog parses'); assert.strictEqual(real[0].version, cur, 'the newest changelog section is the current version');
 assert.ok(real.every(x => x.blocks.length), 'no empty sections');
 console.log('changelog ok');
+// test versions sort before the real version
+assert.strictEqual(C.cmp('1.15.0-test.1', '1.15.0'), -1); assert.strictEqual(C.cmp('1.15.0', '1.15.0-test.1'), 1);
+assert.strictEqual(C.cmp('1.15.0-test.2', '1.15.0-test.10'), -1); assert.strictEqual(C.cmp('1.15.0-test.1', '1.14.22'), 1); assert.strictEqual(C.cmp('1.15.0-test.1', '1.15.0-test.1'), 0);
+const ps = C.parse('# Changelog\n\n## 1.15.0\n- real\n\n## 1.15.0-test.1\n- test\n\n## 1.14.22\n- old\n');
+assert.deepStrictEqual(ps.map(x => x.version), ['1.15.0', '1.15.0-test.1', '1.14.22']);
+assert.deepStrictEqual(C.since(ps, '1.15.0-test.1', '1.15.0').map(x => x.version), ['1.15.0'], 'after a test version the real one is shown');
+assert.deepStrictEqual(C.since(ps, '1.14.22', '1.15.0-test.1').map(x => x.version), ['1.15.0-test.1'], 'a test version shows only its own notes');
