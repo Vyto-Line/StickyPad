@@ -154,9 +154,23 @@ function render(blocks) {
   blocks.forEach(b => {
     if (b.t === 'img') { const src = b.src || srcCache.get(b.id); if (src) ed.appendChild(makeImg(b.id, src)); }
     else if (b.t === 'check') ed.appendChild(makeTodo(b.v, b.done));
+    else if (b.v.length > BIG_TEXT) bigText(b.v);
     else ed.appendChild(document.createTextNode(b.v));
   });
   mark();
+}
+// A very long text (hundreds of thousands of letters) is shown as many short blocks of about 100 lines. One giant block has to be laid out again
+// as a whole at every key press (about 0.3 s for 2 MB); short blocks only redo the one you type in. The text is exactly the same: each block
+// keeps its own line breaks, and serialize() joins them back without adding or losing anything.
+const BIG_TEXT = 200000, CHUNK_LINES = 100;
+function bigText(v) {
+  const lines = v.split('\n'), last = lines.length - 1;
+  for (let i = 0; i <= last; i += CHUNK_LINES) {
+    const end = Math.min(last + 1, i + CHUNK_LINES), d = document.createElement('div');
+    d.className = end > last ? 'chunk last' : 'chunk';
+    d.textContent = lines.slice(i, end).join('\n') + (end > last ? '' : '\n');
+    ed.appendChild(d);
+  }
 }
 function serialize() {
   const blocks = []; let buf = '';
@@ -171,7 +185,7 @@ function serialize() {
         if (tx) blocks.push({ t: 'check', v: tx.textContent, done: !!(box && box.checked) });
         else { const w = c.textContent.replace(/×/g, ''); if (w.trim()) blocks.push({ t: 'text', v: w }); }   // damaged item: keep its words
       }
-      else if (c.nodeType === 1) { if (buf && !buf.endsWith('\n')) buf += '\n'; walk(c); if (buf && !buf.endsWith('\n')) buf += '\n'; }
+      else if (c.nodeType === 1) { if (buf && !buf.endsWith('\n')) buf += '\n'; walk(c); if (buf && !buf.endsWith('\n') && !(c.classList && c.classList.contains('last') && c.classList.contains('chunk'))) buf += '\n'; }
     }
   };
   walk(ed);
@@ -266,8 +280,8 @@ function allSelected() {
   if (r.startContainer === ed && r.startOffset === 0 && r.endContainer === ed && r.endOffset === n) return true;
   // dragged or shift-selected from the very start to the very end
   const first = ed.firstChild, last = ed.lastChild; if (!first) return false;
-  const atStart = (r.startContainer === ed && r.startOffset === 0) || (r.startOffset === 0 && (r.startContainer === first || first.contains(r.startContainer)) && (first.nodeType === 3 || r.startContainer === first));
-  const atEnd = (r.endContainer === ed && r.endOffset === n) || (last.nodeType === 3 && r.endContainer === last && r.endOffset === last.nodeValue.length);
+  const atStart = (r.startContainer === ed && r.startOffset === 0) || (r.startOffset === 0 && (r.startContainer === first || first.contains(r.startContainer)) && (first.nodeType === 3 || r.startContainer === first || (first.classList && first.classList.contains('chunk'))));
+  const atEnd = (r.endContainer === ed && r.endOffset === n) || (last.nodeType === 3 && r.endContainer === last && r.endOffset === last.nodeValue.length) || (last.classList && last.classList.contains('chunk') && r.endContainer.nodeType === 3 && last.contains(r.endContainer) && r.endOffset === r.endContainer.nodeValue.length);
   return atStart && atEnd;
 }
 function clearNote() {   // empties the note completely and leaves a clean caret
@@ -461,10 +475,16 @@ async function reload() {
   apply(); remindPaint(); undoS = []; redoS = []; undoChars = 0; cur = snap(); ownDirty = true; acHide(); loadWords();
 }
 /* ---------- find in note (Ctrl+F) ---------- */
-const FIND_MAX = 5000;
+const FIND_MAX = 500000, FIND_PAINT = 1500;   // every match is counted (up to half a million); only the ones near the current match are painted, which keeps a huge note fast
 let finds = [], findAt = -1, findTimer = null;
-const fold1 = ch => { const f = ch.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); const c = f === 'ς' ? 'σ' : f; return c.length === 1 ? c : ch.toLowerCase().slice(0, 1) || ch; };
-const foldAll = s => { let o = ''; for (const ch of s) o += fold1(ch); return o; };   // ignores case and Greek/Latin accents, one character in -> one character out
+const FMEMO = new Map(), ASCII = /^[\x00-\x7f]*$/;
+const fold1 = ch => {
+  let r = FMEMO.get(ch);
+  if (r === undefined) { const f = ch.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); const c = f === 'ς' ? 'σ' : f; r = c.length === 1 ? c : ch.toLowerCase().slice(0, 1) || ch; if (FMEMO.size < 5000) FMEMO.set(ch, r); }
+  return r;
+};
+const foldAll = s => { if (ASCII.test(s)) return s.toLowerCase(); let o = ''; for (const ch of s) o += fold1(ch); return o; };   // ignores case and Greek/Latin accents, one character in -> one character out
+// Where the matches are: [{ n: text node, i: position }]. (A range is only made for a match when it is painted or visited.)
 function findRanges(q) {
   const out = []; if (!q) return out;
   const needle = foldAll(q);
@@ -472,28 +492,30 @@ function findRanges(q) {
   for (let n = tw.nextNode(); n && out.length < FIND_MAX; n = tw.nextNode()) {
     const t = n.nodeValue; if (t.length < needle.length) continue;
     const hay = foldAll(t); if (hay.length !== t.length) continue;   // (never expected; skip a node that would shift positions)
-    for (let i = hay.indexOf(needle); i !== -1 && out.length < FIND_MAX; i = hay.indexOf(needle, i + needle.length)) {
-      const r = document.createRange(); r.setStart(n, i); r.setEnd(n, i + needle.length); out.push(r);
-    }
+    for (let i = hay.indexOf(needle); i !== -1 && out.length < FIND_MAX; i = hay.indexOf(needle, i + needle.length)) out.push({ n, i, len: needle.length });
   }
   return out;
 }
+const rangeOf = f => { const r = document.createRange(); r.setStart(f.n, f.i); r.setEnd(f.n, f.i + f.len); return r; };
 function findPaint() {
   const hl = window.CSS && CSS.highlights; if (!hl) return;
   hl.delete('find'); hl.delete('find-cur');
   if (!finds.length) return;
-  hl.set('find', new Highlight(...finds));
-  if (findAt >= 0) hl.set('find-cur', new Highlight(finds[findAt]));
+  const from = Math.max(0, findAt - FIND_PAINT), to = Math.min(finds.length, Math.max(findAt, 0) + FIND_PAINT);
+  const rs = []; for (let k = from; k < to; k++) { try { rs.push(rangeOf(finds[k])); } catch {} }
+  hl.set('find', new Highlight(...rs));
+  if (findAt >= 0) { try { hl.set('find-cur', new Highlight(rangeOf(finds[findAt]))); } catch {} }
 }
 function findCount() {
   const q = $('#findIn').value;
-  $('#findCnt').textContent = !q ? '' : !finds.length ? 'No match' : (findAt + 1) + ' / ' + finds.length + (finds.length >= FIND_MAX ? '+' : '');
+  $('#findCnt').textContent = !q ? '' : !finds.length ? 'No match' : (findAt + 1).toLocaleString() + ' / ' + finds.length.toLocaleString() + (finds.length >= FIND_MAX ? '+' : '');
 }
 function findGo(i, scroll = true) {
   if (!finds.length) { findAt = -1; findPaint(); findCount(); return; }
   findAt = (i + finds.length) % finds.length; findPaint(); findCount();
   if (!scroll) return;
-  const r = finds[findAt].getBoundingClientRect(), box = ed.getBoundingClientRect();
+  let r; try { r = rangeOf(finds[findAt]).getBoundingClientRect(); } catch { return; }
+  const box = ed.getBoundingClientRect();
   if (r.top < box.top + 8 || r.bottom > box.bottom - 8) ed.scrollTop += r.top - box.top - box.height / 2;
 }
 function findRun(keep) {

@@ -21,6 +21,7 @@ const notesearch = require('./notesearch');
 const search = require('./search');
 const commands = require('./commands');
 const focusguard = require('./focusguard');
+const counts = require('./counts');
 const safeload = require('./safeload');
 const restore = require('./restore');
 const importers = require('./importers');
@@ -1231,10 +1232,10 @@ function chatSystem(noteId, question, sources) {
     sys += '\n\nThe user lets you read their sticky notes (' + r.count + ' notes, locked ones excluded). ' +
       (r.matched ? 'These are the notes that best fit their question. Answer from them and say which note you used. If the answer is not in them, say so; do not guess.' : 'No note clearly matches the question; these are the newest notes. If the answer is not in them, say so; do not guess.') +
       (r.context ? '\n---\n' + r.context + '\n---' : '\n(There are no notes yet.)') + (r.titles.length ? '\nAll note titles: ' + r.titles.join(' | ') : '');
-    return sys;
+    return sys + counts.facts(question, open);
   }
   const n = notes[noteId];
-  if (n && !n.lock) sys += `\n\nThe user attached this sticky note as context.\nTitle: ${n.title || '(none)'}\n---\n${chatContext(n.text)}\n---` +
+  if (n && !n.lock) sys += (String(n.text || '').length > 40000 ? `\n\n(This note is ${String(n.text).length.toLocaleString('en-US')} characters long: you only see the beginning and the end. Say so if the answer might be in the part you cannot see.)` : '') + counts.facts(question, [n]) + `\n\nThe user attached this sticky note as context.\nTitle: ${n.title || '(none)'}\n---\n${chatContext(n.text)}\n---` +
     '\nIf the user asks you to change the note (rewrite, fix, shorten, translate, reorder, add something), reply with ONLY the complete new text of the note: no introduction, no closing remarks, no code fences. Write checklist items as "- [ ] item". The user can then put your reply into the note with one button. For any other question, answer normally.';
   return sys;
 }

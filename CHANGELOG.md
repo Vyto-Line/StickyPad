@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.14.32
+- **Huge notes no longer lag.** A note with millions of letters made every key press take about a third of a second, because the editor had to lay out the whole text again each time. A very long text (over 200,000 letters) is now shown as many short blocks of about 100 lines, so only the block you type in is redone: typing is about five times faster (about 0.03 s instead of 0.3 s for a 1.8 MB note). The text itself is exactly the same: saving, exporting, undo and select-all work as before, and ordinary notes are not affected at all.
+- **Find in note counts every match.** Ctrl+F showed "5000+" for a word that appears 46,511 times. It now counts all of them (up to half a million) and shows the exact number, and Next/Previous walk through all of them. Only the matches near the current one are highlighted, which keeps even a huge note fast.
+- **The AI gives the exact count when you ask "how many times…".** Language models cannot count reliably (and a very long note is cut to fit them), so the local AI answered 95 for 46,511. When you ask how many times a word or phrase appears (in English or Greek, in a note or across all notes), StickyPad now counts it itself and gives the AI the exact number, ignoring capitals and accents. For very long notes the AI is also told that it only sees the beginning and the end.
+- Not tried on a real Windows PC yet.
+
 ## 1.14.31
 - **Pick your look in the welcome tour.** The second step shows the eight themes as colour swatches with a *Light / Dark / Match Windows* switch, and the whole app changes the moment you click. On a first run the choice is also applied to your first (blank) note. If you open the tour again later from Settings → About, only the app's look changes and your notes keep their colours.
 - **An optional name.** The first step has a small *Call me* field: the title becomes "Welcome, Alex!" as you type, and the name is used in the greeting. It is optional, stays on your PC, can be changed in Settings, and is saved even if you close the tour straight away.
