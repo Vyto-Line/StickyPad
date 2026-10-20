@@ -53,7 +53,12 @@ that defines the same `window.api`; every call goes to one Rust command, `ipc(ch
 | Locked notes (AES-256-GCM + scrypt) | not yet |
 | Settings window, themes apply-all, backups, data-folder sync, start with Windows | not yet |
 | AI: summarize / grammar / checklist / chat / live edit, Ollama manager | not yet (reports itself as off) |
+| Auto-update (signed, from GitHub Releases) | written (`update.rs`); needs the signing key to be switched on, not yet run on a PC |
 | Android | later: needs the Tauri mobile targets and a touch-friendly layout |
 
 Build: GitHub Actions workflow *Tauri build (preview)* produces the Windows installer as a downloadable artifact on every push that touches the port.
 Locally: install Rust + the MSVC build tools, then `node scripts/prep-tauri.js && npx @tauri-apps/cli@2 build`.
+
+### Tauri auto-update
+The app reads `https://github.com/Vyto-Line/StickyPad/releases/latest/download/latest.json`. That file (made by `scripts/make-latest-json.js` in the *Tauri build (preview)* workflow on a `v*` tag) holds the newest version, the installer link and its signature. `src-tauri/src/update.rs` checks it a few seconds after start and every 6 hours (unless *automatic updates* is off), keeps the same states and `update:event` messages as the Electron `updater.js`, downloads when you press Download, verifies the signature against `plugins.updater.pubkey` in `tauri.conf.json`, and installs when you press Restart.
+One-time setup of the signing key: `npx @tauri-apps/cli@2 signer generate -w stickypad.key`, put the public key (the `.pub` file's text) into `tauri.conf.json` instead of `UNSET`, and add the repository secrets `TAURI_SIGNING_PRIVATE_KEY` (the key file's text) and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`. Keep a copy of the private key somewhere safe: if it is lost, installed copies can never be updated. Without the secret the workflow still builds, just without update files.

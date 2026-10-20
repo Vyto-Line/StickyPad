@@ -9,4 +9,4 @@ The installed app updates itself from this repo's GitHub Releases (electron-upda
 5. Installed apps pick it up within a few hours of starting (or at once with Settings > About > Check now).
 
 The app is not code-signed, so Windows SmartScreen may warn on a first manual install; auto-updates are verified with the SHA-512 in `latest.yml`.
-The Tauri preview has its own workflow and is not part of auto-update yet (Tauri's updater needs a signing key).
+The Tauri preview has its own workflow and its own signed auto-update (see *Tauri auto-update* in ARCHITECTURE.md); the tag push uploads its installer and `latest.json` to the release.

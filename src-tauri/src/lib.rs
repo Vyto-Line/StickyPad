@@ -2,6 +2,8 @@
 //! The pages talk to this through one command, `ipc`, whose channel names are the same as in the Electron app's main.js,
 //! so the HTML/JS screens are reused unchanged. Channels that are not ported yet answer `null`.
 
+mod update;
+
 use base64::{engine::general_purpose::STANDARD as B64, Engine as _};
 use serde_json::{json, Map, Value};
 use std::{
@@ -658,6 +660,20 @@ fn dispatch(
         "ollama:status" => Ok(
             json!({ "running": false, "installed": false, "canInstall": false, "local": true, "models": [], "recommended": [], "pulling": [], "installing": false }),
         ),
+        "update:state" => Ok(update::snapshot(app)),
+        "update:check" => {
+            update::check(app);
+            Ok(update::snapshot(app))
+        }
+        "update:download" => {
+            update::download(app);
+            Ok(update::snapshot(app))
+        }
+        "update:install" => {
+            flush(app, true);
+            update::install(app);
+            Ok(Value::Bool(true))
+        }
         _ => Ok(Value::Null), // not ported yet
     }
 }
@@ -676,6 +692,7 @@ async fn ipc(
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let app = tauri::Builder::default()
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .invoke_handler(tauri::generate_handler![ipc])
         .setup(|app| {
             let handle = app.handle().clone();
@@ -683,6 +700,14 @@ pub fn run() {
             app.manage(AppState {
                 store: Mutex::new(store),
                 dirty: AtomicBool::new(false),
+            });
+
+            app.manage(update::UpdateState::new());
+            let upd = handle.clone();
+            update::schedule(handle.clone(), move || {
+                let state = upd.state::<AppState>();
+                let on = state.store.lock().map(|st| st.settings["autoUpdate"].as_bool().unwrap_or(true)).unwrap_or(true);
+                on
             });
 
             // save in the background a moment after something changed
