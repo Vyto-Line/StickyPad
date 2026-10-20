@@ -34,7 +34,7 @@ The icons in the header, from the left: add a checklist item, pin, all notes, se
 ### Settings panel on the right
 <img align="right" width="300" src="docs/images/feature_ai.png" alt="A note with the settings panel docked on its right side">
 
-The **sliders button** (*This note*) opens a panel **beside your text instead of on top of it**, so you can keep reading the note while you change its colour, set a reminder or run the AI. A narrow note grows to make room while the panel is open and returns to its size when you close it. It is **one short list, no tabs**: *Look* (colour, font, size), *This note* (Reminder, Folder, Lock, Earlier versions, Copy or export: each is one line and only the one you click opens) and *AI* (one list and a **Run** button). **All settings…** at the bottom of the panel (or Ctrl+,) opens the full Settings. Everything about *the app* (start with Windows, snapping, shortcuts, backups) lives in Settings only, so each thing has one place.
+The **sliders button** (*This note*) opens a panel **beside your text instead of on top of it**, so you can keep reading the note while you change its colour, set a reminder or run the AI. A narrow note grows to make room while the panel is open and returns to its size when you close it. It is **one short list, no tabs**: *Look* (colour, and a *Font and transparency* drop down), *This note* (Reminder, Folder, Lock, Earlier versions, Copy or export: each is one line and only the one you click opens) and *AI* (one list and a **Run** button). **All settings…** at the bottom of the panel (or Ctrl+,) opens the full Settings. Everything about *the app* (start with Windows, snapping, shortcuts, backups) lives in Settings only, so each thing has one place.
 
 <br clear="right">
 

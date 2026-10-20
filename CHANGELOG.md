@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.14.22
+- **Font and transparency are now in a drop down.** In a note's panel, the font, the text size, *Transparency* and *Keep the text solid* sit under one line, **Font and transparency**, the same way *Model and connection* works in the AI section. It starts closed, so the colour swatches and the *This note* rows (Reminder, Folder, Lock…) fit without scrolling. The controls are the same as before.
+- Not tried on a real Windows PC yet.
+
 ## 1.14.21
 - **Ctrl + mouse wheel changes the text size.** Hold Ctrl and scroll up for bigger text, down for smaller (10 to 48 px). It is the same size as the slider in the note's panel and each note remembers its own.
 - **Pasting from Excel gives the values, not a picture.** Excel puts both the text and a picture of the cells on the clipboard, and StickyPad used to pick the picture. Now the text wins (cells are separated by tabs, and the extra empty line Excel adds at the end is dropped). A picture is pasted only when there is no text, like a screenshot.
