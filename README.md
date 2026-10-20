@@ -58,6 +58,9 @@ A small bar also appears when a note **mentions a date** ("tomorrow at 5pm", "α
 
 StickyPad quietly keeps **up to 30 older copies of each note** while you edit: at least one every 5 minutes, and always one right before a sudden big deletion (for example Ctrl+A then Delete). Open the sliders button (*This note*) and click **Earlier versions**, see each copy with its time, word count and a preview, and press **Restore** (it asks once more to be sure). Restoring keeps today's version in the list as well, so you can always go back. Locked notes keep no copies, so nothing readable is left behind.
 
+### Sync between PCs (test)
+**Settings > Sync** keeps your notes in step between PCs through a small server of your own on Cloudflare's free plan (the code and a step-by-step guide are in the `cloud` folder). Your notes are **encrypted on the PC** with a passphrase, so the server cannot read them; a forgotten passphrase cannot be recovered. If two PCs change the same note, both texts are kept (the older one as a "conflict copy"). Text and checklists only: notes with pictures or a lock stay on their PC. It is a test feature and off by default.
+
 ### Export and import
 - **Copy or export > Export…** (in the note panel) saves the note as a **StickyPad note (.stickypad)**, a **Markdown (.md)** or a **text (.txt)** file. A `.stickypad` file is Markdown inside and **opens with a double-click** (it becomes a new note). Checklist items become `- [x] done` and `- [ ] to do`.
 - **Settings > Data & backup > Export all notes** writes one file per note, in folders that match your note folders.

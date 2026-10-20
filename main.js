@@ -9,6 +9,7 @@ const reminders = require('./reminders');
 const history = require('./history');
 const convert = require('./convert');
 const words = require('./words');
+const syncLib = require('./sync');
 const THEMES = require('./themes');
 const path = require('path');
 const fs = require('fs');
@@ -34,6 +35,7 @@ function takeLock() {
 }
 if (!takeLock()) process.exit(0);
 let quitting = false, remTimer = null, wordsVer = 0, wordsCache = null;
+let syncEng = null, syncTimer = null, syncPoll = null, syncQuiet = false, syncSt = {};   // sync (test feature): see sync.js and cloud/
 // Anything that goes wrong in the main process is written to crash.log (Windows would show a "JavaScript error" box otherwise);
 // while the app is closing for an update it is only logged.
 function crashLog(kind, err) {
@@ -175,7 +177,7 @@ const flush = () => {
     datadir.writeAtomic(file, serialize()); lastMtime = datadir.mtimeOf(file); dirty = false;
   } catch {}
 };
-function save() { dirty = true; wordsVer++; clearTimeout(saveTimer); saveTimer = setTimeout(flush, 300); pingAll(); }
+function save() { dirty = true; wordsVer++; syncSoon(); clearTimeout(saveTimer); saveTimer = setTimeout(flush, 300); pingAll(); }
 
 // Picks up changes made by another device through a synced data folder (OneDrive, Dropbox, Syncthing...).
 function reloadFromDisk() {
@@ -1222,7 +1224,7 @@ function allSettings() {
     hideTaskbar: !!settings.hideTaskbar, snap: !!settings.snap, snapDistance: settings.snapDistance, defaultSize: settings.defaultSize,
     trashDays: settings.trashDays, trashCount: trash.length, shortcuts: !!settings.shortcuts, suggestDates: settings.suggestDates !== false, predictWords: settings.predictWords !== false, keys: curKeys(), keysFailed: settings.shortcuts ? keysFailed : [], chatHistory: !!settings.chatHistory,
     autoBackup: !!settings.autoBackup, lastBackup: settings.lastBackup || 0, backupCount: backup.list(app.getPath('userData')).length,
-    autoUpdate: settings.autoUpdate !== false, whatsNew: settings.whatsNew !== false, update: updater ? updater.get() : null,
+    autoUpdate: settings.autoUpdate !== false, whatsNew: settings.whatsNew !== false, sync: syncEng ? syncEng.status() : { on: false }, update: updater ? updater.get() : null,
     theme: settings.theme, mode: modeOf(), notesFollowMode: settings.notesFollowMode !== false, uiDark: uiDark(), prefs: prefs(), groups, notesCount: Object.keys(notes).length,
     lowMemory: launchcfg.read(app.getPath('userData')).lowMemory, lowMemoryActive: LAUNCH.lowMemory, aiKeep: settings.ai.keepAlive || '5m'
   };
@@ -1289,6 +1291,8 @@ ipcMain.handle('settings:action', (e, name, arg) => {
       app.relaunch(); setTimeout(() => app.exit(0), 200);
       return { ok: true, restarting: true };
     }
+    if (name === 'syncStart' || name === 'syncNow' || name === 'syncStop') return syncAction(name, arg);
+    if (name === 'openAllNotes') { openAll(); return { ok: true }; }
     if (name === 'openWhatsNew') { openWhatsNew(null); return { ok: true }; }
     if (name === 'openBackups') { const d = path.join(app.getPath('userData'), 'backups'); fs.mkdirSync(d, { recursive: true }); shell.openPath(d); return { ok: true }; }
     if (name === 'clearChat') { clearChat(); return { ok: true }; }
@@ -1296,6 +1300,77 @@ ipcMain.handle('settings:action', (e, name, arg) => {
   } catch (err) { return { ok: false, error: String(err && err.message || err) }; }
   return { ok: false, error: 'Unknown action.' };
 });
+
+/* ---------- sync (test feature): keeps notes in step with your own sync server, see sync.js and cloud/ ---------- */
+const syncFile = () => path.join(app.getPath('userData'), 'sync.json');
+const syncSaveState = () => { try { fs.mkdirSync(path.dirname(syncFile()), { recursive: true }); datadir.writeAtomic(syncFile(), JSON.stringify(syncSt)); } catch {} };
+const gnameOf = id => (groups.find(g => g.id === id) || {}).name || '';
+const syncPayload = n => ({ title: String(n.title || ''), blocks: blocksOf(n).filter(b => b.t === 'text' || b.t === 'check'), color: n.color, font: n.font, size: n.size, folder: gnameOf(n.group), updated: n.updated || 0 });
+const syncSkip = n => !!n.lock || !hasContent(n) || blocksOf(n).some(b => b.t === 'img');   // locked notes and notes with pictures stay on this PC
+const quiet = f => { syncQuiet = true; try { return f(); } finally { syncQuiet = false; } };   // changes made by sync itself do not start another sync
+const syncNotes = {
+  list: () => Object.values(notes).map(n => ({ id: n.id, payload: syncPayload(n), skip: syncSkip(n) })),
+  get: id => { const n = notes[id]; return n ? { payload: syncPayload(n), skip: syncSkip(n) } : null; },
+  exists: id => !!notes[id],
+  put: (id, p) => quiet(() => {
+    const blocks = sanitizeBlocks(p.blocks).filter(b => b.t !== 'img'), gid = p.folder ? groupByName(p.folder) : null;
+    const color = typeof p.color === 'string' && /^#[0-9a-f]{6}$/i.test(p.color) ? p.color : undefined;
+    const size = Number.isFinite(p.size) ? Math.min(72, Math.max(8, Math.round(p.size))) : undefined;
+    let n = notes[id];
+    if (n) {
+      try { history.add(dataDir(), n.id, { title: n.title, blocks: blocksOf(n) }, Date.now()); } catch {}   // the text from before stays in "Earlier versions"
+      n.title = String(p.title || '').slice(0, 60); n.blocks = blocks; n.text = textOf(blocks); n.group = gid; n.updated = p.updated || Date.now();
+      if (color) n.color = color; if (size) n.size = size; if (p.font) n.font = String(p.font).slice(0, 60);
+      const w = wins.get(id); if (w && !w.isDestroyed()) w.webContents.send('note:reload');
+    } else {
+      const k = Object.keys(notes).length % 8;
+      notes[id] = newNote({ id, title: String(p.title || '').slice(0, 60), blocks, text: textOf(blocks), group: gid, updated: p.updated || Date.now(), ...(color ? { color } : {}), ...(size ? { size } : {}), ...(p.font ? { font: String(p.font).slice(0, 60) } : {}),
+        bounds: { x: 80 + k * 28, y: 80 + k * 28, width: 300, height: 320 } });
+    }
+    save();
+  }),
+  addCopy: p => syncNotes.put(rid(), { ...p, updated: Date.now() }),
+  remove: id => quiet(() => deleteNote(id)),
+};
+const syncFetch = (url, init) => {
+  const c = new AbortController(), t = setTimeout(() => c.abort(), 20000);
+  return fetch(url, { ...init, signal: c.signal }).finally(() => clearTimeout(t));
+};
+const syncIO = () => ({
+  fetch: syncFetch, state: syncSt, saveState: syncSaveState, notes: syncNotes, changed: () => { pingAll(); refreshTray(); },
+  protect: s => { if (!safeStorage.isEncryptionAvailable()) throw new Error('Windows could not protect the key on this PC.'); return safeStorage.encryptString(s).toString('base64'); },
+  unprotect: s => safeStorage.decryptString(Buffer.from(s, 'base64')),
+});
+async function syncRun() {
+  if (!syncEng || !syncSt.on || quitting) return;
+  const r = await syncEng.run(); pingAll(); return r;
+}
+function syncSoon() {   // a few seconds after the last change
+  if (!syncEng || !syncSt.on || syncQuiet || quitting) return;
+  clearTimeout(syncTimer); syncTimer = setTimeout(() => { syncRun().catch(() => {}); }, 6000);
+}
+async function initSync() {
+  try { syncSt = JSON.parse(fs.readFileSync(syncFile(), 'utf8')) || {}; } catch { syncSt = {}; }
+  syncEng = syncLib.create(syncIO());
+  if (syncSt.on) { await syncEng.resume(); setTimeout(() => { syncRun().catch(() => {}); }, 4000); syncPoll = setInterval(() => { syncRun().catch(() => {}); }, 120000); }
+}
+let syncReady = null;
+const ensureSync = () => syncReady || (syncReady = initSync());
+async function syncAction(name, arg) {
+  await ensureSync().catch(() => {});
+  if (!syncEng) return { ok: false, error: 'Sync is not ready yet.' };
+  try {
+    if (name === 'syncStart') {
+      await syncEng.start(arg || {});
+      clearInterval(syncPoll); syncPoll = setInterval(() => { syncRun().catch(() => {}); }, 120000);
+      const r = await syncRun();
+      return { ok: true, sync: r, info: allSettings() };
+    }
+    if (name === 'syncNow') { const r = await syncRun(); return { ok: !!(r && r.ok), error: r && r.error, info: allSettings() }; }
+    if (name === 'syncStop') { clearInterval(syncPoll); clearTimeout(syncTimer); syncEng.stop(); return { ok: true, info: allSettings() }; }
+  } catch (e) { return { ok: false, error: String(e && e.message || e), info: allSettings() }; }
+  return { ok: false, error: 'Unknown action.' };
+}
 
 /* ---------- lifecycle ---------- */
 app.on('second-instance', (e, argv) => {
@@ -1322,13 +1397,14 @@ app.whenReady().then(async () => {
   maybeWhatsNew();
   save();
   initUpdater();
+  ensureSync().catch(() => {});
   checkReminders(); remTimer = setInterval(checkReminders, 15000);   // also fires reminders that came due while the app was closed
 });
 // With a tray icon the app keeps running when every note window is closed; reopen them from the tray.
 app.on('window-all-closed', () => { flush(); if (!tray) app.quit(); });
 app.on('before-quit', () => {   // leave nothing behind that could keep the process alive or throw while Windows replaces the files
   quitting = true; flush();
-  try { clearInterval(remTimer); } catch {}
+  try { clearInterval(remTimer); clearInterval(syncPoll); clearTimeout(syncTimer); } catch {}
   try { if (file) fs.unwatchFile(file); } catch {}
   try { globalShortcut.unregisterAll(); } catch {}
   try { if (tray && !tray.isDestroyed()) tray.destroy(); } catch {}

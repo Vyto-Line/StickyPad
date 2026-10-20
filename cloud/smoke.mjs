@@ -1,7 +1,8 @@
 // Checks a deployed StickyPad sync server from your PC. It makes a TEST account (random id), saves one encrypted note,
 // reads it back, tries a conflict and a wrong login, then deletes the note. Your real notes are never touched.
 //   node smoke.mjs https://stickypad-sync.YOURNAME.workers.dev  YOUR-REGISTRATION-CODE  "any test passphrase"
-import { deriveKeys, encryptNote, decryptNote, newSalt, randomId } from './crypto.js';
+import { createRequire } from 'node:module';
+const { deriveKeys, encryptNote, decryptNote, newSalt, randomId } = createRequire(import.meta.url)('../synccrypto.js');
 const [base, reg, pass] = process.argv.slice(2);
 if (!base || !reg || !pass) { console.log('Usage: node smoke.mjs <server address> <registration code> "<test passphrase>"'); process.exit(2); }
 let bad = 0;

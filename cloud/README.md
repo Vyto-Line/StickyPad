@@ -13,7 +13,7 @@ Run these in a Command Prompt, inside the `cloud` folder of this repository. Nee
 4. `npx wrangler d1 execute stickypad-sync --remote --file=schema.sql`
 5. `npx wrangler secret put REG_CODE` — type a long secret code of your own (this is what allows creating accounts; keep it private).
 6. `npx wrangler deploy` — prints your address, like `https://stickypad-sync.NAME.workers.dev`.
-7. Check it: `node smoke.mjs https://stickypad-sync.NAME.workers.dev YOUR-REG-CODE "any test passphrase"` — every line should say PASS.
+7. Check it (the folder must stay inside the StickyPad project, because the check uses `../synccrypto.js`): `node smoke.mjs https://stickypad-sync.NAME.workers.dev YOUR-REG-CODE "any test passphrase"` — every line should say PASS.
 
 ## How it protects notes
 - One passphrase makes (PBKDF2, 600,000 rounds) an AES-256-GCM key and a login token. Notes are encrypted before upload; the note id is part of the encryption, so the server cannot swap one note's data for another's.

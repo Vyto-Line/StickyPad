@@ -19,6 +19,7 @@
     <button data-cat="ai"><span class="ic">✨</span>AI</button>
     <button data-cat="folders"><span class="ic">📁</span>Folders</button>
     <button data-cat="data"><span class="ic">💾</span>Data &amp; backup</button>
+    <button data-cat="sync"><span class="ic">☁️</span>Sync</button>
     <button data-cat="about"><span class="ic">ℹ️</span>About</button>
   </nav>
 </aside>
@@ -99,6 +100,27 @@
     <div class="row"><div class="lbl"><b>Import notes</b><span id="importInfo">Turns .md and .txt files into notes. Lines like "- [ ] item" become checklist items.</span></div><div class="ctl"><button id="importNotes" class="btn">Import…</button></div></div>
     <div class="row"><div class="lbl"><b>Open the data folder</b><span id="dataPath" class="path"></span></div><div class="ctl"><button id="openData" class="btn">Open folder</button></div></div>
     <div class="row"><div class="lbl"><b>Use your notes on every PC</b><span id="dataMsg" class="status">Move the data folder into a folder that OneDrive, Dropbox, Google Drive or Syncthing keeps in sync, and choose the same folder on your other PCs. Changes from another PC appear within a few seconds. If two PCs edit at the same moment, the other version is saved in the "conflicts" folder, never lost.</span></div><div class="ctl"><button id="chooseData" class="btn primary">Choose folder…</button><button id="resetData" class="btn" hidden>Use default</button></div></div>
+  </section>
+
+  <section class="cat" id="cat-sync" data-title="Sync">
+    <h2>Sync <span class="tag">Test</span></h2>
+    <div class="row"><div class="lbl"><b>Sync your notes across PCs</b><span>Keeps an encrypted copy of your notes on your own Cloudflare server, so another PC can use the same notes. Off by default. Text and checklists only: notes with pictures or a lock stay on this PC.</span></div><div class="ctl"><input id="syncOn" class="toggle" type="checkbox"></div></div>
+    <div id="syncForm" hidden>
+      <div class="row"><div class="lbl"><b>This PC</b><span>Start a new account here, or join the one you made on another PC.</span></div><div class="ctl seg2"><button id="syncNew" class="btn primary" type="button">Start new</button><button id="syncJoin" class="btn" type="button">Join existing</button></div></div>
+      <div class="row"><div class="lbl"><b>Server address</b><span>The address you got when you deployed (it ends in .workers.dev).</span></div><div class="ctl"><input id="syncServer" class="field" type="text" placeholder="https://stickypad-sync.NAME.workers.dev" spellcheck="false" autocomplete="off" aria-label="Server address"></div></div>
+      <div class="row" id="syncRegRow"><div class="lbl"><b>Registration code</b><span>The secret code you set on the server. Only needed to start a new account.</span></div><div class="ctl"><input id="syncReg" class="field" type="password" placeholder="Registration code" autocomplete="off" aria-label="Registration code"></div></div>
+      <div class="row" data-keep="1" id="syncAcctRow" hidden><div class="lbl"><b>Account id</b><span>Copy it from Settings > Sync on your other PC.</span></div><div class="ctl"><input id="syncAcctIn" class="field" type="text" placeholder="Account id" spellcheck="false" autocomplete="off" aria-label="Account id"></div></div>
+      <div class="row"><div class="lbl"><b>Passphrase</b><span>Encrypts your notes on this PC (at least 8 characters). Use the same one on every PC.</span></div><div class="ctl"><input id="syncPass" class="field" type="password" placeholder="Passphrase" autocomplete="off" aria-label="Passphrase"></div></div>
+      <p class="hint warn">A forgotten passphrase cannot be recovered: nobody can read or reset your synced notes without it. Write it down.</p>
+      <div class="row"><div class="lbl"><span id="syncMsg" class="status">Notes on this PC are uploaded first. Nothing on this PC is deleted.</span></div><div class="ctl"><button id="syncGo" class="btn primary" type="button">Turn on sync</button></div></div>
+    </div>
+    <div id="syncRun" hidden>
+      <div class="row"><div class="lbl"><b>Status</b><span id="syncStatus" class="status"></span></div><div class="ctl"><button id="syncNowBtn" class="btn primary" type="button">Sync now</button></div></div>
+      <div class="row" data-keep="1" id="syncConfRow" hidden><div class="lbl"><b>Conflict copies</b><span id="syncConf"></span></div><div class="ctl"><button id="syncShow" class="btn" type="button">Open Notes</button></div></div>
+      <div class="row"><div class="lbl"><b>Server</b><span id="syncSrv" class="path"></span></div><div class="ctl"><button id="syncCopySrv" class="btn" type="button">Copy address</button></div></div>
+      <div class="row"><div class="lbl"><b>Account id</b><span id="syncAcctOut" class="path"></span></div><div class="ctl"><button id="syncCopyAcct" class="btn" type="button">Copy</button></div></div>
+      <div class="row"><div class="lbl"><b>Stop syncing</b><span>Your notes stay on this PC. The copy on the server is kept; you can join again later.</span></div><div class="ctl"><button id="syncStop" class="btn danger" type="button">Stop syncing</button></div></div>
+    </div>
   </section>
 
   <section class="cat" id="cat-about" data-title="About">

@@ -1,24 +1,13 @@
 // Tests the sync server logic (with a real SQL database standing in for Cloudflare D1) and the encryption.
 const assert = require('assert'), fs = require('fs'), path = require('path'), { pathToFileURL } = require('url');
-process.removeAllListeners('warning');
-const { DatabaseSync } = require('node:sqlite');
 
 // A small stand-in for D1: prepare().bind().first()/all()/run() and batch() (all or nothing).
-function fakeD1() {
-  const db = new DatabaseSync(':memory:'); db.exec(fs.readFileSync(path.join(__dirname, '..', 'cloud', 'schema.sql'), 'utf8'));
-  const stmt = (sql, args = []) => ({
-    bind: (...a) => stmt(sql, a),
-    first: async () => db.prepare(sql).get(...args) || null,
-    all: async () => ({ results: db.prepare(sql).all(...args) }),
-    run: async () => { const r = db.prepare(sql).run(...args); return { meta: { changes: Number(r.changes) } }; },
-  });
-  return { prepare: sql => stmt(sql), batch: async list => { db.exec('BEGIN'); try { const out = []; for (const s of list) out.push(await s.run()); db.exec('COMMIT'); return out; } catch (e) { db.exec('ROLLBACK'); throw e; } } };
-}
+const fakeD1 = require('./d1fake');
 
 (async () => {
   const dir = pathToFileURL(path.join(__dirname, '..', 'cloud') + path.sep).href;
   const { handle } = await import(dir + 'worker.js');
-  const C = await import(dir + 'crypto.js');
+  const C = require('../synccrypto');
   const env = { DB: fakeD1(), REG_CODE: 'let-me-in-123' };
   const call = async (method, p, { body, token, acct, reg } = {}) => {
     const h = { 'content-type': 'application/json' }; if (token) h.authorization = 'Bearer ' + token; if (acct) h['x-account'] = acct; if (reg) h['x-reg-code'] = reg;

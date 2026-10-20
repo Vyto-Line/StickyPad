@@ -117,3 +117,9 @@ h2{font-size:17px;margin-bottom:9px}
 #updDownload,#updInstall{background:linear-gradient(100deg,#ff2bd6,#a855ff 50%,#00e5ff);color:#0b0b14;font-weight:700;border:0;box-shadow:0 0 10px rgba(168,85,255,.45)}
 #updDownload:hover,#updInstall:hover{filter:brightness(1.1)}
 #updDownload:disabled{opacity:.6}
+
+/* sync (test) */
+.tag{font-size:11px;font-weight:600;padding:1px 8px;border-radius:99px;background:var(--accent);color:var(--on-accent);vertical-align:middle}
+.seg2{display:flex;gap:2px;background:var(--hover);border-radius:9px;padding:2px}
+.seg2 .btn{background:none;padding:5px 12px}.seg2 .btn.primary{background:var(--accent)}
+.lbl .ok{color:#1f9d57}
