@@ -11,6 +11,8 @@ r=D.setLocation(def2,def2,sync);assert(r.adopted);assert.strictEqual(fs.readFile
 D.resetLocation(def,sync);assert.strictEqual(D.resolve(def),def);assert(!fs.existsSync(path.join(def,'location.json')));
 // missing folder falls back
 fs.writeFileSync(path.join(def,'location.json'),JSON.stringify({dir:path.join(root,'gone')}));assert.strictEqual(D.resolve(def),def);
+// the folder asked for is known even when it cannot be reached (so the app can wait for it instead of starting empty)
+assert.strictEqual(D.pointerDir(def),path.join(root,'gone'));fs.unlinkSync(path.join(def,'location.json'));assert.strictEqual(D.pointerDir(def),'');
 // relative rejected
 assert.throws(()=>D.setLocation(def,def,'rel/x'));
 // atomic

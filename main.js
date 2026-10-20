@@ -19,6 +19,7 @@ const KEYS = require('./keys');
 const links = require('./links');
 const notesearch = require('./notesearch');
 const search = require('./search');
+const safeload = require('./safeload');
 const importers = require('./importers');
 const placement = require('./placement');
 const changelog = require('./changelog');
@@ -60,6 +61,7 @@ const GPU_OK = !LAUNCH.lowMemory;   // a see-through background with solid text 
 const DAY = 864e5, MAX_BLOCKS = 50000, MAX_TEXT = 5000000;   // generous limits: a long note must never lose its last lines
 const MIN_W = 260, MIN_H = 180, ROLL_H = 40, SNAP = 10, GAP = 4;
 const IMG_ID = /^[a-z0-9]{6,40}\.(png|jpe?g|webp|gif)$/;
+let writeBlocked = false, loadProblem = null;   // writeBlocked: the notes file could not be read, so it must never be overwritten
 let file, saveTimer, allTimer, firstRun = false, DATA = null, dirty = false, lastMtime = 0;
 const dataDir = () => DATA || app.getPath('userData');
 const DEFAULT_SETTINGS = {
@@ -147,16 +149,15 @@ function serialize() {
   const ns = {}; for (const k of Object.keys(notes)) ns[k] = packNote(notes[k]);
   return JSON.stringify({ version: 2, notes: ns, trash: trash.map(packNote), groups, settings });   // compact: a big note is not padded with indentation
 }
-function load() {
-  firstRun = !fs.existsSync(file);
-  try {
-    const d = JSON.parse(fs.readFileSync(file, 'utf8'));
-    if (d && d.version === 2) {
-      notes = d.notes || {}; trash = d.trash || []; groups = Array.isArray(d.groups) ? d.groups : [];
-      const ds = d.settings || {};
-      settings = { ...DEFAULT_SETTINGS, ...ds, ai: { ...DEFAULT_SETTINGS.ai, ...(ds.ai || {}) } };
-    } else { notes = d || {}; trash = []; }
-  } catch { notes = {}; trash = []; }
+// Puts what was read from the notes file into memory.
+function applyData(d) {
+  if (d && d.version === 2) {
+    notes = d.notes || {}; trash = d.trash || []; groups = Array.isArray(d.groups) ? d.groups : [];
+    const ds = d.settings || {};
+    settings = { ...DEFAULT_SETTINGS, ...ds, ai: { ...DEFAULT_SETTINGS.ai, ...(ds.ai || {}) } };
+  } else { notes = d || {}; trash = []; }
+  if (!notes || typeof notes !== 'object') notes = {};
+  if (!Array.isArray(trash)) trash = [];
   trash = trash.filter(t => t && Date.now() - t.deletedAt < settings.trashDays * DAY);
   // Clean out empty checklist items that older versions saved (they used to show up as stray tick boxes).
   Object.values(notes).concat(trash).forEach(n => {
@@ -167,8 +168,20 @@ function load() {
   const gids = new Set(groups.map(g => g.id));
   Object.values(notes).concat(trash).forEach(n => { if (n.group && !gids.has(n.group)) n.group = null; });
 }
+// Loads the notes. A file that exists but cannot be read is NEVER treated as "no notes" (the next save would replace the real notes with
+// an empty set): it is kept as it is, the notes are restored from the newest good copy if there is one, and otherwise nothing is written at all.
+function load() {
+  writeBlocked = false; loadProblem = null;
+  const r = safeload.readJson(file);
+  firstRun = !!r.missing;
+  if (r.ok) { applyData(r.data); return; }
+  if (r.missing) { applyData(null); return; }
+  const kept = safeload.keepBroken(dataDir(), file), rec = safeload.recover(dataDir(), app.getPath('userData'));
+  if (rec) { applyData(rec.data); loadProblem = { kind: 'recovered', from: rec.from, kept, error: r.error }; }
+  else { applyData(null); writeBlocked = true; loadProblem = { kind: 'blocked', kept, error: r.error }; }
+}
 const flush = () => {
-  clearTimeout(saveTimer); if (!file) return;
+  clearTimeout(saveTimer); if (!file || writeBlocked) return;
   try {
     const m = datadir.mtimeOf(file);
     // another PC (or program) changed the file since we last read or wrote it: keep its version in /conflicts before we replace it
@@ -180,8 +193,10 @@ function save() { dirty = true; wordsVer++; clearTimeout(saveTimer); saveTimer =
 
 // Picks up changes made by another device through a synced data folder (OneDrive, Dropbox, Syncthing...).
 function reloadFromDisk() {
+  const r = safeload.readJson(file, 3);
+  if (!r.ok) return;                     // the other copy is missing or half written (a sync program is still busy): keep what we have, it is saved again at the next change
   const mine = settings;                 // settings stay per-PC (shortcuts, AI key, startup...)
-  load(); settings = mine;
+  firstRun = false; applyData(r.data); settings = mine;
   wins.forEach((w, id) => {
     if (w.isDestroyed()) return;
     if (notes[id]) w.webContents.send('note:reload'); else w.close();
@@ -1245,7 +1260,9 @@ function setKeys(p) {
 }
 
 /* ---------- backups and trash retention ---------- */
-function doBackup() { flush(); const dir = backup.makeBackup(dataDir(), 7, new Date(), app.getPath('userData')); settings.lastBackup = Date.now(); save(); return dir; }
+function doBackup() {
+  if (writeBlocked || (!Object.keys(notes).length && !trash.length)) return '';   // nothing worth keeping: an empty copy must not push real backups out of the newest seven
+  flush(); const dir = backup.makeBackup(dataDir(), 7, new Date(), app.getPath('userData')); settings.lastBackup = Date.now(); save(); return dir; }
 function purgeTrash() {
   const keep = [], drop = [];
   trash.forEach(t => (Date.now() - t.deletedAt < settings.trashDays * DAY ? keep : drop).push(t));
@@ -1354,12 +1371,33 @@ app.on('second-instance', (e, argv) => {
   if (settings.launch === 'all') openAll(); else showAll(); });
 app.whenReady().then(async () => {
   DATA = datadir.resolve(app.getPath('userData'));
+  // The notes were moved to another folder (OneDrive, Dropbox...) but it cannot be reached right now: it may only be slow to start after a restart.
+  // Wait a little. If it stays away, ask, instead of quietly starting with an empty set.
+  const want = datadir.pointerDir(app.getPath('userData'));
+  if (want && DATA !== want) {
+    for (let i = 0; i < 20 && DATA !== want; i++) { safeload.sleep(500); DATA = datadir.resolve(app.getPath('userData')); }
+    if (DATA !== want) {
+      const pick = dialog.showMessageBoxSync({ type: 'warning', title: 'StickyPad', buttons: ['Quit StickyPad', 'Start with an empty set for now'], defaultId: 0, cancelId: 0, noLink: true,
+        message: 'Your notes folder cannot be reached.', detail: want + '\n\nIf it is on OneDrive, Dropbox or another drive, wait until it is connected and start StickyPad again. Your notes there are untouched. If you start with an empty set now, what you write will be kept in the normal StickyPad folder instead.' });
+      if (pick === 0) { app.exit(0); return; }
+    }
+  }
   file = path.join(DATA, 'notes.json');
-  load(); sweepHistory(); sweepImages(); lastMtime = datadir.mtimeOf(file); watchData();
+  load();
+  if (loadProblem && loadProblem.kind === 'blocked') {
+    // The notes file is there but cannot be read, and there is no other copy: touch nothing and say so.
+    try { dialog.showMessageBoxSync({ type: 'error', title: 'StickyPad', buttons: ['Open the folder and close StickyPad'], noLink: true, message: 'StickyPad could not read your notes file.',
+      detail: 'Nothing was changed or deleted. Your notes are still in the file notes.json in the folder that opens next' + (loadProblem.kept ? ' (a copy was also saved as ' + path.basename(loadProblem.kept) + ')' : '') + '. Please do not delete anything there. ' + (loadProblem.error ? '\n\nReason: ' + loadProblem.error : '') }); } catch {}
+    try { shell.openPath(dataDir()); } catch {}
+    app.exit(0); return;
+  }
+  if (!loadProblem) safeload.keepLastGood(dataDir(), file);
+  sweepHistory(); sweepImages(); lastMtime = datadir.mtimeOf(file); watchData();
   applyMode(); try { NT.on('updated', () => themeChanged()); } catch {}
   if (typeof settings.lastDark !== 'boolean') settings.lastDark = uiDark();   // first start with themes: remember, do not repaint existing notes
   if (settings.autoBackup && !firstRun && !backup.sameDay(settings.lastBackup)) { try { doBackup(); } catch {} }   // one safety copy a day
   createTray();
+  if (loadProblem && loadProblem.kind === 'recovered') { try { new Notification({ title: 'StickyPad', body: 'Your notes file could not be read, so your notes were restored from ' + path.basename(path.dirname(loadProblem.from)) + '/' + path.basename(loadProblem.from) + '. The unreadable file was kept as ' + path.basename(loadProblem.kept || 'notes.json') + '.' }).show(); } catch {} }
   ['display-added', 'display-removed', 'display-metrics-changed'].forEach(ev => screen.on(ev, () => setTimeout(onScreensChanged, 400)));
   // Only the very first launch (or a missing tray) creates a blank note; otherwise closed empty notes stay gone.
   if (!Object.keys(notes).length && (firstRun || !tray)) { const n = newNote(); notes[n.id] = n; }

@@ -29,6 +29,7 @@
       "convert.js",
       "words.js",
       "search.js",
+      "safeload.js",
       "quick.html",
       "quick.css",
       "quick.js",

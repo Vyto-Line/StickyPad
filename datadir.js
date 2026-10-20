@@ -16,6 +16,11 @@ function resolve(defaultDir) {
   return defaultDir;
 }
 
+// The folder a pointer file asks for, even when that folder cannot be reached right now ('' when there is no pointer).
+function pointerDir(defaultDir) {
+  try { const d = JSON.parse(fs.readFileSync(path.join(defaultDir, POINTER), 'utf8')).dir; return typeof d === 'string' && path.isAbsolute(d) ? d : ''; } catch { return ''; }
+}
+
 function writeAtomic(file, text) {   // write to a temp file first so a crash or full disk can never leave half a notes file
   const tmp = file + '.tmp';
   fs.writeFileSync(tmp, text);
@@ -54,4 +59,4 @@ function keepConflict(dir, text, now = new Date()) {
 
 const mtimeOf = file => { try { return fs.statSync(file).mtimeMs; } catch { return 0; } };
 
-module.exports = { resolve, writeAtomic, setLocation, resetLocation, keepConflict, mtimeOf, POINTER };
+module.exports = { resolve, pointerDir, writeAtomic, setLocation, resetLocation, keepConflict, mtimeOf, POINTER };
