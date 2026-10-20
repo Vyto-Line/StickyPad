@@ -17,7 +17,7 @@ with sync_playwright() as p:
     b = p.chromium.launch()
     # a normal note is untouched
     small = make(500); pg = page(b, [{'t': 'text', 'v': small}])
-    ok(pg.evaluate("innerWidth - ed.getBoundingClientRect().right") >= 6, 'ordinary notes keep the scroll bar away from the edge too')
+    ok(pg.evaluate("innerWidth - ed.getBoundingClientRect().right") >= 12, 'ordinary notes keep the scroll bar away from the edge too')
     ok(pg.evaluate("document.querySelectorAll('#ed .chunk').length") == 0, 'a normal note is one piece, as before')
     # a huge one is cut into short blocks and still saves exactly the same text
     text = make(40000); expect = text.count('alpha'); ln = len(text)
@@ -27,7 +27,7 @@ with sync_playwright() as p:
     bl = saved(pg); ok(bl and bl[0]['t'] == 'text' and bl[0]['v'] == 'Q' + text and bl[1]['t'] == 'check' and bl[1]['v'] == 'after', 'the saved text is exactly the original plus the typed letter (%d vs %d chars)' % (len(bl[0]['v']) if bl else -1, ln + 1))
     lay = pg.evaluate("() => { const b = note.blocks; const t0 = performance.now(); render(b); ed.getBoundingClientRect(); ed.scrollHeight; return performance.now() - t0; }")
     ok(lay < 250, 'drawing the huge note takes %d ms (it was about 500)' % lay)
-    ok(pg.evaluate("innerWidth - ed.getBoundingClientRect().right") >= 6, 'the scroll bar is 6+ px inside the window edge (the window resize border no longer covers it)')
+    ok(pg.evaluate("innerWidth - ed.getBoundingClientRect().right") >= 12, 'the scroll bar is 12+ px inside the window edge (the window resize border no longer covers it)')
     # typing stays quick
     pg.keyboard.press('Control+End'); ts = []
     for _ in range(3):
