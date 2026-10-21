@@ -1037,8 +1037,15 @@ function toggleQuick() {
     webPreferences: { preload, contextIsolation: true, nodeIntegration: false }
   });
   quickWin = win; win.setMenu(null); win.loadFile('quick.html');
-  win.once('ready-to-show', () => { if (win.isDestroyed()) return; win.show(); win.focus(); win.webContents.focus(); });
-  win.on('blur', () => { setTimeout(() => { if (!win.isDestroyed() && !win.isFocused()) closeQuick(); }, 120); });   // a short wait, so the window is not closed while it is still being focused
+  const t0 = Date.now(); let shownAt = 0;
+  win.once('ready-to-show', () => { if (win.isDestroyed()) return; shownAt = Date.now(); win.show(); win.focus(); win.webContents.focus(); slowWindow('the search window', t0); });
+  // Pressing the shortcut leaves Ctrl and Alt held for a moment, and Windows can shift focus away just as the window appears.
+  // That used to close the window at once (it looked as if the shortcut sometimes did nothing): in the first moment, take the focus back instead.
+  win.on('blur', () => {
+    if (win.isDestroyed()) return;
+    if (shownAt && Date.now() - shownAt < 900) { perfLog('SEARCH window lost focus ' + (Date.now() - shownAt) + ' ms after it appeared: focus taken back'); try { win.focus(); win.webContents.focus(); } catch {} return; }
+    setTimeout(() => { if (!win.isDestroyed() && !win.isFocused()) closeQuick(); }, 120);   // a short wait, so the window is not closed while it is still being focused
+  });   // a short wait, so the window is not closed while it is still being focused
   win.on('closed', () => { if (quickWin === win) quickWin = null; });
 }
 
