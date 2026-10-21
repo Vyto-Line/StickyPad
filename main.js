@@ -336,7 +336,7 @@ function openNote(n) {
   });
   w.on('focus', focusguard.guard(w));
   const cid = w.webContents.id;
-  w.on('closed', () => { panelGrow.delete(n.id); wins.delete(n.id); byContents.delete(cid); if (!reopening.has(n.id)) relock(notes[n.id]); pingAll(); });
+  w.on('closed', () => { panelGrow.delete(n.id); if (!reopening.has(n.id)) seeThrough.delete(n.id); wins.delete(n.id); byContents.delete(cid); if (!reopening.has(n.id)) relock(notes[n.id]); pingAll(); });
   return w;
 }
 
@@ -1019,7 +1019,6 @@ function toggleQuick() {
 
 /* ---------- IPC: trash ---------- */
 ipcMain.handle('trash:open', () => openAll('trash'));
-ipcMain.handle('trash:list', () => trashList());
 ipcMain.handle('trash:restore', (e, id) => {
   const k = trash.findIndex(t => t.id === id); if (k < 0) return;
   const [t] = trash.splice(k, 1); delete t.deletedAt;
@@ -1035,9 +1034,6 @@ ipcMain.handle('app:info', () => ({
   hideTaskbar: !!settings.hideTaskbar, snap: !!settings.snap, groups, theme: settings.theme
 }));
 ipcMain.handle('app:prefs', (e, p) => setPrefs(p));
-ipcMain.handle('app:startup', (e, v) => setStartup(v));
-ipcMain.handle('app:hideTaskbar', (e, v) => setHide(v));
-ipcMain.handle('app:snap', (e, v) => setSnap(v));
 
 /* ---------- AI helper (summarise / fix grammar) ---------- */
 function setKey(k) {

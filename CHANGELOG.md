@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.14.42
+- **Clean-up, no change you can see.** Removed code nothing used any more (one internal handler for the trash list, and three internal settings calls that Settings no longer needs). Fixed a small memory leak: the app remembered whether each note window was see-through even after the window closed, one tiny entry per note ever opened; now it forgets it on close.
+- Not tried on a real Windows PC yet.
+
 ## 1.14.41
 - **A performance log: Settings > About > Open performance log.** If StickyPad feels slow, it writes down what was slow: a window that took more than half a second to appear (the tour, a note, Home), the app freezing for more than 0.3 seconds, and a save that took more than 60 ms, each with the size of the notes file and the number of open windows. It holds only times and sizes, never your notes, so you can send it to me and I can see where the time goes.
 - **"Start with a note" no longer waits for the note.** The tour now closes after at most 0.6 seconds, and the new note still comes to the front as soon as it has appeared.
