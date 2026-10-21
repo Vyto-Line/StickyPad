@@ -15,10 +15,12 @@
 
 ## Next
 1. Print several notes at once, in a chosen order (select in Home, order, one print job).
-2. Greeting hours: ask Alex what he wants (later start for "afternoon"? different word?).
-3. More tests (search, AI, update handlers).
-4. Home window speed-up: only if Alex has hundreds or thousands of notes.
-5. Alex's further ideas.
+2. More tests (search, AI, update handlers).
+3. Home window speed-up: only if Alex has hundreds or thousands of notes.
+4. Alex's further ideas.
+
+## Done 2026-10-21/22 (v1.14.44 to v1.14.47)
+- Ctrl+Alt+F reliable (focus kept, cannot stay hidden); more actions in the search window; windows always appear and come to the front at start-up; "When StickyPad starts" works when started again from the tray.
 
 ## Set aside by Alex (only when he asks)
 - Split main.js and note.js; upgrade Electron 33.
@@ -34,6 +36,6 @@
 ## Alex's ideas (2026-10-21), status
 - Printing: single note done in 1.14.43 (Ctrl+P). Still open: print several notes at once, in a chosen order (Alex picked "one at a time" for now).
 - Home "+ Note" opens behind Home: fixed in 1.14.43.
-- Greeting hours: "Good afternoon" shows from 12:00 to 17:00. Alex had no preference when asked; ask again what he wants (later start? different word?).
+- Greeting hours: dropped by Alex on 2026-10-22 (no change).
 - Accessibility tab: shortcuts row removed (1.14.43).
 - Trash drag and drop (delete by dropping on Trash, restore by dropping on Notes): done in 1.14.43.
