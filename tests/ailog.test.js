@@ -44,3 +44,20 @@ const cfg = { provider: 'ollama', model: 'm', url: 'http://x' };
   A.setLogger(null);
   console.log('ai log ok');
 })().catch(e => { console.error(e); process.exit(1); });
+
+// thinking is switched off for the reasoning families (Gemma 4 included)
+(async () => {
+  assert.deepStrictEqual(A.thinkOff('gemma4:e4b'), { think: false });
+  assert.deepStrictEqual(A.thinkOff('library/gemma4:12b'), { think: false });
+  assert.deepStrictEqual(A.thinkOff('qwen3:8b'), { think: false });
+  assert.deepStrictEqual(A.thinkOff('gpt-oss:20b'), { think: 'low' });
+  assert.deepStrictEqual(A.thinkOff('llama3.2:3b'), {});
+  assert.deepStrictEqual(A.thinkOff('gemma3:4b'), {});
+  // chat: an Ollama that rejects "think" is asked again without it
+  let n = 0; const bodies = [];
+  const f = async (u, o) => { n++; const b = JSON.parse(o.body); bodies.push(b);
+    return 'think' in b ? { ok: false, status: 400, json: async () => ({ error: '"gemma4" does not support think' }) } : stream(['{"message":{"content":"yes"}}\n{"done":true}\n']); };
+  assert.strictEqual(await A.chatStream({ provider: 'ollama', model: 'gemma4:e4b', url: 'http://x' }, 's', [{ role: 'user', content: 'q' }], () => {}, null, f), 'yes');
+  assert.strictEqual(n, 2); assert.ok(!('think' in bodies[1]));
+  console.log('ai think ok');
+})().catch(e => { console.error(e); process.exit(1); });

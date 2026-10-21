@@ -1,6 +1,8 @@
 # Changelog
 
-## 1.14.34
+## 1.14.35
+- **A huge note opens in a fraction of a second.** A note of 51,200 lines (3.7 MB) took 10 to 15 seconds to open. The page read the whole text back out several times and each time glued a giant string together over and over; that now takes 6 milliseconds instead of almost a second, and the result is kept until you change something. The search for dates ("tomorrow at 5pm") only looks at the first 100,000 letters of a huge note, and spell-check is switched off for it (checking millions of letters is what made typing crawl).
+- **The AI no longer goes silent with Gemma 4.** Gemma 4 "thinks" before it answers unless told not to, and could spend its whole answer on thinking and send back nothing (the "Ollama gave an empty reply" message). StickyPad now turns thinking off for Gemma 4 and the other reasoning families (Qwen3.5, DeepSeek, Phi-4-reasoning, Cogito, Nemotron, SmolLM3, GLM-4…), and sets gpt-oss to "low" because that one cannot be switched off. An Ollama that rejects the setting is asked again without it.
 - **An AI log: Settings > AI > Open AI log.** Every AI request (chat, summarize, fix grammar, translate…) and every problem is written to a small text file: which model, how big the request was, how long it took, how much came back, and what went wrong (Ollama not running, too slow, an empty reply, a stream that stopped half way). It holds only sizes and timings, never your notes or the answers, so you can send it to me.
 - **The AI no longer goes silent.** If the local model sends back nothing, StickyPad now asks it once more automatically (a model that is still loading often does this). If it is still empty you get a clear message that points to the log, instead of an empty chat bubble.
 - Not tried on a real Windows PC yet.

@@ -151,6 +151,7 @@ function repairTodos() {
 }
 function render(blocks) {
   ed.textContent = '';
+  ed.spellcheck = !blocks.some(b => b.t === 'text' && b.v.length > BIG_TEXT);   // checking the spelling of millions of letters makes a huge note crawl
   blocks.forEach(b => {
     if (b.t === 'img') { const src = b.src || srcCache.get(b.id); if (src) ed.appendChild(makeImg(b.id, src)); }
     else if (b.t === 'check') ed.appendChild(makeTodo(b.v, b.done));
@@ -172,24 +173,39 @@ function bigText(v) {
     ed.appendChild(d);
   }
 }
+// Reading a huge note back out of the page takes a while, and it was done again and again (on opening, for the undo copy, for the date check, for saving).
+// The result is kept until something in the editor really changes. Checklists are left out because ticking a box changes no element.
+let memoBlocks = null;
+const memoWatch = new MutationObserver(() => { memoBlocks = null; });
+memoWatch.observe(ed, { childList: true, characterData: true, subtree: true, attributes: true });
 function serialize() {
-  const blocks = []; let buf = '';
-  const flush = () => { if (buf) { blocks.push({ t: 'text', v: buf }); buf = ''; } };
+  if (memoWatch.takeRecords().length) memoBlocks = null;
+  if (memoBlocks) return memoBlocks;
+  const out = serializeNow();
+  if (ed.textContent.length > 100000 && !ed.querySelector('.todo')) { memoWatch.takeRecords(); memoBlocks = out; }
+  return out;
+}
+function serializeNow() {
+  // The text is collected in pieces and joined at the end. Asking a half-built giant string whether it ends with a line break forces the browser to
+  // glue it together each time, which took almost a second for a 3.7 MB note.
+  const blocks = []; let parts = [], size = 0, endNl = false;
+  const add = t => { if (t) { parts.push(t); size += t.length; endNl = t.charCodeAt(t.length - 1) === 10; } };
+  const flush = () => { if (size) { blocks.push({ t: 'text', v: parts.join('') }); parts = []; size = 0; endNl = false; } };
   const walk = node => {
     for (const c of node.childNodes) {
-      if (c.nodeType === 3) buf += c.nodeValue;
-      else if (c.nodeName === 'BR') buf += '\n';
+      if (c.nodeType === 3) add(c.nodeValue);
+      else if (c.nodeName === 'BR') add('\n');
       else if (c.nodeName === 'IMG') { flush(); if (c.dataset.id) blocks.push({ t: 'img', id: c.dataset.id }); }
       else if (c.classList && c.classList.contains('todo')) {
         flush(); const tx = c.querySelector('.tx'), box = c.querySelector('input');
         if (tx) blocks.push({ t: 'check', v: tx.textContent, done: !!(box && box.checked) });
         else { const w = c.textContent.replace(/×/g, ''); if (w.trim()) blocks.push({ t: 'text', v: w }); }   // damaged item: keep its words
       }
-      else if (c.nodeType === 1) { if (buf && !buf.endsWith('\n')) buf += '\n'; walk(c); if (buf && !buf.endsWith('\n') && !(c.classList && c.classList.contains('last') && c.classList.contains('chunk'))) buf += '\n'; }
+      else if (c.nodeType === 1) { if (size && !endNl) add('\n'); walk(c); if (size && !endNl && !(c.classList && c.classList.contains('last') && c.classList.contains('chunk'))) add('\n'); }
     }
   };
   walk(ed);
-  if (buf.endsWith('\n')) buf = buf.slice(0, -1);   // the browser's trailing placeholder line break
+  if (size && endNl) { const last = parts.pop(); size -= 1; const cut = last.slice(0, -1); if (cut) parts.push(cut); }   // the browser's trailing placeholder line break
   flush();
   return blocks;
 }
@@ -610,7 +626,7 @@ let dateFound = null;
 function dateCheck() {
   const bar = $('#datebar');
   if (!note || bodyLocked() || note.suggestDates === false || note.remind > Date.now()) { bar.hidden = true; dateFound = null; return; }
-  const found = StickyDates.first(noteAsText(), Date.now());
+  const all = noteAsText(), found = StickyDates.first(all.length > 100000 ? all.slice(0, 100000) : all, Date.now());   // a huge note is only searched at its start
   if (!found || dateDismissed.has(found.text + '|' + found.at)) { bar.hidden = true; dateFound = null; return; }
   dateFound = found;
   const when = new Date(found.at), now = new Date(), sameDay = when.toDateString() === now.toDateString();

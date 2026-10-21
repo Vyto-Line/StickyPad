@@ -28,6 +28,12 @@ with sync_playwright() as p:
     lay = pg.evaluate("() => { const b = note.blocks; const t0 = performance.now(); render(b); ed.getBoundingClientRect(); ed.scrollHeight; return performance.now() - t0; }")
     ok(lay < 250, 'drawing the huge note takes %d ms (it was about 500)' % lay)
     ok(pg.evaluate("innerWidth - ed.getBoundingClientRect().right") >= 12, 'the scroll bar is 12+ px inside the window edge (the window resize border no longer covers it)')
+    # reading the note back out is fast, and the kept copy never goes stale
+    sr = pg.evaluate("() => { const t0 = performance.now(); memoBlocks = null; serializeNow(); return performance.now() - t0; }")
+    ok(sr < 150, 'reading the huge note back out takes %d ms (it was about 880 for 3.7 MB)' % sr)
+    ok(pg.evaluate("() => { serialize(); ed.firstChild.firstChild.nodeValue = 'EDITED' + ed.firstChild.firstChild.nodeValue; return serialize()[0].v.startsWith('EDITED'); }"), 'the kept copy is dropped as soon as the text changes')
+    ok(pg.evaluate("ed.spellcheck") is False, 'spell-check is off for a huge note')
+    ok(page(b, [{'t': 'text', 'v': small}]).evaluate("ed.spellcheck") is True, 'spell-check stays on for ordinary notes')
     # typing stays quick
     pg.keyboard.press('Control+End'); ts = []
     for _ in range(3):
