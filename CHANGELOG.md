@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.14.44
+- **Ctrl+Alt+F (search all notes): safer and easier to diagnose.** If the search window exists but is hidden, the shortcut now shows it instead of closing it (which could make it look dead). If Windows refuses a shortcut because another program already uses it, that is written to the performance log (Settings > About > Open performance log) and shown as a warning in Settings > Shortcuts.
+- Not tried on a real Windows PC yet.
+
 ## 1.14.43
 - **Print a note.** Press **Ctrl+P** in a note, use **Settings panel > Print…**, or right-click a note card in Home > **Print…**. The Windows print window opens (plain black on white, with checklists and pictures); nothing is sent until you press Print. Locked notes must be unlocked first.
 - **Drag and drop with the Trash.** In Home, drag a note card onto **Trash** in the sidebar to delete it, and drag a deleted note out of the Trash list onto **Notes** to bring it back.

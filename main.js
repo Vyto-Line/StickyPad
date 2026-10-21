@@ -1025,7 +1025,10 @@ function setPrefsFull(p) { if (['light', 'dark', 'system'].includes(p.mode)) { s
 function closeQuick() { if (quickWin && !quickWin.isDestroyed()) quickWin.close(); quickWin = null; }
 // The small search window (Ctrl+Alt+F): opens in the middle of the screen the mouse is on, closes when you click elsewhere.
 function toggleQuick() {
-  if (quickWin && !quickWin.isDestroyed()) { closeQuick(); return; }
+  if (quickWin && !quickWin.isDestroyed()) {
+    if (!quickWin.isVisible()) { quickWin.show(); quickWin.focus(); perfLog('SEARCH window was hidden, shown again'); return; }   // never opened properly: show it, do not close it
+    closeQuick(); return;
+  }
   let d; try { d = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()); } catch { d = screen.getPrimaryDisplay(); }
   const wa = d.workArea, zf = accessOf().size / 100, W = Math.min(wa.width, Math.round(640 * zf)), H = Math.min(wa.height, Math.round(460 * zf));   // the search window grows with the interface size
   const win = new BrowserWindow({
@@ -1447,7 +1450,7 @@ const curKeys = () => KEYS.merge(settings.keys);
 function registerShortcuts() {
   unregisterShortcuts(); keysFailed = [];
   const k = curKeys();
-  const reg = (id, fn) => { let ok = false; try { ok = globalShortcut.register(KEYS.toElectron(k[id]), fn); } catch {} if (!ok) keysFailed.push(id); };
+  const reg = (id, fn) => { let ok = false; try { ok = globalShortcut.register(KEYS.toElectron(k[id]), fn); } catch {} if (!ok) { keysFailed.push(id); try { perfLog('SHORTCUT refused by Windows (another program uses it?): ' + k[id]); } catch {} } };
   reg('g_new', () => makeNote(null));
   reg('g_all', () => openAll());
   reg('g_chat', () => openChat());
