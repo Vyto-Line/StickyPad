@@ -1038,7 +1038,17 @@ function toggleQuick() {
   });
   quickWin = win; win.setMenu(null); win.loadFile('quick.html');
   const t0 = Date.now(); let shownAt = 0;
-  win.once('ready-to-show', () => { if (win.isDestroyed()) return; shownAt = Date.now(); win.show(); win.focus(); win.webContents.focus(); slowWindow('the search window', t0); });
+  // Show it as soon as the page is ready: whichever comes first of "ready to show", "page loaded" or a short timer
+  // (a window that waits for only one of them can stay hidden, so the shortcut seemed to need two presses).
+  let shown = false;
+  const showIt = why => {
+    if (shown || win.isDestroyed()) return; shown = true; shownAt = Date.now();
+    win.show(); win.focus(); win.webContents.focus(); slowWindow('the search window', t0);
+    if (why === 'timer') perfLog('SEARCH window was shown by the timer, not by the page (' + (Date.now() - t0) + ' ms)');
+  };
+  win.once('ready-to-show', () => showIt('ready'));
+  win.webContents.once('did-finish-load', () => showIt('load'));
+  setTimeout(() => showIt('timer'), 700);
   // Pressing the shortcut leaves Ctrl and Alt held for a moment, and Windows can shift focus away just as the window appears.
   // That used to close the window at once (it looked as if the shortcut sometimes did nothing): in the first moment, take the focus back instead.
   win.on('blur', () => {

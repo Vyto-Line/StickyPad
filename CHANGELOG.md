@@ -1,7 +1,7 @@
 # Changelog
 
 ## 1.14.44
-- **Ctrl+Alt+F (search all notes) sometimes did nothing.** Likely cause: Ctrl and Alt are still held when the window appears, Windows moved the focus away for a moment, and the window closed itself at once. In its first second the search window now takes the focus back instead of closing. Also: If the search window exists but is hidden, the shortcut now shows it instead of closing it (which could make it look dead). If Windows refuses a shortcut because another program already uses it, that is written to the performance log (Settings > About > Open performance log) and shown as a warning in Settings > Shortcuts.
+- **Ctrl+Alt+F (search all notes) sometimes did nothing.** Likely cause: Ctrl and Alt are still held when the window appears, Windows moved the focus away for a moment, and the window closed itself at once. In its first second the search window now takes the focus back instead of closing. Also, the search window is now shown by whichever comes first of "ready", "page loaded" or a 0.7 s timer, so it can no longer stay hidden until the second press. Also: If the search window exists but is hidden, the shortcut now shows it instead of closing it (which could make it look dead). If Windows refuses a shortcut because another program already uses it, that is written to the performance log (Settings > About > Open performance log) and shown as a warning in Settings > Shortcuts.
 - Not tried on a real Windows PC yet.
 
 ## 1.14.43
