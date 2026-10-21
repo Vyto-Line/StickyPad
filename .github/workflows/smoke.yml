@@ -1,5 +1,11 @@
 name: Electron smoke test
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+    inputs:
+      electron:
+        description: 'Electron version to try (empty = the one in package.json)'
+        required: false
+        default: ''
 jobs:
   smoke:
     runs-on: windows-latest
@@ -9,6 +15,9 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
       - run: npm install
+      - name: Use another Electron version (not saved)
+        if: ${{ inputs.electron != '' }}
+        run: npm install --no-save electron@${{ inputs.electron }}
       - name: Start the real app and report
         shell: bash
         run: |
