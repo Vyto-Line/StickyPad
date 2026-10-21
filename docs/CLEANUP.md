@@ -55,3 +55,40 @@ What the numbers say (slowest first):
 ## Already done (so it is not repeated)
 - Search across all notes: measured and sped up (1.14.2x).
 - Huge notes: chunked editor, content-visibility, exact Find count (1.14.32, 1.14.33).
+
+## Research for steps 2 to 7 (2026-10-21, read-only: no code changed)
+
+Ranked by value for the risk. Each is its own release.
+
+### Step 2: dead code (low risk, do first)
+- IPC handler never called by any page: `trash:list`.
+- `preload.js` functions no page uses: `openTrash`, `setHideTaskbar`, `setSnap`, `setStartup` (their handlers `app:hideTaskbar`, `app:snap`, `app:startup` may then go too; check each before removing).
+- Module exports used only inside their own file (can stop being exported).
+- Unused CSS classes: all.css `gearpanel`; note.css `aibtns, badge, editline, sect, tabgear, tabs, tool, tools`.
+- `src-tauri/ui/`: a 20-file, 188 KB copy of the UI for the scrapped Tauri port. Decide: keep (Tauri may come back) or delete; `tauri.yml` workflow goes with it.
+- Check: all tests pass, packaging test still green, nothing changes for the user.
+
+### Step 3: memory and leaks (low risk, small)
+- `seeThrough` (main.js:343) is set in `makeNote` (line 312) and never deleted when a note window closes: one entry per note ever opened. Delete on close.
+- `histT` only cleaned by `dropHistory`; check it on note delete.
+- Timers are fine: watchFile is unwatched on quit, the 250 ms stall monitor is unref'd, reminders 15 s, note.js scroll-bar sync 500 ms (could stop while the window is hidden).
+- Electron memory cannot be measured here; needs Alex's PC (Task Manager before/after).
+
+### Step 4: tests (no risk to the app)
+48 of 87 IPC handlers are not named in any Node test: note:roll/unlock/relock/removeLock/close, grp:update/delete, all:*, search:open/close, trash:*, ai:get/set/edit/editStop/warmup, ollama:*, theme:set, chat:*, update:*, access:get/set, settings:open, home:go, app:info. Best value: lock/unlock (data safety), trash restore/empty, grp:delete, chat save/load, access:get/set.
+CI (`test.yml`) runs `npm test` on Ubuntu and Windows but not the Python UI tests; adding them would catch UI regressions automatically.
+
+### Step 5: split the big files (medium risk, biggest effort)
+main.js (1,660 lines) already has clear banners. Proposed modules, each taking `ctx` (shared state) so behaviour stays the same:
+- `main/locking.js` (locking, pictures), `main/storage.js` (storage, backups, trash retention), `main/windows.js` (windows, snapping, tray, splash, tour), `main/history.js`, `main/search.js`, `main/export.js`, `main/ollama.js` + `main/chat.js` (AI), `main/updates.js`, `main/reminders.js`, `main/access.js`.
+note.js (1,128 lines): `note-find.js`, `note-ai.js` (summarise + live edit, ~250 lines), `note-lock.js`, `note-undo.js`, `note-scrollbar.js`. New files must be added to note.html and package.json `build.files` (the packaging test checks this).
+Do one module per release or per commit, running all tests each time. Does not make the app faster; it makes it safer to change.
+
+### Step 6: docs (no risk)
+README, CHANGELOG and docs/ refreshed for 1.14.x (Accessibility, perf log, AI log, shortcut change, `Ctrl+Alt+Q`); remove mentions of the scrapped sync.
+
+### Step 7: dependencies
+Only 3: `electron-updater ^6.3.9`, `electron ^33`, `electron-builder ^25`. Electron 33 is old (security fixes stop for old majors), so upgrading Electron is the one worthwhile item, but it can only be validated on a real Windows PC. npm registry is blocked here, so `npm outdated` could not run; do it in CI or on Alex's PC.
+
+### Suggested order
+2 (dead code) -> 3 (leaks) -> 4 (tests) -> 6 (docs) -> 5 (split, one module at a time) -> 7 (Electron upgrade, with a Windows test). Home-window speed-up (item 1 above) only if Alex has hundreds or thousands of notes.
