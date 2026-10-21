@@ -42,8 +42,8 @@
       if (S.pullFail) { emit('ollama', { type: 'pull', name, state: 'error', error: 'disk full' }); return { ok: false, error: 'disk full' }; }
       S.ol.models.push({ name, size: 1.3e9 }); emit('ollama', { type: 'pull', name, state: 'done' }); return { ok: true };
     },
-    accessGet: async () => Object.assign({ size: 100, contrast: false, read: false, motion: null, focus: true, big: false, sr: true }, window.__ACCESS || {}),
-    accessSet: async p => { S.calls.push(['accessSet', p]); window.__ACCESS = Object.assign(window.__ACCESS || {}, p); L.acc.forEach(f => f(Object.assign({ size: 100, contrast: false, read: false, motion: null, focus: true, big: false, sr: true }, window.__ACCESS))); return window.__ACCESS; },
+    accessGet: async () => Object.assign({ size: 100, contrast: false, read: false, motion: false, focus: false, big: false, sr: false }, window.__ACCESS || {}),
+    accessSet: async p => { S.calls.push(['accessSet', p]); window.__ACCESS = Object.assign(window.__ACCESS || {}, p); L.acc.forEach(f => f(Object.assign({ size: 100, contrast: false, read: false, motion: false, focus: false, big: false, sr: false }, window.__ACCESS))); return window.__ACCESS; },
     onAccess: cb => L.acc.push(cb), setZoom: f => { S.zoom = f; },
     uiTheme: async () => (S.uiTheme ? JSON.parse(JSON.stringify(S.uiTheme)) : null), onUiTheme: cb => L.ui.push(cb),
     grpMove: async (id, g) => { S.calls.push(['grpMove', id, g]); if (S.all) { const n = S.all.notes.find(x => x.id === id); if (n) n.group = g; } return true; },

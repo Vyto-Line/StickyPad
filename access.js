@@ -3,15 +3,14 @@
 // bigger buttons and screen reader announcements. Loaded in <head> of every window: it first uses what was remembered last time (so the window
 // opens already set up), then asks the app and follows every change.
 (function () {
-  const KEY = 'sp.access', DEF = { size: 100, contrast: false, read: false, motion: null, focus: true, big: false, sr: true };
+  const KEY = 'sp.access', DEF = { size: 100, contrast: false, read: false, motion: false, focus: false, big: false, sr: false };
   const isNote = /note\.html$/i.test(location.pathname);   // notes keep their own text size: only their buttons and look change
   let cur = Object.assign({}, DEF), zoomed = null, live = null;
-  const reduced = () => { try { return !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) { return false; } };
   function apply(a) {
     cur = Object.assign({}, DEF, a || {});
     const c = document.documentElement.classList;
-    c.toggle('a11y-hc', !!cur.contrast); c.toggle('a11y-read', !!cur.read); c.toggle('a11y-focus', cur.focus !== false); c.toggle('a11y-big', !!cur.big);
-    c.toggle('a11y-motion', cur.motion === true || (cur.motion === null && reduced()));
+    c.toggle('a11y-hc', !!cur.contrast); c.toggle('a11y-read', !!cur.read); c.toggle('a11y-focus', !!cur.focus); c.toggle('a11y-big', !!cur.big);
+    c.toggle('a11y-motion', cur.motion === true);
     const f = isNote ? 1 : (cur.size || 100) / 100;
     if (f !== zoomed) { zoomed = f; try { if (window.api && window.api.setZoom) window.api.setZoom(f); } catch (e) { /* ignore */ } }
     try { localStorage.setItem(KEY, JSON.stringify(cur)); } catch (e) { /* private window or blocked storage */ }
@@ -31,6 +30,5 @@
   try { apply(JSON.parse(localStorage.getItem(KEY) || 'null')); } catch (e) { apply(null); }
   const api = window.api;
   if (api && api.accessGet) { api.accessGet().then(a => apply(a)).catch(() => {}); if (api.onAccess) api.onAccess(a => apply(a)); }
-  try { if (window.matchMedia) matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', () => apply(cur)); } catch (e) { /* older engine */ }
   window.StickyAccess = { apply, announce, get: () => Object.assign({}, cur) };
 })();

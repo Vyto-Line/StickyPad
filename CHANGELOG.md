@@ -1,12 +1,12 @@
 # Changelog
 
-## 1.14.38
-- **A new Accessibility tab (Settings > Accessibility).** Seven options, all applied straight away to every open window:
+## 1.14.39
+- **A new Accessibility tab (Settings > Accessibility).** Seven options, all off until you switch them on, and all applied straight away to every open window. The preview shows a note with its title bar, so the effect of "Bigger buttons" is visible:
   - **Interface size** 100 / 115 / 130 / 150% for Home, Settings, the AI chat, search and the tour (notes keep their own text size; the search window grows with it);
   - **High contrast**: pure black on white (or white on black in dark mode), solid colours and real borders, and black or white text in notes;
   - **Easier-to-read notes**: a wide, familiar font (Verdana), more space between letters, words and lines;
-  - **Reduce motion**: no startup animation, no tour animations, no fading or sliding. Until you touch it, StickyPad follows the "Animation effects" setting of Windows;
-  - **Always show the keyboard focus**: a thick orange outline on whatever the keyboard is on (on by default);
+  - **Reduce motion**: no startup animation, no tour animations, no fading or sliding;
+  - **Always show the keyboard focus**: a thick orange outline on whatever the keyboard is on;
   - **Bigger buttons in notes**: a taller title bar and larger icons;
   - **Screen reader announcements**: Narrator and NVDA are told when the AI has answered, the AI has finished editing a note, or Find reaches a match.
 - **The first-time tour has a new step, "Make it comfortable"**, with the size, high contrast, easier-to-read notes and reduce motion switches, so anyone who needs them can turn them on from the very start.

@@ -135,7 +135,12 @@ h2{font-size:17px;margin-bottom:9px}
 .bdet[open]>summary::after{content:'▴'}
 .bdet .blist{max-height:230px;overflow:auto}
 
-.aprev{width:240px;border-radius:8px;padding:10px 12px;background:#FFF2A8;color:#1b1b1b;box-shadow:0 1px 4px rgba(0,0,0,.25);font-size:15px;line-height:1.45}
-.apt{font-weight:600;margin-bottom:6px}
+.aprev{width:300px;border-radius:8px;padding:10px 12px;background:#FFF2A8;color:#1b1b1b;box-shadow:0 1px 4px rgba(0,0,0,.25);font-size:15px;line-height:1.45}
+.aprev{padding:0 0 10px;overflow:hidden}.apb{padding:0 12px}
+.apbar{display:flex;align-items:center;gap:2px;height:32px;padding:0 5px 0 8px;background:rgba(0,0,0,.08);margin-bottom:8px}
+.apt{font-weight:600}.apfill{flex:1}.apg{opacity:.5;margin-right:6px}
+.api{flex:none;display:grid;place-items:center;width:24px;height:24px;border-radius:7px;font-size:13px;opacity:.7}
+html.a11y-big .apbar{height:46px}html.a11y-big .api{width:34px;height:36px;font-size:19px;opacity:.9}
+html.a11y-hc .api{border:1.5px solid #000;opacity:1}
 html.a11y-read .aprev{font-family:Verdana,Tahoma,"Segoe UI",sans-serif;letter-spacing:.04em;word-spacing:.12em;line-height:1.85}
 html.a11y-hc .aprev{border:2px solid #000;color:#000;box-shadow:none}

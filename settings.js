@@ -290,11 +290,11 @@ window.addEventListener('focus', () => { load(); aiLoad(); });
 
 /* ---------- accessibility ---------- */
 let A = null;
-const acc = () => Object.assign({ size: 100, contrast: false, read: false, motion: null, focus: true, big: false, sr: true }, A || {});
+const acc = () => Object.assign({ size: 100, contrast: false, read: false, motion: false, focus: false, big: false, sr: false }, A || {});
 function accFill() {
-  const a = acc(), motion = a.motion === null ? !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) : a.motion;
+  const a = acc();
   $$('[data-asz]').forEach(b => { const on = Number(b.dataset.asz) === a.size; b.classList.toggle('on', on); b.setAttribute('aria-checked', on); });
-  $$('[data-acc]').forEach(c => { c.checked = c.dataset.acc === 'motion' ? motion : !!a[c.dataset.acc]; });
+  $$('[data-acc]').forEach(c => { c.checked = !!a[c.dataset.acc]; });
 }
 async function accLoad() { try { A = await api.accessGet(); } catch (e) { A = null; } accFill(); }
 async function accSave(p) { A = await api.accessSet(p); accFill(); }

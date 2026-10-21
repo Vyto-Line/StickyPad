@@ -14,20 +14,21 @@ css = lambda pg, sel, prop: pg.evaluate("getComputedStyle(document.querySelector
 with sync_playwright() as p:
     b = p.chromium.launch()
     # defaults: only the focus outline is on
-    pg = page(b, 'settings.html'); ok(cls(pg) == ['a11y-focus'], 'by default only the keyboard focus outline is on: %s' % cls(pg))
+    pg = page(b, 'settings.html'); ok(cls(pg) == [], 'by default every option is off: %s' % cls(pg))
     # the settings tab
     pg.click('.hsub[data-cat=access]'); pg.wait_for_timeout(200)
     ok(pg.is_visible('#cat-access') and pg.locator('#cat-access .toggle').count() == 6 and pg.locator('[data-asz]').count() == 4, 'the Accessibility tab shows the sizes and six switches')
-    ok(pg.eval_on_selector('[data-asz="100"]', 'e=>e.classList.contains("on")') and pg.is_checked('#aFocus') and pg.is_checked('#aSr') and not pg.is_checked('#aContrast'), 'it shows what is on now')
+    ok(pg.eval_on_selector('[data-asz="100"]', 'e=>e.classList.contains("on")') and pg.locator('#cat-access .toggle:checked').count() == 0, 'every switch starts off')
     pg.click('[data-asz="130"]'); pg.wait_for_timeout(200)
     ok(pg.evaluate("__S.zoom") == 1.3, 'a size changes the zoom of this window (%s)' % pg.evaluate("__S.zoom"))
-    pg.check('#aContrast'); pg.check('#aRead'); pg.check('#aMotion'); pg.check('#aBig'); pg.uncheck('#aFocus'); pg.wait_for_timeout(200)
-    ok(cls(pg) == ['a11y-big', 'a11y-hc', 'a11y-motion', 'a11y-read'], 'the switches set the classes: %s' % cls(pg))
+    ph = float(css(pg, '.apbar', 'height').replace('px', '')); pg.check('#aContrast'); pg.check('#aRead'); pg.check('#aMotion'); pg.check('#aBig'); pg.check('#aFocus'); pg.check('#aSr'); pg.uncheck('#aSr'); pg.wait_for_timeout(200)
+    pb = float(css(pg, '.apbar', 'height').replace('px', '')); ok(ph == 32 and pb >= 46 and float(css(pg, '.api', 'width').replace('px', '')) >= 34, 'the preview shows bigger buttons: bar %d -> %d px' % (ph, pb))
+    ok(cls(pg) == ['a11y-big', 'a11y-focus', 'a11y-hc', 'a11y-motion', 'a11y-read'], 'the switches set the classes: %s' % cls(pg))
     ok(css(pg, 'body', 'color') == 'rgb(0, 0, 0)', 'high contrast makes the text pure black (%s)' % css(pg, 'body', 'color'))
     ok(css(pg, '.aprev', 'letterSpacing') != 'normal', 'the preview shows the wider spacing')
     pg.screenshot(path=os.path.join(OUT, 'access_settings.png'))
     calls = pg.evaluate("__S.calls.filter(c=>c[0]=='accessSet').map(c=>c[1])")
-    ok({'size': 130} in calls and {'contrast': True} in calls and {'motion': True} in calls and {'focus': False} in calls, 'every change is sent to the app: %s' % calls)
+    ok({'size': 130} in calls and {'contrast': True} in calls and {'motion': True} in calls and {'focus': True} in calls, 'every change is sent to the app: %s' % calls)
     ok(not pg.errs, 'no errors %s' % pg.errs[:1])
     # a change from another window arrives
     pg.evaluate("__S.fireAccess && __S.fireAccess({size:150})")
@@ -45,11 +46,10 @@ with sync_playwright() as p:
     # screen reader line
     pa.evaluate("StickyAccess.announce('The AI answered. Hello')"); pa.wait_for_timeout(200)
     ok(pa.evaluate("document.querySelector('#a11yLive').textContent") == 'The AI answered. Hello' and pa.evaluate("document.querySelector('#a11yLive').getAttribute('aria-live')") == 'polite', 'announcements go to a polite live region')
-    pq = page(b, 'all.html', "window.__ACCESS={sr:false}"); pq.evaluate("StickyAccess.announce('x')"); pq.wait_for_timeout(150)
-    ok(pq.evaluate("!document.querySelector('#a11yLive')"), 'announcements are silent when switched off')
-    # reduced motion also follows Windows when the switch was never touched
+    pq = page(b, 'all.html'); pq.evaluate("StickyAccess.announce('x')"); pq.wait_for_timeout(150)
+    ok(pq.evaluate("!document.querySelector('#a11yLive')"), 'announcements are off by default')
+    # reduce motion is only on when you switch it on (Windows' own setting does not turn it on behind your back)
     pm = b.new_page(viewport={'width': 600, 'height': 500}, reduced_motion='reduce'); pm.add_init_script(STUB); pm.goto('file://' + ROOT + 'settings.html'); pm.wait_for_timeout(400)
-    ok('a11y-motion' in cls(pm), 'reduce motion follows Windows by default')
-    pm.click('.hsub[data-cat=access]'); ok(pm.is_checked('#aMotion'), '... and the switch shows it')
+    ok('a11y-motion' not in cls(pm), 'reduce motion stays off until you switch it on')
     b.close()
 print('FAILS:', fails); sys.exit(1 if fails else 0)

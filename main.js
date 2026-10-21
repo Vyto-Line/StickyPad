@@ -73,7 +73,7 @@ const DEFAULT_SETTINGS = {
   hideTaskbar: true, snap: true, launch: 'notes', splash: true, name: '', lang: 'en', theme: 'classic',
   snapDistance: 10, defaultSize: 16, trashDays: 30, shortcuts: true, keys: {}, chatHistory: true, autoBackup: true, lastBackup: 0, autoUpdate: true, whatsNew: true, seenVersion: '',
   ai: { provider: 'off', model: '', url: 'http://localhost:11434', keyEnc: '', keepAlive: '5m' },
-  access: { size: 100, contrast: false, read: false, motion: null, focus: true, big: false, sr: true }   // Settings > Accessibility (motion: null = follow Windows)
+  access: { size: 100, contrast: false, read: false, motion: false, focus: false, big: false, sr: false }   // Settings > Accessibility: everything is off until you switch it on
 };
 let notes = {}, trash = [], groups = [], settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
 let welcomeWin = null, quickWin = null, allWin = null, settingsWin = null, tray = null, splashWin = null, whatsWin = null, whatsFrom = null, whatsMax = 3, memKey = null, chatWin = null, chatState = null;
@@ -1458,16 +1458,15 @@ const ACCESS_SIZES = [100, 115, 130, 150];
 function accessOf() {
   const d = DEFAULT_SETTINGS.access, a = settings.access && typeof settings.access === 'object' ? settings.access : {};
   return {
-    size: ACCESS_SIZES.includes(a.size) ? a.size : d.size, contrast: !!a.contrast, read: !!a.read, motion: typeof a.motion === 'boolean' ? a.motion : null,
-    focus: a.focus !== false, big: !!a.big, sr: a.sr !== false
+    size: ACCESS_SIZES.includes(a.size) ? a.size : d.size, contrast: !!a.contrast, read: !!a.read, motion: a.motion === true,
+    focus: a.focus === true, big: !!a.big, sr: a.sr === true
   };
 }
 function setAccess(p) {
   const a = accessOf();
   if (p && typeof p === 'object') {
     if (ACCESS_SIZES.includes(p.size)) a.size = p.size;
-    ['contrast', 'read', 'focus', 'big', 'sr'].forEach(k => { if (k in p) a[k] = !!p[k]; });
-    if ('motion' in p) a.motion = typeof p.motion === 'boolean' ? p.motion : null;
+    ['contrast', 'read', 'motion', 'focus', 'big', 'sr'].forEach(k => { if (k in p) a[k] = !!p[k]; });
   }
   settings.access = a; save();
   BrowserWindow.getAllWindows().forEach(w => { if (!w.isDestroyed()) w.webContents.send('access:changed', a); });
@@ -1596,7 +1595,7 @@ app.whenReady().then(async () => {
   // Only the very first launch (or a missing tray) creates a blank note; otherwise closed empty notes stay gone.
   if (!Object.keys(notes).length && (firstRun || !tray)) { const n = newNote(); notes[n.id] = n; }
   if (settings.shortcuts) registerShortcuts();
-  if (settings.splash && accessOf().motion !== true) await showSplash();   // no startup animation when motion is reduced
+  if (settings.splash && !accessOf().motion) await showSplash();   // no startup animation when motion is reduced
   openStartup();
   if (firstRun && !settings.welcomeSeen) setTimeout(() => { try { openWelcome(); } catch {} }, 600);   // a brand-new install gets a short tour
   const startFiles = convert.noteFileArgs(process.argv);   // StickyPad was started by double-clicking a .stickypad file

@@ -71,7 +71,7 @@
   }
   // comfort options for anyone who needs them: the same switches as Settings > Accessibility, applied straight away
   function comfortPicker(ex) {
-    let a = Object.assign({ size: 100, contrast: false, read: false, motion: null }, window.StickyAccess ? StickyAccess.get() : {});
+    let a = Object.assign({ size: 100, contrast: false, read: false, motion: false }, window.StickyAccess ? StickyAccess.get() : {});
     const set = p => { Object.assign(a, p); try { window.api.accessSet(p); } catch {} paint(); };
     const seg = document.createElement('div'); seg.className = 'seg'; seg.setAttribute('role', 'group'); seg.setAttribute('aria-label', 'Interface size');
     [100, 115, 130, 150].forEach(n => {
@@ -87,8 +87,7 @@
     const hint = document.createElement('div'); hint.className = 'hint'; hint.style.marginTop = '12px'; hint.textContent = 'More options in Settings › Accessibility, any time';
     function paint() {
       seg.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', Number(b.dataset.size) === a.size));
-      const still = a.motion === null ? !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) : a.motion;
-      rows.forEach(c => { c.checked = c.dataset.k === 'motion' ? still : !!a[c.dataset.k]; });
+      rows.forEach(c => { c.checked = !!a[c.dataset.k]; });
     }
     ex.append(seg, opts, hint); paint();
     try { window.api.accessGet().then(r => { if (r) { a = Object.assign(a, r); paint(); } }); } catch {}
