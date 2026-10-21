@@ -37,4 +37,4 @@ function fromStickyNotes(dbBuf, walBuf) {
   }
   return out;
 }
-module.exports = { fromKeep, fromStickyNotes, ticksToMs, COLORS };
+module.exports = { fromKeep, fromStickyNotes, ticksToMs, };

@@ -126,4 +126,4 @@ function runInstaller(file, spawnImpl = spawn) {
   });
 }
 
-module.exports = { RECOMMENDED, validName, status, pull, remove, findOllama, startOllama, waitUntilRunning, downloadInstaller, runInstaller, INSTALLER_URL, DEFAULT_URL };
+module.exports = { RECOMMENDED, validName, status, pull, remove, findOllama, startOllama, waitUntilRunning, downloadInstaller, runInstaller, DEFAULT_URL };

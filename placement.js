@@ -53,4 +53,4 @@ function growForPanel(bounds, workArea) {   // -> { bounds, grown } ; grown = fa
   if (x + width > workArea.x + workArea.width) x = Math.max(workArea.x, workArea.x + workArea.width - width);
   return { bounds: { ...bounds, x, width }, grown: width !== bounds.width };
 }
-module.exports = { growForPanel, DOCK_MIN, PANEL_W, place, comeHome, displayOf, reachable, clampTo, area };
+module.exports = { growForPanel, DOCK_MIN, place, comeHome, displayOf, area };

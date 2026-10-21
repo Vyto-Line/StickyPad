@@ -124,4 +124,4 @@ function decodeText(buf, greek) {
   catch { return new TextDecoder(greek ? 'windows-1253' : 'windows-1252').decode(b); }
 }
 
-module.exports = { META_KEYS, IMPORT_EXT, decodeText, slug, toMarkdown, toText, fromMarkdown, uniqueNames, noteFileArgs, NOTE_EXT };
+module.exports = { IMPORT_EXT, decodeText, slug, toMarkdown, toText, fromMarkdown, uniqueNames, noteFileArgs, };

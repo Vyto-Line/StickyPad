@@ -67,4 +67,4 @@ function keepBroken(dir, file, now = new Date()) {
   } catch { return ''; }
 }
 
-module.exports = { sleep, readJson, countNotes, candidates, recover, keepLastGood, keepBroken };
+module.exports = { sleep, readJson, countNotes, recover, keepLastGood, keepBroken };

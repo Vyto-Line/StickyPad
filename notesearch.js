@@ -31,4 +31,4 @@ function build(notes, question, { maxNotes = 6, perNote = 1500, total = 7000 } =
   const titles = ranked.slice(0, 60).map(r => r.n.title || String(r.n.text || '').trim().split('\n')[0].slice(0, 40)).filter(Boolean);
   return { context: ctx.trim(), used, matched, titles, count: ranked.length };
 }
-module.exports = { build, words, stem, fold };
+module.exports = { build, words, fold };

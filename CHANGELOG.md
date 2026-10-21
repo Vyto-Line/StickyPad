@@ -1,7 +1,7 @@
 # Changelog
 
 ## 1.14.42
-- **Clean-up, no change you can see.** Removed code nothing used any more (one internal handler for the trash list, and three internal settings calls that Settings no longer needs). Fixed a small memory leak: the app remembered whether each note window was see-through even after the window closed, one tiny entry per note ever opened; now it forgets it on close.
+- **Clean-up, no change you can see.** Removed code nothing used any more (one internal handler for the trash list, and three internal settings calls that Settings no longer needs). Fixed a small memory leak: the app remembered whether each note window was see-through even after the window closed, one tiny entry per note ever opened; now it forgets it on close. Also removed an unused function and tidied 20 internal names that were shared between files for no reason.
 - Not tried on a real Windows PC yet.
 
 ## 1.14.41

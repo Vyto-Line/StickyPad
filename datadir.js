@@ -59,4 +59,4 @@ function keepConflict(dir, text, now = new Date()) {
 
 const mtimeOf = file => { try { return fs.statSync(file).mtimeMs; } catch { return 0; } };
 
-module.exports = { resolve, pointerDir, writeAtomic, setLocation, resetLocation, keepConflict, mtimeOf, POINTER };
+module.exports = { resolve, pointerDir, writeAtomic, setLocation, resetLocation, keepConflict, mtimeOf, };

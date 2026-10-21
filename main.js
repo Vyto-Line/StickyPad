@@ -404,7 +404,6 @@ function openHome(section, arg) {
   homeWin.on('closed', () => { chatJobs.forEach(a => a.abort()); chatJobs.clear(); homeWin = null; homePage = ''; syncHome(); });
 }
 function openAll(tab) { openHome(tab === 'trash' ? 'trash' : 'notes'); }
-const openTrash = () => openAll('trash');
 const pingAll = () => {
   clearTimeout(allTimer);
   allTimer = setTimeout(() => { if (allWin && !allWin.isDestroyed()) allWin.webContents.send('all:changed'); }, 150);

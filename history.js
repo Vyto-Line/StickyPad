@@ -63,4 +63,4 @@ function pictureIds(dir) {
   return out;
 }
 
-module.exports = { LIMITS, read, add, list, get, remove, ids, pictureIds, shouldKeep, lastTime, textLen, hasStuff };
+module.exports = { read, add, list, get, remove, ids, pictureIds, shouldKeep, lastTime, hasStuff };
