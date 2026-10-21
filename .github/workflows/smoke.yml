@@ -1,0 +1,16 @@
+name: Electron smoke test
+on: workflow_dispatch
+jobs:
+  smoke:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm install
+      - name: Start the real app and report
+        shell: bash
+        run: npx electron tools/smoke.js 2>&1 | tee smoke.txt
+      - uses: actions/upload-artifact@v4
+        with: { name: smoke-report, path: smoke.txt }
