@@ -14,6 +14,7 @@
     searchIds: async q => (S.all ? S.all.notes : [{ id: 'n1', title: 'Shopping', text: 'milk, eggs' }]).filter(n => (n.full || n.title + ' ' + n.text).toLowerCase().includes(String(q).toLowerCase())).map(n => n.id),
     searchQuery: async q => { S.calls.push(['searchQuery', q]); return window.__RESULTS ? window.__RESULTS(q) : []; },
     notePrint: async () => { S.calls.push(['notePrint']); return { ok: true }; },
+    allPrint: async (ids, o) => { S.calls.push(['allPrint', ids, o]); return window.__PRINT ? window.__PRINT(ids, o) : { ok: true, skipped: 0 }; },
     allTrash: async id => { S.calls.push(['allTrash', id]); return true; },
     trashRestore: async id => { S.calls.push(['trashRestore', id]); return true; },
     searchShow: async id => { S.calls.push(['searchShow', id]); return true; },

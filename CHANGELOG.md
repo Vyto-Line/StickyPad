@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.14.48
+- **Print several notes in one go.** In Home, press **Select notes to print**, then click the notes in the order you want them: each gets a number. Tick **Each note on its own page** if you want that, otherwise the notes follow one another on the same page (a thin line between them) and a new page starts only when one is full. Press **Print…** to open the Windows print window. Locked notes cannot be chosen. Esc or Cancel leaves select mode.
+- Not tried on a real Windows PC yet. Printing needs a try with a printer or "Microsoft Print to PDF".
+
 ## 1.14.47
 - **Home, notes and the tour can no longer stay hidden at start-up.** A hidden window waited for one signal ("ready to show") before appearing, and on some PCs that signal does not come: the notes appeared but the Home window did not. Every window now appears at the first of three signals (ready to show, page loaded, or 1.5 s), and at start-up it is raised to the front twice (right away and 0.4 s later). If the first signal was missing, the performance log says so (a `WINDOW ... was shown by` line), which tells me what Windows is doing on your PC.
 - Not tried on a real Windows PC yet.

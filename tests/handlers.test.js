@@ -31,6 +31,11 @@ const H = require('./fake-electron');
   await h['note:lock'](pr.e, 'longpass');
   assert.deepStrictEqual(await h['note:print'](pr.e), { ok: false, error: 'Unlock the note first.' });
   await h['note:removeLock'](pr.e, 'longpass');
+  assert.deepStrictEqual(await h['all:print']({}, [], {}), { ok: false, skipped: 0, error: 'Choose at least one note.' }, 'nothing chosen');
+  await h['note:lock'](pr.e, 'longpass');
+  const pm = await h['all:print']({}, [pr.id, 'nope', pr.id], { newPage: true });
+  assert.ok(pm.ok === false && pm.skipped === 1 && /Locked/.test(pm.error), 'a locked note is skipped, unknown ids ignored: ' + JSON.stringify(pm));
+  await h['note:removeLock'](pr.e, 'longpass');
 
   // ---- groups: new, rename, move, delete frees the notes ----
   assert.strictEqual(await h['grp:new']({}, '   '), null, 'empty name refused');

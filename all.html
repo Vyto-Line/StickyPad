@@ -30,6 +30,13 @@
     <div class="links">
       <button id="showFolder" class="link">＋ New folder</button>
       <button id="tidy" class="link" title="Arrange open notes in rows, folder by folder">Tidy up notes</button>
+      <button id="selectBtn" class="link" title="Choose several notes and print them in one go">Select notes to print</button>
+    </div>
+    <div class="bar" id="printBar" hidden>
+      <span id="selInfo" class="muted" role="status" aria-live="polite"></span>
+      <label class="chk"><input id="newPage" type="checkbox"> Each note on its own page</label>
+      <button id="printGo" class="btn primary" disabled>Print…</button>
+      <button id="selDone" class="btn">Cancel</button>
     </div>
     <div class="bar" id="folderRow" hidden>
       <input id="fname" class="field" type="text" maxlength="40" placeholder="Folder name" aria-label="New folder name" autocomplete="off" spellcheck="false">

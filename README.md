@@ -114,6 +114,9 @@ Notes of hundreds of thousands of lines open in a fraction of a second and type 
 ### If something is slow or wrong
 *Settings > About* opens three logs: the **performance log** (a window that took more than half a second, a freeze over 0.3 s, a slow save), the **update log** and the **AI log** (*Settings > AI*, what the model answered or why it did not). They hold only times, sizes and error text, never your notes.
 
+### Printing
+Press **Ctrl+P** in a note to print it. To print several notes together, press **Select notes to print** in Home, click the notes in the order you want, and press **Print…** (each note on its own page, or one after another on the same page). Locked notes are not printed.
+
 ### Several screens
 StickyPad remembers which screen each note is on. Unplug a monitor and its notes move to your main screen; plug it back in and they return to where they were.
 

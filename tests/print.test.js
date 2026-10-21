@@ -8,3 +8,13 @@ assert.ok(h.includes('background:#fff') && h.includes('@page'), 'plain black on 
 assert.ok(!P.buildHtml('', [], '', '').includes('<h1>'), 'no title, no heading');
 assert.ok(P.buildHtml(null, null).includes('<body>'), 'bad input does not throw');
 console.log('print ok');
+// several notes in one page
+const items = [{ title: 'First', blocks: [{ t: 'text', v: 'one' }], font: 'Georgia' }, { title: 'Second <b>', blocks: [{ t: 'check', v: 'milk', done: false }], font: '' }, null];
+const same = P.buildMany(items, 'file:///i/', { newPage: false }), own = P.buildMany(items, 'file:///i/', { newPage: true });
+assert.ok(same.indexOf('First') < same.indexOf('Second &lt;b&gt;'), 'notes are printed in the order given');
+assert.strictEqual((same.match(/<section class="nt"/g) || []).length, 3, 'one section per note (a bad entry is an empty section, not a crash)');
+assert.ok(same.includes('border-top') && !same.includes('break-before:page'), 'same page: a thin line between notes');
+assert.ok(own.includes('break-before:page') && !own.includes('border-top'), 'own page: each note starts a new page');
+assert.ok(same.includes('font-family:&quot;Georgia&quot;'), 'each note keeps its font');
+assert.ok(P.buildMany(null).includes('<body>'), 'bad input does not throw');
+console.log('print many ok');

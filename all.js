@@ -1,5 +1,6 @@
 const $ = s => document.querySelector(s);
 const isDark = hex => (window.StickyThemes ? window.StickyThemes.wantsLightText(hex) : (() => { const n = parseInt(hex.slice(1), 16); return (0.299 * (n >> 16 & 255) + 0.587 * (n >> 8 & 255) + 0.114 * (n & 255)) / 255 < 0.5; })());
+let selecting = false, sel = [], printMsg = '';   // "Select notes to print": sel is the notes in the order they were chosen
 let data = { groups: [], notes: [], trash: [], greeting: 'Hello', emoji: '', prefs: {} };
 let view = new URLSearchParams(location.search).get('tab') === 'trash' ? 'trash' : 'notes';
 let folder = '*';   // which folder chip is chosen: '*' all, a folder id, or '-' for notes without a folder
@@ -29,7 +30,17 @@ function card(n) {
   [n.locked ? '🔒 locked' : '', n.pinned ? '📌 pinned' : '', n.images ? '📷 ' + n.images : '', n.rolled ? 'rolled up' : '', n.open ? '' : 'closed'].filter(Boolean)
     .forEach(x => { const c = document.createElement('span'); c.className = 'chip'; c.textContent = x; badges.appendChild(c); });
   b.append(t, s, badges);
-  b.onclick = () => api.allShow(n.id);
+  b.onclick = () => {
+    if (!selecting) { api.allShow(n.id); return; }
+    if (n.locked) return;   // a locked note cannot be printed
+    const k = sel.indexOf(n.id); if (k >= 0) sel.splice(k, 1); else sel.push(n.id);
+    draw();
+  };
+  if (selecting) {
+    b.draggable = false; b.setAttribute('aria-pressed', sel.includes(n.id));
+    if (n.locked) b.classList.add('nosel');
+    if (sel.includes(n.id)) { b.classList.add('picked'); const nb = document.createElement('span'); nb.className = 'pick'; nb.textContent = sel.indexOf(n.id) + 1; nb.setAttribute('aria-label', 'Number ' + (sel.indexOf(n.id) + 1) + ' to print'); b.appendChild(nb); }
+  }
   b.oncontextmenu = e => { e.preventDefault(); api.allContext(n.id); };
   b.ondragstart = e => { e.dataTransfer.setData('text/plain', n.id); e.dataTransfer.effectAllowed = 'move'; b.classList.add('dragging'); dragKind = 'note'; };
   b.ondragend = () => { b.classList.remove('dragging'); dragKind = null; };
@@ -103,7 +114,12 @@ function draw() {
   $('#tabNotes').classList.toggle('on', !inTrash); $('#tabTrash').classList.toggle('on', inTrash);
   $('#tabNotes').setAttribute('aria-selected', !inTrash); $('#tabTrash').setAttribute('aria-selected', inTrash);
   $('#trashN').textContent = data.trash.length || '';
+  if (inTrash && selecting) { selecting = false; sel = []; }
   $('#notesBar').hidden = inTrash; $('#trashBar').hidden = !inTrash;
+  $('#printBar').hidden = !selecting; $('#selectBtn').hidden = selecting;
+  sel = sel.filter(id => data.notes.some(x => x.id === id));   // a note that was deleted meanwhile drops out
+  $('#printGo').disabled = !sel.length;
+  if (!printMsg) $('#selInfo').textContent = sel.length ? sel.length + (sel.length === 1 ? ' note' : ' notes') + ' chosen: printed in the order of the numbers' : 'Click the notes to print, in the order you want them.';
   $('#sections').hidden = inTrash; $('#trashList').hidden = !inTrash;
 
   const total = data.notes.length;
@@ -180,6 +196,16 @@ arm($('#emptyBtn'), 'Empty trash', 'Sure? Cannot undo', () => api.trashEmpty());
 $('#q').addEventListener('input', () => { draw(); runSearch(); });
 $('#new').onclick = () => api.allNew();
 $('#tidy').onclick = () => api.tidy();
+function selectMode(on) { selecting = on; sel = []; printMsg = ''; draw(); }
+$('#selectBtn').onclick = () => selectMode(true);
+$('#selDone').onclick = () => selectMode(false);
+$('#printGo').onclick = async () => {
+  if (!sel.length) return;
+  const r = await api.allPrint(sel.slice(), { newPage: $('#newPage').checked });
+  if (r && r.ok) { selectMode(false); return; }
+  if (r && r.cancelled) return;
+  printMsg = (r && r.error) || 'Printing did not start.'; $('#selInfo').textContent = printMsg; setTimeout(() => { printMsg = ''; draw(); }, 5000);
+};
 function folderRow(show) { $('#folderRow').hidden = !show; if (show) { $('#fname').value = ''; $('#fname').focus(); } }
 async function addFolder() { const v = $('#fname').value.trim(); if (!v) { $('#fname').focus(); return; } await api.grpNew(v); folderRow(false); refresh(); }
 $('#showFolder').onclick = () => folderRow($('#folderRow').hidden);
@@ -190,6 +216,7 @@ $('#chatBtn').onclick = () => api.openChat();
 $('#gear').onclick = () => api.openSettings();
 document.addEventListener('keydown', e => {
   if (e.ctrlKey && e.key.toLowerCase() === 'n') { e.preventDefault(); api.allNew(); }
+  if (e.key === 'Escape' && selecting && !e.target.closest('input')) selectMode(false);
 });
 api.onAllChanged(refresh);
 api.onAllTab(setView);

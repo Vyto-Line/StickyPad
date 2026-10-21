@@ -9,7 +9,7 @@ contextBridge.exposeInMainWorld('api', {
   saveImage: call('img:save'),
   info: call('app:info'),
   openAll: call('all:open'), tidy: call('all:tidy'),
-  allList: call('all:list'), allShow: call('all:show'), allContext: call('all:context'), allNew: call('all:new'), allTrash: call('all:trash'), allOpenGroup: call('all:openGroup'),
+  allList: call('all:list'), allShow: call('all:show'), allContext: call('all:context'), allNew: call('all:new'), allTrash: call('all:trash'), allPrint: call('all:print'), allOpenGroup: call('all:openGroup'),
   grpNew: call('grp:new'), grpUpdate: call('grp:update'), grpDelete: call('grp:delete'), grpMove: call('grp:move'),
   trashRestore: call('trash:restore'), trashPurge: call('trash:purge'), trashEmpty: call('trash:empty'),
   prefs: call('app:prefs'),

@@ -14,16 +14,18 @@
 - Print one note (Ctrl+P), Trash drag and drop, Home "+ Note" opens in front, shortcuts row removed from Accessibility.
 
 ## Next
-1. Print several notes at once, in a chosen order (select in Home, order, one print job).
+1. Electron upgrade (Alex agreed on 2026-10-22): read breaking changes, raise a few versions at a time, a test installer for each, Alex checks start-up, Ctrl+Alt+F, tour, printing, dragging, updates. Also match electron-builder / electron-updater.
 2. More tests (search, AI, update handlers).
 3. Home window speed-up: only if Alex has hundreds or thousands of notes.
 4. Alex's further ideas.
+
+(Print several notes at once: done in 1.14.48.)
 
 ## Done 2026-10-21/22 (v1.14.44 to v1.14.47)
 - Ctrl+Alt+F reliable (focus kept, cannot stay hidden); more actions in the search window; windows always appear and come to the front at start-up; "When StickyPad starts" works when started again from the tray.
 
 ## Set aside by Alex (only when he asks)
-- Split main.js and note.js; upgrade Electron 33.
+- Split main.js and note.js.
 
 ## Still wanted, no date
 - Test on a real Windows PC (WINDOWS_CHECKLIST.md). The performance and AI logs help here.

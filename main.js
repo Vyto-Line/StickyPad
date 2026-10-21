@@ -643,21 +643,38 @@ const noteBlocks = n => blocksOf(n);
 const isOpen = n => !n.lock || sessions.has(n.id);
 
 /* ---------- print one note (the Windows print window opens; nothing is sent until you press Print) ---------- */
-async function printNote(n) {
-  if (!n) return { ok: false };
-  if (!isOpen(n)) return { ok: false, error: 'Unlock the note first.' };
-  if (!hasContent(n)) return { ok: false, error: 'This note is empty.' };
-  const file = path.join(app.getPath('userData'), 'print-' + n.id + '.html');
+async function printHtml(html, tag) {   // opens the Windows print window for a finished page
+  const file = path.join(app.getPath('userData'), 'print-' + tag + '.html');
   let w = null;
   try {
-    fs.writeFileSync(file, printer.buildHtml(n.title, blocksOf(n), imgBase(), n.font));
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, html);
     w = new BrowserWindow({ show: false, webPreferences: { sandbox: true, contextIsolation: true, nodeIntegration: false } });
     await w.loadFile(file);
     return await new Promise(res => w.webContents.print({ silent: false, printBackground: false }, (ok, why) => res({ ok: !!ok, cancelled: !ok && /cancel/i.test(String(why || '')), error: !ok && !/cancel/i.test(String(why || '')) ? 'Printing did not start.' : undefined })));
   } catch (err) { return { ok: false, error: 'Printing did not start.' }; }
   finally { try { if (w && !w.isDestroyed()) w.destroy(); } catch {} try { fs.unlinkSync(file); } catch {} }
 }
+async function printNote(n) {
+  if (!n) return { ok: false };
+  if (!isOpen(n)) return { ok: false, error: 'Unlock the note first.' };
+  if (!hasContent(n)) return { ok: false, error: 'This note is empty.' };
+  return printHtml(printer.buildHtml(n.title, blocksOf(n), imgBase(), n.font), n.id);
+}
+// Several notes in one print job, in the order of ids. Locked and empty notes are skipped (and counted).
+async function printNotes(ids, newPage) {
+  const list = []; let skipped = 0;
+  for (const id of [...new Set(Array.isArray(ids) ? ids.filter(x => typeof x === 'string') : [])].slice(0, 300)) {
+    const n = notes[id]; if (!n) continue;
+    if (!isOpen(n) || !hasContent(n)) { skipped++; continue; }
+    list.push({ title: n.title, blocks: blocksOf(n), font: n.font });
+  }
+  if (!list.length) return { ok: false, skipped, error: skipped ? 'Locked and empty notes cannot be printed.' : 'Choose at least one note.' };
+  const r = await printHtml(printer.buildMany(list, imgBase(), { newPage: !!newPage }), 'many');
+  return { ...r, skipped, count: list.length };
+}
 ipcMain.handle('note:print', e => printNote(notes[idOf(e)]));
+ipcMain.handle('all:print', (e, ids, opts) => printNotes(ids, opts && opts.newPage));
 ipcMain.handle('note:export', async e => {
   const n = notes[idOf(e)]; if (!n) return { ok: false };
   if (!isOpen(n)) return { ok: false, error: 'Unlock the note first.' };
