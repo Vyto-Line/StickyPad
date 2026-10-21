@@ -10,15 +10,15 @@ with sync_playwright() as p:
     ok(q.locator('.kbtn').count()==12,'12 shortcuts listed (%s)'%q.locator('.kbtn').count())
     ok(q.inner_text('[data-key=g_clip]')=='Ctrl + Alt + V','clipboard shortcut default shown (%s)'%q.inner_text('[data-key=g_clip]'))
     q.click('[data-key=g_new]'); ok('Press the keys' in q.inner_text('[data-key=g_new]'),'click starts recording')
-    q.keyboard.press('Control+Alt+Q'); q.wait_for_timeout(200)
-    ok(q.inner_text('[data-key=g_new]')=='Ctrl + Alt + Q','new shortcut is shown (%s)'%q.inner_text('[data-key=g_new]'))
+    q.keyboard.press('Control+Alt+X'); q.wait_for_timeout(200)
+    ok(q.inner_text('[data-key=g_new]')=='Ctrl + Alt + X','new shortcut is shown (%s)'%q.inner_text('[data-key=g_new]'))
     sent=[c for c in q.evaluate('__S.calls') if c[0]=='settingsSet' and 'keys' in c[1]]
-    ok(sent and sent[-1][1]['keys']['g_new']=='Ctrl+Alt+Q','saved to the app')
+    ok(sent and sent[-1][1]['keys']['g_new']=='Ctrl+Alt+X','saved to the app')
     ok(q.is_visible('[data-reset=g_new]'),'Reset appears for a changed shortcut')
     # a clash is refused
-    q.click('[data-key=g_all]'); q.keyboard.press('Control+Alt+Q'); q.wait_for_timeout(100)
+    q.click('[data-key=g_all]'); q.keyboard.press('Control+Alt+X'); q.wait_for_timeout(100)
     ok(q.is_visible('#keysMsg') and 'already used' in q.inner_text('#keysMsg'),'clash is explained (%s)'%q.inner_text('#keysMsg'))
-    q.keyboard.press('Escape'); q.wait_for_timeout(100); ok(q.inner_text('[data-key=g_all]')=='Ctrl + Alt + A','Esc cancels, shortcut unchanged')
+    q.keyboard.press('Escape'); q.wait_for_timeout(100); ok(q.inner_text('[data-key=g_all]')=='Ctrl + Alt + Q','Esc cancels, shortcut unchanged')
     # modifier alone does nothing; a weak shortcut is refused
     q.click('[data-key=g_all]'); q.keyboard.press('Control'); q.wait_for_timeout(50); ok('Press the keys' in q.inner_text('[data-key=g_all]'),'a lone Ctrl keeps waiting')
     q.keyboard.press('Shift+K'); q.wait_for_timeout(100); ok('Use Ctrl or Alt' in q.inner_text('#keysMsg'),'Shift+K is refused (%s)'%q.inner_text('#keysMsg')); q.keyboard.press('Escape')
@@ -30,7 +30,7 @@ with sync_playwright() as p:
     q.click('[data-key=n_todo]'); q.keyboard.press('Alt+T'); q.wait_for_timeout(200); q.click('#keysReset'); q.wait_for_timeout(200)
     ok(q.inner_text('[data-key=n_todo]')=='Ctrl + Shift + C','Reset all')
     # warning for a shortcut Windows refused
-    q.evaluate("__S.set.keysFailed=['g_chat']"); q.click('[data-key=g_new]'); q.keyboard.press('Control+Alt+Q'); q.wait_for_timeout(200)
+    q.evaluate("__S.set.keysFailed=['g_chat']"); q.click('[data-key=g_new]'); q.keyboard.press('Control+Alt+X'); q.wait_for_timeout(200)
     ok(q.is_visible('#keysWarn') and 'AI chat' in q.inner_text('#keysWarn'),'warns about a shortcut another program holds')
     ok(not errs,'no errors %s'%errs); b.close()
 print('FAILS:',fails); import sys; sys.exit(1 if fails else 0)

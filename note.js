@@ -535,6 +535,7 @@ function findPaint() {
 function findCount() {
   const q = $('#findIn').value;
   $('#findCnt').textContent = !q ? '' : !finds.length ? 'No match' : (findAt + 1).toLocaleString() + ' / ' + finds.length.toLocaleString() + (finds.length >= FIND_MAX ? '+' : '');
+  if (q && window.StickyAccess) StickyAccess.announce($('#findCnt').textContent === 'No match' ? 'No match' : 'Match ' + $('#findCnt').textContent.replace('/', 'of'));
 }
 function findGo(i, scroll = true) {
   if (!finds.length) { findAt = -1; findPaint(); findCount(); return; }
@@ -945,10 +946,11 @@ function editDone(stopped) {
   let s = edit.acc; if (!edit.cont) s = s.replace(/^\s+/, ''); else s = s.replace(/^\s+/, '').replace(/\s+$/, '');
   s = s.replace(/\s+$/, ''); if (edit.inTodo) s = s.replace(/\s*[\r\n]+\s*/g, ' ');
   edit.node.nodeValue = edit.lead + s + edit.trail;
+  if (window.StickyAccess) StickyAccess.announce('The AI has finished editing the note.');
   editEnd(); ed.focus(); mark(); queue(); commitNow(); saveNow();
   editBarShow('done', 'Done');
 }
-function editFail(msg) { editRevert(); aiShow('Something went wrong', msg, [['Close', aiClose, true]]); }
+function editFail(msg) { if (window.StickyAccess) StickyAccess.announce(msg); editRevert(); aiShow('Something went wrong', msg, [['Close', aiClose, true]]); }
 api.onAiEvent(m => {
   if (!edit || m.id !== edit.id) return;
   if (m.type === 'chunk') { edit.acc += m.text; editPaint(); }

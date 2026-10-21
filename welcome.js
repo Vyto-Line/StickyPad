@@ -23,6 +23,7 @@
   const STEPS = () => [
     { scene: 0, title: name ? 'Welcome, ' + name + '!' : 'Welcome to StickyPad', text: ['Colourful sticky notes that live on your desktop. **Everything stays on your PC.**', 'Press {g_new} anywhere in Windows to make a new note.'], name: true },
     { scene: -1, wide: true, title: 'Pick your look', text: ['The whole app changes as you click.'], look: true },
+    { scene: -1, wide: true, title: 'Make it comfortable', text: ['Bigger text, stronger contrast, calmer screens. **Switch on anything that helps you:** it applies straight away.'], comfort: true },
     { scene: 1, title: 'Find anything', text: ['{g_all} opens **Home** with all your notes, folders and the trash.', '{g_find} searches inside **every note** (capitals and accents do not matter).', 'Drag a .stickypad, .md or .txt file onto any StickyPad window to add it as a note.'] },
     { scene: 3, title: 'An AI helper, if you want one', text: ['Ask questions about your notes or let the AI edit a note. It works with **free Ollama on your own PC** (nothing leaves it), or with Claude if you choose.', 'It stays **off** until you set it up.'], button: { label: 'Set up the AI…', go: 'settings', section: 'ai' } },
     { scene: 4, title: 'Your notes are safe', text: ['A backup is made **automatically every day**. If something ever goes wrong: **Settings › Data & backup › Restore**.', '**Export** a note as a .stickypad file to move it to another PC, with its pictures and look.'], last: true }
@@ -68,6 +69,31 @@
     window.addEventListener('sp-theme', paintSwatches); stopLook = () => window.removeEventListener('sp-theme', paintSwatches);   // light/dark changed: the swatches follow
     return box.querySelector('[aria-pressed=true]') || box.firstChild;
   }
+  // comfort options for anyone who needs them: the same switches as Settings > Accessibility, applied straight away
+  function comfortPicker(ex) {
+    let a = Object.assign({ size: 100, contrast: false, read: false, motion: null }, window.StickyAccess ? StickyAccess.get() : {});
+    const set = p => { Object.assign(a, p); try { window.api.accessSet(p); } catch {} paint(); };
+    const seg = document.createElement('div'); seg.className = 'seg'; seg.setAttribute('role', 'group'); seg.setAttribute('aria-label', 'Interface size');
+    [100, 115, 130, 150].forEach(n => {
+      const b = document.createElement('button'); b.type = 'button'; b.textContent = n + '%'; b.dataset.size = n; b.onclick = () => set({ size: n }); seg.appendChild(b);
+    });
+    const opts = document.createElement('div'); opts.className = 'opts';
+    const rows = [['contrast', 'High contrast', 'Stronger text and borders'], ['read', 'Easier-to-read notes', 'Wider spacing and a clearer font'], ['motion', 'Reduce motion', 'No animations']].map(([k, label, sub]) => {
+      const l = document.createElement('label'); l.className = 'opt';
+      const c = document.createElement('input'); c.type = 'checkbox'; c.dataset.k = k; c.onchange = () => set({ [k]: c.checked });
+      const t = document.createElement('span'); t.innerHTML = '<b></b><i></i>'; t.firstChild.textContent = label; t.lastChild.textContent = sub;
+      l.append(c, t); opts.appendChild(l); return c;
+    });
+    const hint = document.createElement('div'); hint.className = 'hint'; hint.style.marginTop = '12px'; hint.textContent = 'More options in Settings › Accessibility, any time';
+    function paint() {
+      seg.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', Number(b.dataset.size) === a.size));
+      const still = a.motion === null ? !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) : a.motion;
+      rows.forEach(c => { c.checked = c.dataset.k === 'motion' ? still : !!a[c.dataset.k]; });
+    }
+    ex.append(seg, opts, hint); paint();
+    try { window.api.accessGet().then(r => { if (r) { a = Object.assign(a, r); paint(); } }); } catch {}
+    return seg.querySelector('[aria-pressed=true]') || seg.firstChild;
+  }
   function draw() {
     const steps = STEPS(), s = steps[at];
     document.querySelectorAll('#scene .sc').forEach(v => v.classList.toggle('on', Number(v.dataset.s) === s.scene)); $('#scene').classList.toggle('none', s.scene < 0); $('#card').classList.toggle('wide', !!s.wide);   // showing a scene again restarts its animation
@@ -78,6 +104,7 @@
     let focusEl = null;
     if (s.name) focusEl = nameField(ex);
     if (s.look) focusEl = lookPicker(ex);
+    if (s.comfort) focusEl = comfortPicker(ex);
     if (s.button) { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = s.button.label; b.onclick = () => { if (saveT) { clearTimeout(saveT); saveT = null; try { window.api.prefs({ name }); } catch {} } window.api.welcomeClose({ go: s.button.go, section: s.button.section }); }; ex.appendChild(b); }
     $('#back').hidden = at === 0; $('#skip').hidden = !!s.last;
     $('#next').textContent = s.last ? 'Start with a note' : 'Next';

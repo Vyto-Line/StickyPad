@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.14.38
+- **A new Accessibility tab (Settings > Accessibility).** Seven options, all applied straight away to every open window:
+  - **Interface size** 100 / 115 / 130 / 150% for Home, Settings, the AI chat, search and the tour (notes keep their own text size; the search window grows with it);
+  - **High contrast**: pure black on white (or white on black in dark mode), solid colours and real borders, and black or white text in notes;
+  - **Easier-to-read notes**: a wide, familiar font (Verdana), more space between letters, words and lines;
+  - **Reduce motion**: no startup animation, no tour animations, no fading or sliding. Until you touch it, StickyPad follows the "Animation effects" setting of Windows;
+  - **Always show the keyboard focus**: a thick orange outline on whatever the keyboard is on (on by default);
+  - **Bigger buttons in notes**: a taller title bar and larger icons;
+  - **Screen reader announcements**: Narrator and NVDA are told when the AI has answered, the AI has finished editing a note, or Find reaches a match.
+- **The first-time tour has a new step, "Make it comfortable"**, with the size, high contrast, easier-to-read notes and reduce motion switches, so anyone who needs them can turn them on from the very start.
+- Not tried on a real Windows PC yet (the interface size uses the same zoom as Ctrl + plus in a browser).
+
 ## 1.14.37
 - **All notes now opens with Ctrl+Alt+Q.** Ctrl+Alt+A is a screenshot shortcut in several other programs, which then kept it for themselves and StickyPad never got it. If you changed the key yourself in Settings > Shortcuts, your choice is kept.
 - **The shortcut named in the sidebar and in the tray menu is always the real one.** The line at the bottom of the sidebar reads "Ctrl+Alt+Q opens this window from anywhere" (using whatever key you set), and the tray menu shows your current keys instead of fixed text.

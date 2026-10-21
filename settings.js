@@ -287,3 +287,18 @@ window.addEventListener('focus', () => { load(); aiLoad(); });
   const q = new URLSearchParams(location.search).get('section');
   showCat(q && document.getElementById('cat-' + q) ? q : 'general');
 })();
+
+/* ---------- accessibility ---------- */
+let A = null;
+const acc = () => Object.assign({ size: 100, contrast: false, read: false, motion: null, focus: true, big: false, sr: true }, A || {});
+function accFill() {
+  const a = acc(), motion = a.motion === null ? !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) : a.motion;
+  $$('[data-asz]').forEach(b => { const on = Number(b.dataset.asz) === a.size; b.classList.toggle('on', on); b.setAttribute('aria-checked', on); });
+  $$('[data-acc]').forEach(c => { c.checked = c.dataset.acc === 'motion' ? motion : !!a[c.dataset.acc]; });
+}
+async function accLoad() { try { A = await api.accessGet(); } catch (e) { A = null; } accFill(); }
+async function accSave(p) { A = await api.accessSet(p); accFill(); }
+$$('[data-asz]').forEach(b => { b.onclick = () => accSave({ size: Number(b.dataset.asz) }); });
+$$('[data-acc]').forEach(c => { c.onchange = () => accSave({ [c.dataset.acc]: c.checked }); });
+$('#aKeys').onclick = () => { $('#sq').value = ''; filter(''); showCat('shortcuts'); };
+accLoad();

@@ -1,7 +1,9 @@
-const { contextBridge, ipcRenderer, webUtils } = require('electron');
+const { contextBridge, ipcRenderer, webUtils, webFrame } = require('electron');
 const call = c => (...a) => ipcRenderer.invoke(c, ...a);
 contextBridge.exposeInMainWorld('api', {
   get: call('note:get'), remind: call('note:remind'), aiWarmup: call('ai:warmup'), noteExport: call('note:export'), wordsGet: call('words:get'), welcomeGet: call('welcome:get'), welcomeClose: call('welcome:close'), dropFiles: files => ipcRenderer.invoke('drop:import', Array.from(files || []).map(f => { try { return webUtils.getPathForFile(f); } catch { return ''; } })), searchQuery: call('search:query'), searchIds: call('search:ids'), searchShow: call('search:show'), searchClose: call('search:close'), searchOpen: call('search:open'), searchRun: call('search:run'), histList: call('hist:list'), histRestore: call('hist:restore'), update: call('note:update'), pin: call('note:pin'), roll: call('note:roll'),
+  accessGet: call('access:get'), accessSet: call('access:set'), onAccess: cb => ipcRenderer.on('access:changed', (e, a) => cb(a)),
+  setZoom: f => { try { webFrame.setZoomFactor(Math.min(2, Math.max(0.5, Number(f) || 1))); } catch (e) { /* zoom is a comfort, never an error */ } },
   newNote: call('note:new'), close: call('note:close'), remove: call('note:delete'),
   lock: call('note:lock'), unlock: call('note:unlock'), relock: call('note:relock'), removeLock: call('note:removeLock'),
   saveImage: call('img:save'),

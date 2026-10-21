@@ -1,0 +1,32 @@
+/* Accessibility options (see access.js). Classes on <html>: a11y-hc, a11y-read, a11y-focus, a11y-big, a11y-motion. */
+
+/* keyboard focus you cannot miss */
+html.a11y-focus :focus-visible{outline:3px solid #ff9f0a!important;outline-offset:2px!important;border-radius:4px}
+html.a11y-focus #ed:focus-visible{outline:none!important}   /* the text caret already shows where you are typing */
+
+/* reduced motion: no animation, no sliding or fading */
+html.a11y-motion *,html.a11y-motion *::before,html.a11y-motion *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+
+/* high contrast: solid colours, strong text, real borders */
+html.a11y-hc{--fg:#000!important;--mute:#000!important;--line:#000!important;--bg:#fff!important;--card:#fff!important;--hover:#e6e6e6!important;--accent:#0030c0!important;--on-accent:#fff!important;--danger:#a00000!important}
+html.a11y-hc[data-ui=dark]{--fg:#fff!important;--mute:#fff!important;--line:#fff!important;--bg:#000!important;--card:#000!important;--hover:#222!important;--accent:#ffd60a!important;--on-accent:#000!important;--danger:#ff6b6b!important}
+html.a11y-hc *{text-shadow:none!important;backdrop-filter:none!important}
+html.a11y-hc .row,html.a11y-hc .card,html.a11y-hc .btn,html.a11y-hc .field,html.a11y-hc .hitem,html.a11y-hc .search,html.a11y-hc .chip,html.a11y-hc button,html.a11y-hc input,html.a11y-hc select,html.a11y-hc textarea{border:2px solid var(--line)!important}
+html.a11y-hc .toggle{outline:2px solid var(--line)}
+html.a11y-hc .lbl span,html.a11y-hc .hint,html.a11y-hc .note{opacity:1!important;color:var(--fg)!important}
+/* notes: the note's own colour stays, its text becomes pure black (or white on a dark note) and the icons lose their dimming */
+html.a11y-hc #ed,html.a11y-hc #topic{color:#000!important}
+html.a11y-hc body.dark #ed,html.a11y-hc body.dark #topic{color:#fff!important}
+html.a11y-hc .ib{opacity:1!important;border:1.5px solid currentColor!important}
+html.a11y-hc header,html.a11y-hc body{border-color:#000!important}
+html.a11y-hc body.dark header,html.a11y-hc body.dark{border-color:#fff!important}
+
+/* easier-to-read notes: a wide, familiar font, more room between letters, words and lines */
+html.a11y-read #ed{font-family:Verdana,Tahoma,"Segoe UI",sans-serif!important;letter-spacing:.04em!important;word-spacing:.12em!important;line-height:1.85!important}
+html.a11y-read #topic{font-family:Verdana,Tahoma,"Segoe UI",sans-serif!important;letter-spacing:.03em!important}
+
+/* bigger buttons in a note */
+html.a11y-big header{height:46px!important}
+html.a11y-big .ib{width:34px!important;height:36px!important}
+html.a11y-big .ib svg.i{width:22px!important;height:22px!important}
+html.a11y-big #panel .btn,html.a11y-big #editbar .btn,html.a11y-big #editbar button{min-height:34px}

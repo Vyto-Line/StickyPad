@@ -107,7 +107,7 @@ api.onChatEvent(m => {
   if (m.type === 'chunk') { curText += m.text; paint(); return; }
   const r = curBubble; curBubble = null; curId = null; setBusy(false);
   if (m.type === 'error') {
-    r.b.classList.add('error'); r.b.textContent = m.error;
+    r.b.classList.add('error'); r.b.textContent = m.error; if (window.StickyAccess) StickyAccess.announce(m.error);
     const a = document.createElement('div'); a.className = 'acts';
     const retry = document.createElement('button'); retry.textContent = 'Retry';
     retry.onclick = () => { r.wrap.remove(); generate(); };
@@ -118,6 +118,7 @@ api.onChatEvent(m => {
   renderMd(r.b, curText); addActions(r.wrap, curText);
   if (curSources && curSources.length) { const s = document.createElement('div'); s.className = 'src'; s.textContent = 'Looked at: ' + curSources.join(' · '); r.wrap.appendChild(s); }
   messages.push({ role: 'assistant', content: curText }); persist();
+  if (window.StickyAccess) StickyAccess.announce('The AI answered. ' + curText.replace(/\s+/g, ' ').slice(0, 300));
 });
 
 function send() {

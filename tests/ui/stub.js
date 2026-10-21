@@ -1,5 +1,5 @@
 (() => {
-  const L = { ollama: [], ai: [], update: [], ui: [] };
+  const L = { ollama: [], ai: [], update: [], ui: [], acc: [] };
   const REC = [{name:'llama3.2:1b',label:'Llama 3.2 · 1B',size:'1.3 GB',note:'Fastest'},{name:'llama3.2:3b',label:'Llama 3.2 · 3B',size:'2.0 GB',note:'Recommended'},{name:'llama3.1:8b',label:'Llama 3.1 · 8B',size:'4.9 GB',note:'Best'}];
   const S = window.__S = { calls: [], editMode: 'ok', stop: false,
     ai: { provider: 'ollama', model: 'llama3.2', url: 'http://localhost:11434', hasKey: false, defaultModel: 'claude-haiku-5-5' },
@@ -42,6 +42,9 @@
       if (S.pullFail) { emit('ollama', { type: 'pull', name, state: 'error', error: 'disk full' }); return { ok: false, error: 'disk full' }; }
       S.ol.models.push({ name, size: 1.3e9 }); emit('ollama', { type: 'pull', name, state: 'done' }); return { ok: true };
     },
+    accessGet: async () => Object.assign({ size: 100, contrast: false, read: false, motion: null, focus: true, big: false, sr: true }, window.__ACCESS || {}),
+    accessSet: async p => { S.calls.push(['accessSet', p]); window.__ACCESS = Object.assign(window.__ACCESS || {}, p); L.acc.forEach(f => f(Object.assign({ size: 100, contrast: false, read: false, motion: null, focus: true, big: false, sr: true }, window.__ACCESS))); return window.__ACCESS; },
+    onAccess: cb => L.acc.push(cb), setZoom: f => { S.zoom = f; },
     uiTheme: async () => (S.uiTheme ? JSON.parse(JSON.stringify(S.uiTheme)) : null), onUiTheme: cb => L.ui.push(cb),
     grpMove: async (id, g) => { S.calls.push(['grpMove', id, g]); if (S.all) { const n = S.all.notes.find(x => x.id === id); if (n) n.group = g; } return true; },
     home: async (id, arg) => { S.calls.push(['home', id, arg]); return true; },
