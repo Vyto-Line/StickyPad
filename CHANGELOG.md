@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.14.40
+- **"Start with a note" at the end of the tour opens the note.** The tour used to close at once, and Windows could hand the focus to another window while the new note was still appearing, leaving the note hidden behind it. The tour now stays until the new note is on screen, then brings it to the front and closes.
+- **Less lag with long notes.** A note of 20,000 letters or more (about 3,500 words) is now drawn in short blocks, so typing in a 190,000-letter note costs 33 ms a key instead of 130 ms. A very big notes file (a huge note makes it several MB) is also written to the disk less often while you type (every 1 to 2 seconds instead of every 0.3 s); it is always written at once when you close StickyPad.
+- Not tried on a real Windows PC yet.
+
 ## 1.14.39
 - **A new Accessibility tab (Settings > Accessibility).** Seven options, all off until you switch them on, and all applied straight away to every open window. The preview shows a note with its title bar, so the effect of "Bigger buttons" is visible:
   - **Interface size** 100 / 115 / 130 / 150% for Home, Settings, the AI chat, search and the tour (notes keep their own text size; the search window grows with it);

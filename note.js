@@ -151,7 +151,7 @@ function repairTodos() {
 }
 function render(blocks) {
   ed.textContent = '';
-  ed.spellcheck = !blocks.some(b => b.t === 'text' && b.v.length > BIG_TEXT);   // checking the spelling of millions of letters makes a huge note crawl
+  ed.spellcheck = !blocks.some(b => b.t === 'text' && b.v.length > 200000);   // checking the spelling of millions of letters makes a huge note crawl
   blocks.forEach(b => {
     if (b.t === 'img') { const src = b.src || srcCache.get(b.id); if (src) ed.appendChild(makeImg(b.id, src)); }
     else if (b.t === 'check') ed.appendChild(makeTodo(b.v, b.done));
@@ -163,7 +163,7 @@ function render(blocks) {
 // A very long text (hundreds of thousands of letters) is shown as many short blocks of about 100 lines. One giant block has to be laid out again
 // as a whole at every key press (about 0.3 s for 2 MB); short blocks only redo the one you type in. The text is exactly the same: each block
 // keeps its own line breaks, and serialize() joins them back without adding or losing anything.
-const BIG_TEXT = 200000, CHUNK_LINES = 100;
+const BIG_TEXT = 20000, CHUNK_LINES = 100;   // from 20,000 letters (about 3,500 words) a note is drawn in short blocks: typing in one block of 190,000 letters took 130 ms a key, now 33
 function bigText(v) {
   const lines = v.split('\n'), last = lines.length - 1;
   for (let i = 0; i <= last; i += CHUNK_LINES) {

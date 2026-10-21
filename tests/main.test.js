@@ -222,7 +222,9 @@ const H = require('./fake-electron');
   assert.deepStrictEqual(await h['search:query']({}, 'q'.repeat(5000)), [], 'a huge query is just cut, no crash');
   { const wg = await h['welcome:get']({}); assert.ok(wg.keys && typeof wg.name === 'string' && wg.fresh === true, 'the welcome tour knows it is a first run: ' + JSON.stringify(wg).slice(0, 80));
     await h['app:prefs']({}, { name: '  Alex  ' }); assert.strictEqual((await h['welcome:get']({})).name, 'Alex', 'the name from the tour is kept (trimmed)');
-    await h['welcome:close']({}, {}); assert.strictEqual((await h['welcome:get']({})).fresh, false, 'after the tour it is no longer a first run'); }
+    const nb = (await h['all:list']({})).notes.length, wb = wins.length;
+    await h['welcome:close']({}, { go: 'note' }); assert.strictEqual((await h['welcome:get']({})).fresh, false, 'after the tour it is no longer a first run');
+    assert.strictEqual((await h['all:list']({})).notes.length, nb + 1, '"Start with a note" makes a new note'); assert.strictEqual(wins.length, wb + 1, '... and opens its window'); }
   { const cr = await h['search:query']({}, 'dark'); assert.ok(cr[0].cmd === 'dark' && cr[0].title[0].t === 'Dark mode', 'an action comes first'); const co = await h['search:query']({}, '>'); assert.ok(co.length >= 10 && co.every(r => r.cmd), 'only actions with ">"');
     assert.strictEqual(await h['search:run']({}, 'nope'), false, 'unknown action refused'); assert.strictEqual(await h['search:run']({}, 'light'), true); await new Promise(r => setTimeout(r, 150)); }
   assert.strictEqual(await h['search:show']({}, 'nope'), false);

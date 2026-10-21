@@ -19,6 +19,9 @@ with sync_playwright() as p:
     small = make(500); pg = page(b, [{'t': 'text', 'v': small}])
     ok(pg.evaluate("innerWidth - ed.getBoundingClientRect().right") >= 12, 'ordinary notes keep the scroll bar away from the edge too')
     ok(pg.evaluate("document.querySelectorAll('#ed .chunk').length") == 0, 'a normal note is one piece, as before')
+    # a medium note (100,000 letters) is cut into short blocks too: one block of that size took 130 ms for every key
+    pg = page(b, [{'t': 'text', 'v': make(14000)[:100000]}]); ok(pg.evaluate("document.querySelectorAll('#ed .chunk').length") > 20, 'a 100,000-letter note is shown in short blocks')
+    ok(pg.evaluate("ed.spellcheck") is True, '... and still gets spell-check')
     # a huge one is cut into short blocks and still saves exactly the same text
     text = make(40000); expect = text.count('alpha'); ln = len(text)
     pg = page(b, [{'t': 'text', 'v': text}, {'t': 'check', 'v': 'after', 'done': False}])

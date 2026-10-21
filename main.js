@@ -192,10 +192,15 @@ const flush = () => {
     const m = datadir.mtimeOf(file);
     // another PC (or program) changed the file since we last read or wrote it: keep its version in /conflicts before we replace it
     if (lastMtime && m && m !== lastMtime) { try { datadir.keepConflict(dataDir(), fs.readFileSync(file, 'utf8')); } catch {} }
-    datadir.writeAtomic(file, serialize()); lastMtime = datadir.mtimeOf(file); dirty = false;
+    const text = serialize(); lastBytes = text.length;
+    datadir.writeAtomic(file, text); lastMtime = datadir.mtimeOf(file); dirty = false;
   } catch {}
 };
-function save() { dirty = true; wordsVer++; clearTimeout(saveTimer); saveTimer = setTimeout(flush, 300); pingAll(); }
+// Writing the notes file takes longer the bigger it is (a 3.7 MB note makes it 7 MB), and it blocks every window while it runs. So a big file is written
+// less often while you type (a crash loses at most that many seconds; closing StickyPad always writes at once).
+let lastBytes = 0;
+const saveDelay = () => lastBytes > 3e6 ? 2000 : lastBytes > 1e6 ? 1000 : lastBytes > 3e5 ? 600 : 300;
+function save() { dirty = true; wordsVer++; clearTimeout(saveTimer); saveTimer = setTimeout(flush, saveDelay()); pingAll(); }
 
 // Picks up changes made by another device through a synced data folder (OneDrive, Dropbox, Syncthing...).
 function reloadFromDisk() {
@@ -531,9 +536,20 @@ function openWelcome() {
 ipcMain.handle('welcome:get', () => ({ keys: curKeys(), name: settings.name || '', fresh: !settings.welcomeSeen }));
 ipcMain.handle('welcome:close', (e, o) => {
   settings.welcomeSeen = true; save();
+  const closeTour = () => { if (welcomeWin && !welcomeWin.isDestroyed()) welcomeWin.close(); };
   if (o && o.go === 'settings') openSettings(typeof o.section === 'string' ? o.section : undefined);
-  else if (o && o.go === 'note') makeNote(null);
-  if (welcomeWin && !welcomeWin.isDestroyed()) welcomeWin.close();
+  else if (o && o.go === 'note') {
+    // The tour stays open until the new note is on screen. Closing it first let Windows give the focus to another window, and a note that is
+    // shown while it is not in front can stay hidden behind it ("Start with a note" then seemed to do nothing).
+    const n = makeNote(null), w = wins.get(n.id);
+    if (w && !w.isDestroyed()) {
+      let finished = false;
+      const fin = () => { if (finished) return; finished = true; try { if (!w.isDestroyed()) { w.show(); w.moveTop(); w.focus(); } } catch {} closeTour(); };
+      w.once('ready-to-show', () => setTimeout(fin, 120)); setTimeout(fin, 2500);   // (the second is only a safety net)
+      return;
+    }
+  }
+  closeTour();
 });
 
 /* ---------- settings ---------- */
