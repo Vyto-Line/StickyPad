@@ -31,8 +31,8 @@ function card(n) {
   b.append(t, s, badges);
   b.onclick = () => api.allShow(n.id);
   b.oncontextmenu = e => { e.preventDefault(); api.allContext(n.id); };
-  b.ondragstart = e => { e.dataTransfer.setData('text/plain', n.id); e.dataTransfer.effectAllowed = 'move'; b.classList.add('dragging'); };
-  b.ondragend = () => b.classList.remove('dragging');
+  b.ondragstart = e => { e.dataTransfer.setData('text/plain', n.id); e.dataTransfer.effectAllowed = 'move'; b.classList.add('dragging'); dragKind = 'note'; };
+  b.ondragend = () => { b.classList.remove('dragging'); dragKind = null; };
   return b;
 }
 
@@ -76,7 +76,9 @@ function section(g, items, label) {
 function drawTrash() {
   const box = $('#trashList'); box.innerHTML = '';
   data.trash.forEach(t => {
-    const d = document.createElement('div'); d.className = 'item';
+    const d = document.createElement('div'); d.className = 'item'; d.draggable = true;
+    d.ondragstart = e => { e.dataTransfer.setData('text/plain', 'trash:' + t.id); e.dataTransfer.effectAllowed = 'move'; d.classList.add('dragging'); dragKind = 'trash'; };
+    d.ondragend = () => { d.classList.remove('dragging'); dragKind = null; };
     d.style.background = t.color; d.style.color = isDark(t.color) ? '#f2f2f2' : '#1b1b1b';
     const p = document.createElement('p'); p.className = 'snip';
     p.style.fontFamily = '"' + String(t.font).replace(/["\\]/g, '') + '", "Segoe UI", sans-serif';
@@ -158,6 +160,20 @@ function runSearch(now) {
 async function refresh() { data = await api.allList(); await runSearch(true); draw(); }
 
 /* ---------- wiring ---------- */
+// Drag a note onto the Trash tab to delete it; drag a deleted note onto the Notes tab to bring it back.
+let dragKind = null;   // 'note' or 'trash' while something is being dragged (the browser hides what is dragged until the drop)
+function dropTab(sel, kind, take) {   // sel: the tab and the matching sidebar item of the Home window (which is added after this script)
+  const hit = e => e.target.closest && e.target.closest(sel);
+  document.addEventListener('dragover', e => { const b = hit(e); if (b && dragKind === kind) { e.preventDefault(); b.classList.add('over'); } });
+  document.addEventListener('dragleave', e => { const b = hit(e); if (b) b.classList.remove('over'); });
+  document.addEventListener('drop', async e => {
+    const b = hit(e); if (!b) return; b.classList.remove('over');
+    if (dragKind !== kind) return;
+    e.preventDefault(); const id = e.dataTransfer.getData('text/plain') || ''; dragKind = null; if (id) await take(id.replace(/^trash:/, ''));
+  });
+}
+dropTab('#tabTrash, .hitem[data-go="trash"]', 'note', id => api.allTrash(id).then(refresh));
+dropTab('#tabNotes, .hitem[data-go="notes"]', 'trash', id => api.trashRestore(id).then(refresh));
 $('#tabNotes').onclick = () => setView('notes');
 $('#tabTrash').onclick = () => setView('trash');
 arm($('#emptyBtn'), 'Empty trash', 'Sure? Cannot undo', () => api.trashEmpty());

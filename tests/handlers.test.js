@@ -26,6 +26,12 @@ const H = require('./fake-electron');
   g = await h['note:get'](a.e); assert.ok(JSON.stringify(g.blocks).includes('Secret body') && !g.locked, 'lock removed, text stays');
   assert.strictEqual(await h['note:removeLock'](a.e, 'longpass'), false, 'not locked any more');
 
+  // ---- printing: refused while locked or empty (the print window itself needs the real app) ----
+  const pr = await mk('Print me');
+  await h['note:lock'](pr.e, 'longpass');
+  assert.deepStrictEqual(await h['note:print'](pr.e), { ok: false, error: 'Unlock the note first.' });
+  await h['note:removeLock'](pr.e, 'longpass');
+
   // ---- groups: new, rename, move, delete frees the notes ----
   assert.strictEqual(await h['grp:new']({}, '   '), null, 'empty name refused');
   const gid = await h['grp:new']({}, 'Work'); assert.ok(gid);

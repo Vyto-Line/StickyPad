@@ -1,0 +1,10 @@
+const assert = require('assert'), P = require('../print');
+const h = P.buildHtml('Plan <b>', [{ t: 'text', v: 'line 1\nline 2\n' }, { t: 'check', v: 'milk & eggs', done: true }, { t: 'check', v: 'bread', done: false }, { t: 'img', id: 'abc123.png' }, { t: 'img', id: '../evil.png' }, { t: 'text', v: '<script>x</script>' }], 'file:///data/images/', 'Segoe UI');
+assert.ok(h.includes('<h1>Plan &lt;b&gt;</h1>'), 'title escaped');
+assert.ok(h.includes('line 1\nline 2') && !h.includes('<script>'), 'text escaped, kept as written');
+assert.ok(h.includes('milk &amp; eggs') && h.includes('&#9745;') && h.includes('&#9744;'), 'checklist boxes');
+assert.ok(h.includes('src="file:///data/images/abc123.png"') && !h.includes('evil'), 'good pictures in, odd ids out');
+assert.ok(h.includes('background:#fff') && h.includes('@page'), 'plain black on white page');
+assert.ok(!P.buildHtml('', [], '', '').includes('<h1>'), 'no title, no heading');
+assert.ok(P.buildHtml(null, null).includes('<body>'), 'bad input does not throw');
+console.log('print ok');

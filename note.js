@@ -742,6 +742,14 @@ async function copyNote() {
   setTimeout(() => { b.textContent = old; }, 1400);
 }
 $('#copyTxt').onclick = copyNote;
+async function printThis() {
+  const m = $('#exportMsg');
+  if (bodyLocked()) { m.textContent = 'Unlock the note first.'; return; }
+  if (timer) saveNow();
+  const r = await api.notePrint(); m.textContent = r && r.error ? r.error : '';
+}
+$('#printBtn').onclick = printThis;
+document.addEventListener('keydown', e => { if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'p') { e.preventDefault(); printThis(); } });
 $('#exportBtn').onclick = async () => {
   if (bodyLocked()) { $('#exportMsg').textContent = 'Unlock the note first.'; return; }
   if (timer) saveNow();

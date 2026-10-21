@@ -21,3 +21,10 @@
 
 ## Scrapped
 - Cloud sync (the `sync-test` branch is left alone), the 2.0.0 far plans, Android.
+
+## Alex's ideas (2026-10-21)
+- Printing: single note done in 1.14.43 (Ctrl+P). Still open: print several notes at once, in a chosen order (Alex picked "one at a time" for now).
+- Home "+ Note" opens behind Home: fixed in 1.14.43.
+- Greeting hours: "Good afternoon" shows from 12:00 to 17:00. Alex had no preference when asked; ask again what he wants (later start? different word?).
+- Accessibility tab: shortcuts row removed (1.14.43).
+- Trash drag and drop (delete by dropping on Trash, restore by dropping on Notes): done in 1.14.43.

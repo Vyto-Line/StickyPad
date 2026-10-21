@@ -8,6 +8,7 @@ const backup = require('./backup');
 const reminders = require('./reminders');
 const history = require('./history');
 const convert = require('./convert');
+const printer = require('./print');
 const words = require('./words');
 const THEMES = require('./themes');
 const path = require('path');
@@ -614,6 +615,23 @@ ipcMain.handle('note:get', e => {
 /* ---------- export and import (Markdown / plain text files) ---------- */
 const noteBlocks = n => blocksOf(n);
 const isOpen = n => !n.lock || sessions.has(n.id);
+
+/* ---------- print one note (the Windows print window opens; nothing is sent until you press Print) ---------- */
+async function printNote(n) {
+  if (!n) return { ok: false };
+  if (!isOpen(n)) return { ok: false, error: 'Unlock the note first.' };
+  if (!hasContent(n)) return { ok: false, error: 'This note is empty.' };
+  const file = path.join(app.getPath('userData'), 'print-' + n.id + '.html');
+  let w = null;
+  try {
+    fs.writeFileSync(file, printer.buildHtml(n.title, blocksOf(n), imgBase(), n.font));
+    w = new BrowserWindow({ show: false, webPreferences: { sandbox: true, contextIsolation: true, nodeIntegration: false } });
+    await w.loadFile(file);
+    return await new Promise(res => w.webContents.print({ silent: false, printBackground: false }, (ok, why) => res({ ok: !!ok, cancelled: !ok && /cancel/i.test(String(why || '')), error: !ok && !/cancel/i.test(String(why || '')) ? 'Printing did not start.' : undefined })));
+  } catch (err) { return { ok: false, error: 'Printing did not start.' }; }
+  finally { try { if (w && !w.isDestroyed()) w.destroy(); } catch {} try { fs.unlinkSync(file); } catch {} }
+}
+ipcMain.handle('note:print', e => printNote(notes[idOf(e)]));
 ipcMain.handle('note:export', async e => {
   const n = notes[idOf(e)]; if (!n) return { ok: false };
   if (!isOpen(n)) return { ok: false, error: 'Unlock the note first.' };
@@ -886,6 +904,7 @@ function deleteNote(id) {
   if (!Object.keys(notes).length && !tray) { const nn = newNote(); notes[nn.id] = nn; openNote(nn); }
   save(); pingTrash(); if (w && !w.isDestroyed()) w.close();
 }
+ipcMain.handle('all:trash', (e, id) => { if (typeof id === 'string' && notes[id]) deleteNote(id); });   // a note dropped on the Trash tab in Home
 ipcMain.handle('note:delete', e => { const id = idOf(e); if (id) deleteNote(id); });
 /* ---------- IPC: folders ---------- */
 ipcMain.handle('grp:new', (e, name) => {
@@ -910,7 +929,10 @@ ipcMain.handle('grp:move', (e, noteId, gid) => {
 
 /* ---------- IPC: overview window ---------- */
 ipcMain.handle('all:open', (e, tab) => openAll(tab === 'trash' ? 'trash' : undefined));
-ipcMain.handle('all:new', () => { makeNote(null); });
+ipcMain.handle('all:new', () => {   // from Home: the new note must come to the front, not open behind the Home window
+  const n = makeNote(null), w = wins.get(n.id);
+  if (w && !w.isDestroyed()) w.once('ready-to-show', () => { if (!w.isDestroyed()) { w.show(); w.focus(); } });
+});
 ipcMain.handle('all:tidy', () => tidy());
 const trashList = () => trash.map(t => ({
   id: t.id, title: t.title || '', locked: !!t.lock, text: t.lock ? '' : String(t.text || '').slice(0, 300),
@@ -934,6 +956,7 @@ ipcMain.handle('all:context', (e, id) => {
   Menu.buildFromTemplate([
     { label: 'Open note', click: () => { const w = openNote(n); if (w.isMinimized()) w.restore(); w.show(); w.focus(); } },
     { label: 'Copy text', enabled: !n.lock && String(n.text || '').trim() !== '', click: () => clipboard.writeText(String(n.text || '')) },
+    { label: 'Print…', enabled: !n.lock || sessions.has(n.id), click: () => { printNote(n); } },
     { label: 'Move to folder', submenu: [
       { label: 'No folder', type: 'radio', checked: !n.group, click: () => move(null) },
       ...(groups.length ? [{ type: 'separator' }] : []),

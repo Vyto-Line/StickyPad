@@ -301,5 +301,4 @@ async function accLoad() { try { A = await api.accessGet(); } catch (e) { A = nu
 async function accSave(p) { A = await api.accessSet(p); accFill(); }
 $$('[data-asz]').forEach(b => { b.onclick = () => accSave({ size: Number(b.dataset.asz) }); });
 $$('[data-acc]').forEach(c => { c.onchange = () => accSave({ [c.dataset.acc]: c.checked }); });
-$('#aKeys').onclick = () => { $('#sq').value = ''; filter(''); showCat('shortcuts'); };
 accLoad();

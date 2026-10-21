@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.14.43
+- **Print a note.** Press **Ctrl+P** in a note, use **Settings panel > Print…**, or right-click a note card in Home > **Print…**. The Windows print window opens (plain black on white, with checklists and pictures); nothing is sent until you press Print. Locked notes must be unlocked first.
+- **Drag and drop with the Trash.** In Home, drag a note card onto **Trash** in the sidebar to delete it, and drag a deleted note out of the Trash list onto **Notes** to bring it back.
+- **"+ Note" in Home (and Ctrl+N there) now opens the new note in front.** Before, it could open behind the Home window and look as if nothing happened.
+- **Accessibility:** removed the "Keyboard shortcuts" row; shortcuts have their own tab.
+- Clean-up from 1.14.42 is included: unused code removed, one small memory leak fixed.
+- Not tried on a real Windows PC yet. Printing in particular needs a try with a real printer or "Microsoft Print to PDF".
+
 ## 1.14.42
 - **Clean-up, no change you can see.** Removed code nothing used any more (one internal handler for the trash list, and three internal settings calls that Settings no longer needs). Fixed a small memory leak: the app remembered whether each note window was see-through even after the window closed, one tiny entry per note ever opened; now it forgets it on close. Also removed an unused function and tidied 20 internal names that were shared between files for no reason.
 - Not tried on a real Windows PC yet.

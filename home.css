@@ -21,3 +21,5 @@ body.homed{flex-direction:row!important;border:0!important}
 .homed aside{display:none!important}
 .homed #content>.search{display:flex;align-items:center;gap:8px;max-width:520px;margin:0 0 16px;background:var(--card);border:1px solid var(--line);border-radius:9px;padding:0 10px;color:var(--mute)}
 .homed #content>.search input{flex:1;border:0;background:none;outline:0;padding:7px 0;color:var(--fg)}
+
+.hitem.over{outline:2px dashed var(--accent,#5b7cfa);outline-offset:-2px}
