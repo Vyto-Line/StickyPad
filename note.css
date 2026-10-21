@@ -291,3 +291,12 @@ body.rolled #findbar{display:none}
 
 /* very long notes: blocks that are off screen are not laid out or painted until you scroll to them (opening a 4 MB note took a second or more) */
 .chunk{content-visibility:auto;contain-intrinsic-block-size:auto calc(var(--l, 100) * 1.45em)}
+
+/* The note's own scroll bar. The built-in one (8 px, right at the window edge) could not be grabbed on Windows: the pointer stayed a text cursor over it.
+   This one is a plain element with a wide, always-arrow grab area, kept away from the window's resize border. */
+#ed{scrollbar-width:none;padding-right:18px}
+#ed::-webkit-scrollbar{display:none}
+#sb{position:fixed;z-index:30;width:16px;cursor:default;touch-action:none;user-select:none}
+#sb[hidden]{display:none}
+#sbt{position:absolute;right:3px;width:8px;min-height:36px;border-radius:8px;background:var(--tint2);transition:width .12s,background .12s}
+#sb:hover #sbt,#sb.drag #sbt{width:11px;background:var(--line)}

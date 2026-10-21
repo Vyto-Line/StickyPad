@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.14.36
+- **The note's scroll bar can be grabbed.** The built-in scroll bar was only 8 pixels wide and, on Windows, the pointer stayed a text cursor over it, so a huge note could not be scrolled by dragging. A note now has StickyPad's own scroll bar: a 16 pixel grab area with an ordinary arrow pointer, kept clear of the window's resize border. Drag the thumb, click above or below it to move one page, or use the mouse wheel over it; the text cursor stays where it was. The mouse wheel, Page Up/Down and the keyboard scroll the note as before.
+- Not tried on a real Windows PC yet.
+
 ## 1.14.35
 - **A huge note opens in a fraction of a second.** A note of 51,200 lines (3.7 MB) took 10 to 15 seconds to open. The page read the whole text back out several times and each time glued a giant string together over and over; that now takes 6 milliseconds instead of almost a second, and the result is kept until you change something. The search for dates ("tomorrow at 5pm") only looks at the first 100,000 letters of a huge note, and spell-check is switched off for it (checking millions of letters is what made typing crawl).
 - **The AI no longer goes silent with Gemma 4.** Gemma 4 "thinks" before it answers unless told not to, and could spend its whole answer on thinking and send back nothing (the "Ollama gave an empty reply" message). StickyPad now turns thinking off for Gemma 4 and the other reasoning families (Qwen3.5, DeepSeek, Phi-4-reasoning, Cogito, Nemotron, SmolLM3, GLM-4…), and sets gpt-oss to "low" because that one cannot be switched off. An Ollama that rejects the setting is asked again without it.

@@ -1085,3 +1085,42 @@ document.addEventListener('keydown', e => { if (KEY(e, 'n_edit')) { e.preventDef
 document.addEventListener('keydown', e => { if (KEY(e, 'n_settings')) { e.preventDefault(); openAllSettings(); } });
 function openAllSettings(section) { $('#panel').hidden = true; $('#cfg').setAttribute('aria-expanded', 'false'); api.openSettings(section); }
 $('#allSet').onclick = () => openAllSettings();
+
+/* ---------- the note's scroll bar (see note.css) ---------- */
+const sb = $('#sb'), sbt = $('#sbt');
+let sbDrag = null, sbQueued = false;
+function sbSync() {
+  sbQueued = false;
+  const vis = ed.scrollHeight > ed.clientHeight + 1 && !document.body.classList.contains('rolled') && ed.offsetParent !== null;
+  if (!vis) { sb.hidden = true; return; }
+  const r = ed.getBoundingClientRect();
+  sb.hidden = false; sb.style.left = Math.round(r.right - 16) + 'px'; sb.style.top = Math.round(r.top) + 'px'; sb.style.height = Math.round(r.height) + 'px';
+  const track = r.height, ratio = ed.clientHeight / ed.scrollHeight, th = Math.max(36, Math.round(track * ratio));
+  const room = Math.max(1, ed.scrollHeight - ed.clientHeight), top = Math.round((track - th) * Math.min(1, Math.max(0, ed.scrollTop / room)));
+  sbt.style.height = th + 'px'; sbt.style.top = top + 'px';
+}
+const sbAsk = () => { if (!sbQueued) { sbQueued = true; requestAnimationFrame(sbSync); } };
+ed.addEventListener('scroll', sbAsk, { passive: true });
+window.addEventListener('resize', sbAsk);
+ed.addEventListener('input', sbAsk);
+new ResizeObserver(sbAsk).observe(ed);
+setInterval(() => { if (!document.hidden) sbAsk(); }, 500);   // the text can grow or shrink without any event (pictures loading, parts of a huge note being drawn)
+sb.addEventListener('pointerdown', e => {
+  if (e.button !== 0) return;
+  e.preventDefault();   // keep the caret where it is
+  sb.setPointerCapture(e.pointerId);
+  const tr = sbt.getBoundingClientRect();
+  if (e.target === sbt) sbDrag = { y: e.clientY, top: ed.scrollTop };
+  else { ed.scrollTop += (e.clientY < tr.top ? -1 : 1) * ed.clientHeight * 0.9; sbAsk(); return; }   // click on the empty track: one page up or down
+  sb.classList.add('drag');
+});
+sb.addEventListener('mousedown', e => e.preventDefault());   // (the pointer event alone does not stop the text field losing focus)
+sb.addEventListener('pointermove', e => {
+  if (!sbDrag) return;
+  const r = ed.getBoundingClientRect(), th = sbt.offsetHeight, span = Math.max(1, r.height - th);
+  ed.scrollTop = sbDrag.top + (e.clientY - sbDrag.y) * (ed.scrollHeight - ed.clientHeight) / span;
+});
+const sbEnd = () => { sbDrag = null; sb.classList.remove('drag'); };
+sb.addEventListener('pointerup', sbEnd); sb.addEventListener('pointercancel', sbEnd); sb.addEventListener('lostpointercapture', sbEnd);
+sb.addEventListener('wheel', e => { ed.scrollTop += e.deltaY; e.preventDefault(); }, { passive: false });
+sbAsk();
