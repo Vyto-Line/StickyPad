@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.14.45
+- **StickyPad comes to the front when it starts.** The start-up splash never takes the front, so on Windows the notes and Home could open hidden behind other programs. For the first seconds after start-up (and when you click StickyPad's shortcut while it already runs in the tray), every window is now raised to the front, without stealing what you are typing. This applies whatever "When StickyPad starts" is set to.
+- **More actions in the search window (Ctrl+Alt+F, or `>`):** every Settings page (General, Appearance, Notes, Keyboard shortcuts, Accessibility, Folders, About), the accessibility options (bigger or smaller interface, high contrast, bigger buttons, keyboard focus, reduced motion, easier-to-read notes, screen reader; each turns on or off; and "back to the defaults"), "Print the note I was just in", "Check for updates", and the performance, AI and update logs.
+- Not tried on a real Windows PC yet.
+
 ## 1.14.44
 - **Ctrl+Alt+F (search all notes) sometimes did nothing.** Likely cause: Ctrl and Alt are still held when the window appears, Windows moved the focus away for a moment, and the window closed itself at once. In its first second the search window now takes the focus back instead of closing. Also, the search window is now shown by whichever comes first of "ready", "page loaded" or a 0.7 s timer, so it can no longer stay hidden until the second press. Also: If the search window exists but is hidden, the shortcut now shows it instead of closing it (which could make it look dead). If Windows refuses a shortcut because another program already uses it, that is written to the performance log (Settings > About > Open performance log) and shown as a warning in Settings > Shortcuts.
 - Not tried on a real Windows PC yet.

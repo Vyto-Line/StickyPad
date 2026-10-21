@@ -291,6 +291,19 @@ function cleanBounds(b) {
   else { const p = screen.getPrimaryDisplay().workArea, k = Object.keys(notes).length % 8; out.x = p.x + 80 + k * 28; out.y = p.y + 80 + k * 28; }
   return out;
 }
+// Windows puts a window opened by a program that is not in front BEHIND the other programs (the start-up splash never takes the front,
+// so the notes and Home used to appear hidden behind other windows). This raises a window without stealing the typing focus.
+let raiseUntil = 0;   // for a few seconds after start-up (and after a second launch) every window that appears is raised
+function raise(w) {
+  try {
+    if (!w || w.isDestroyed()) return;
+    if (w.isMinimized()) w.restore();
+    w.show();
+    if (w.isAlwaysOnTop()) w.moveTop(); else { w.setAlwaysOnTop(true); w.moveTop(); w.setAlwaysOnTop(false); }
+  } catch {}
+}
+const raiseNow = () => Date.now() < raiseUntil;
+let lastNote = null;   // the note you were last working in (for "Print the note I was just in")
 function openNote(n) {
   const solid = GPU_OK && !!n.solidText;   // only notes that ask for it get a see-through window (the rest stay as safe as before)
   const existing = wins.get(n.id);
@@ -311,11 +324,11 @@ function openNote(n) {
   if (n.rolled) w.setMaximumSize(10000, ROLL_H);
   if (!solid && Number.isFinite(n.opacity) && n.opacity < 1) { try { w.setOpacity(Math.min(1, Math.max(0.3, n.opacity))); } catch {} }   // whole note fades
   seeThrough.set(n.id, solid);
-  wins.set(n.id, w); byContents.set(w.webContents.id, n.id);
+  wins.set(n.id, w); byContents.set(w.webContents.id, n.id); w.on('focus', () => { lastNote = n.id; });
   if (n.pinned) w.setAlwaysOnTop(true, 'screen-saver');
   const t0 = Date.now();
   w.loadFile('note.html', { query: { id: n.id } });
-  w.once('ready-to-show', () => { w.show(); pingAll(); slowWindow('a note', t0); });
+  w.once('ready-to-show', () => { w.show(); if (raiseNow()) raise(w); pingAll(); slowWindow('a note', t0); });
   const keep = (byHand) => {
     const m = notes[n.id]; if (!m || w.isDestroyed()) return;
     const ds = displayList();
@@ -358,7 +371,7 @@ function makeNote(near, over) {
 function showAll() {   // brings every note to the front, reopening any that were closed
   Object.values(notes).forEach(n => {
     const w = wins.get(n.id);
-    if (w && !w.isDestroyed()) { if (w.isMinimized()) w.restore(); w.show(); } else openNote(n);
+    if (w && !w.isDestroyed()) raise(w); else openNote(n);
   });
   if (!Object.keys(notes).length) makeNote(null);
 }
@@ -371,7 +384,7 @@ function utilWindow(ref, title, htmlFile, w, h, query) {
     webPreferences: { preload, contextIsolation: true, nodeIntegration: false }
   });
   win.setMenu(null); win.loadFile(htmlFile, query ? { query } : undefined);
-  win.once('ready-to-show', () => { win.show(); win.focus(); slowWindow(htmlFile, t0); });
+  win.once('ready-to-show', () => { win.show(); win.focus(); if (raiseNow()) raise(win); slowWindow(htmlFile, t0); });
   win.on('focus', focusguard.guard(win));   // makes sure text boxes receive typing (and never starts a focus fight between two windows)
   return win;
 }
@@ -389,7 +402,7 @@ function openHome(section, arg) {
   const file = HOME_PAGES[section];
   const query = section === 'trash' ? { tab: 'trash' } : section === 'settings' && arg ? { section: String(arg) } : section === 'chat' && arg ? { note: String(arg) } : undefined;
   if (homeWin && !homeWin.isDestroyed()) {
-    homeWin.show(); homeWin.focus();
+    homeWin.show(); homeWin.focus(); raise(homeWin);
     if (homePage === file) {   // already showing that page: just tell it what to show
       const wc = homeWin.webContents;
       if (file === 'all.html') wc.send('all:tab', section); else if (section === 'chat' && arg) wc.send('chat:attach', arg); else if (section === 'settings' && arg) wc.send('settings:section', arg);
@@ -1013,13 +1026,24 @@ function runCommand(id) {
     case 'showall': showAll(); break;
     case 'tidy': tidy(); break;
     case 'welcome': openWelcome(); break;
+    case 'settings-general': case 'settings-appearance': case 'settings-notes': case 'settings-shortcuts': case 'settings-access': case 'settings-folders': case 'settings-about': openSettings(id.slice(9)); break;
+    case 'access-contrast': case 'access-big': case 'access-motion': case 'access-focus': case 'access-read': case 'access-sr': { const k = id.slice(7); setAccess({ [k]: !accessOf()[k] }); break; }
+    case 'access-bigger': case 'access-smaller': {
+      const i = ACCESS_SIZES.indexOf(accessOf().size); setAccess({ size: ACCESS_SIZES[Math.max(0, Math.min(ACCESS_SIZES.length - 1, i + (id === 'access-bigger' ? 1 : -1)))] }); break;
+    }
+    case 'access-reset': setAccess({ size: 100, contrast: false, read: false, motion: false, focus: false, big: false, sr: false }); break;
+    case 'print': { const n = notes[lastNote]; if (n) printNote(n); else try { new Notification({ title: 'StickyPad', body: 'Open a note first, then search for Print.' }).show(); } catch {} break; }
+    case 'log-perf': openLog('openPerfLog'); break;
+    case 'log-ai': openLog('openAiLog'); break;
+    case 'log-update': openLog('openUpdateLog'); break;
+    case 'updates': openSettings('about'); break;
     default: return false;
   }
   return true;
 }
 ipcMain.handle('search:run', (e, id) => {
   if (!commands.byId(id)) return false;
-  closeQuick(); setTimeout(() => { try { runCommand(id); } catch {} }, 60); return true;   // after the small window has gone, so the new window can take focus
+  closeQuick(); setTimeout(() => { try { runCommand(id); } catch (err) { crashLog('command ' + id, err); } }, 60); return true;   // after the small window has gone, so the new window can take focus
 });
 function setPrefsFull(p) { if (['light', 'dark', 'system'].includes(p.mode)) { settings.mode = p.mode; applyMode(); themeChanged(); save(); } }
 function closeQuick() { if (quickWin && !quickWin.isDestroyed()) quickWin.close(); quickWin = null; }
@@ -1505,6 +1529,15 @@ function purgeTrash() {
 }
 
 /* ---------- the Settings window ---------- */
+function openLog(name) {   // the three logs (Settings > About / AI, and the search window)
+  const L = {
+    openUpdateLog: [updateLogFile, 'No update check has run yet. Press "Check now" in Settings > About, then open this file again.\n'],
+    openPerfLog: [perfLogFile, 'Nothing slow has been recorded yet. If StickyPad feels slow, use it for a while and open this file again: windows that take long to appear, freezes and slow saves are listed here.\n'],
+    openAiLog: [aiLogFile, 'Nothing has been recorded yet. Use the AI (chat, summarize, fix grammar...) and open this file again: every request and every problem is listed here.\n'],
+  }[name];
+  const f = L[0](); if (!fs.existsSync(f)) { fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, L[1]); }
+  shell.openPath(f); return { ok: true };
+}
 function openSettings(section) { openHome('settings', typeof section === 'string' ? section : undefined); }
 // How much memory StickyPad uses right now (private memory per process, like Task Manager's "Memory" column), in MB.
 function memoryUse() {
@@ -1596,18 +1629,7 @@ ipcMain.handle('settings:action', (e, name, arg) => {
     if (name === 'importOther') return importOther(settingsWin, arg);
     if (name === 'memory') return { ok: true, ...memoryUse() };
     if (name === 'restartApp') { flush(); app.relaunch(); setTimeout(() => app.exit(0), 200); return { ok: true }; }
-    if (name === 'openUpdateLog') {
-      const f = updateLogFile(); if (!fs.existsSync(f)) fs.writeFileSync(f, 'No update check has run yet. Press "Check now" in Settings > About, then open this file again.\n');
-      shell.openPath(f); return { ok: true };
-    }
-    if (name === 'openPerfLog') {
-      const f = perfLogFile(); if (!fs.existsSync(f)) fs.writeFileSync(f, 'Nothing slow has been recorded yet. If StickyPad feels slow, use it for a while and open this file again: windows that take long to appear, freezes and slow saves are listed here.\n');
-      shell.openPath(f); return { ok: true };
-    }
-    if (name === 'openAiLog') {
-      const f = aiLogFile(); if (!fs.existsSync(f)) fs.writeFileSync(f, 'Nothing has been recorded yet. Use the AI (chat, summarize, fix grammar...) and open this file again: every request and every problem is listed here.\n');
-      shell.openPath(f); return { ok: true };
-    }
+    if (name === 'openUpdateLog' || name === 'openPerfLog' || name === 'openAiLog') return openLog(name);
     if (name === 'openReleases') { shell.openExternal('https://github.com/Vyto-Line/StickyPad/releases'); return { ok: true }; }
     if (name === 'openData') { shell.openPath(dataDir()); return { ok: true }; }
     if (name === 'chooseDataFolder' || name === 'resetDataFolder') {
@@ -1640,7 +1662,8 @@ app.on('second-instance', (e, argv) => {
   if (quitting) return;
   const files = convert.noteFileArgs(argv);   // a .stickypad file was double-clicked while StickyPad is already running
   if (files.length) { importFiles(files); return; }
-  if (settings.launch === 'all') openAll(); else showAll(); });
+  raiseUntil = Date.now() + 5000;   // a second launch (the shortcut was clicked while StickyPad runs in the tray): bring the windows to the front
+  if (settings.launch === 'all') { openAll(); raise(homeWin); } else showAll(); });
 app.whenReady().then(async () => {
   watchStalls();
   DATA = datadir.resolve(app.getPath('userData'));
@@ -1676,6 +1699,7 @@ app.whenReady().then(async () => {
   if (!Object.keys(notes).length && (firstRun || !tray)) { const n = newNote(); notes[n.id] = n; }
   if (settings.shortcuts) registerShortcuts();
   if (settings.splash && !accessOf().motion) await showSplash();   // no startup animation when motion is reduced
+  raiseUntil = Date.now() + 8000;   // start-up: windows that appear in the next seconds come to the front
   openStartup();
   if (firstRun && !settings.welcomeSeen) setTimeout(() => { try { openWelcome(); } catch {} }, 600);   // a brand-new install gets a short tour
   const startFiles = convert.noteFileArgs(process.argv);   // StickyPad was started by double-clicking a .stickypad file
