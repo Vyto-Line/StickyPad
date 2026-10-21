@@ -95,4 +95,5 @@ Only 3: `electron-updater ^6.3.9`, `electron ^33`, `electron-builder ^25`. Elect
 
 ### Progress (2026-10-21)
 - Steps 2 and 3 done in 1.14.42 (dead handlers, unused exports, `seeThrough` freed on close; `histT` was already fine). Unused CSS left alone on purpose.
+- Step 6 (docs) done: README (Accessibility, huge notes, logs) and ARCHITECTURE (access.js, tools, Tauri paused, logs).
 - Step 4 started: `tests/handlers.test.js` covers lock/unlock/relock/removeLock, groups, trash restore/purge/empty, chat history, accessibility settings (no release needed, tests only). Still untested: all:*, search:*, ai:*, ollama:*, theme:set, update:*, settings:open, home:go, app:info.

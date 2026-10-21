@@ -103,6 +103,17 @@ Under *Look*, a **Transparency** bar makes the note see-through (0 to 70%), one 
 - **Long notes** are processed in pieces, so even a very large note is handled completely.
 - **Greek** has dedicated rules (accents, final ς, spelling) and a guard: if the model answers in English or rewrites your text too heavily, the answer is discarded and your original stays.
 
+### Accessibility
+*Settings > Accessibility* (also offered in the first-start tour). Everything is **off by default**:
+- **Text size** (100, 115, 130, 150 %) for every window, **high contrast**, **bigger buttons**, **a clear focus outline** for keyboard users, **reduced motion** (no splash or animations), and **screen-reader announcements** for things that change (find results, AI answers, errors).
+- A live preview shows what each option does before you keep it.
+
+### Very large notes
+Notes of hundreds of thousands of lines open in a fraction of a second and type at normal speed: the text is shown in pieces and only the part you can see is drawn. A thin scroll bar on the right can be dragged, and spell checking is switched off automatically above 200,000 characters so typing stays smooth.
+
+### If something is slow or wrong
+*Settings > About* opens three logs: the **performance log** (a window that took more than half a second, a freeze over 0.3 s, a slow save), the **update log** and the **AI log** (*Settings > AI*, what the model answered or why it did not). They hold only times, sizes and error text, never your notes.
+
 ### Several screens
 StickyPad remembers which screen each note is on. Unplug a monitor and its notes move to your main screen; plug it back in and they return to where they were.
 

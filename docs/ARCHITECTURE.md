@@ -11,6 +11,8 @@
 | `ollamaui.js` | model picker + install button shared by the note popover and Settings |
 | `datadir.js` | movable data folder, atomic writes, conflict copies; pure Node |
 | `backup.js`, `themes.js` | daily backups, colour themes |
+| `access.js`, `access.css` | accessibility options applied in every window (classes on `<html>`, text zoom, announcements) |
+| `tools/measure.js`, `tools/measure_ui.py` | timing of save/load/search and of window opening (see `docs/CLEANUP.md`) |
 | `tools/stickypad_db.py` | notes.json <-> SQLite |
 
 Modules marked "pure Node" do not import Electron, so they are unit-tested directly (`npm test`).
@@ -36,7 +38,9 @@ this PC's version is written and the other one is kept in `conflicts/`. Settings
 note that the file also contains them, so the last PC to save wins for those. Writes are atomic.
 Sync services copy whole files, so two PCs editing the same second can still conflict: that is what `conflicts/` is for.
 
-## Tauri port (in progress, `src-tauri/`)
+## Tauri port (paused, `src-tauri/`)
+The released app is Electron. The Tauri port is kept in case it comes back (see `docs/PLAN.md`); nothing in the Electron app depends on it.
+
 Goal: no bundled Chromium (the installer is about 2.5 MB instead of ~80 MB), and a path to Android (Tauri 2 mobile).
 
 How it works: `scripts/prep-tauri.js` copies the existing screens into `src-tauri/ui` and generates a small `tauri-shim.js` from `preload.js`
@@ -62,3 +66,6 @@ Locally: install Rust + the MSVC build tools, then `node scripts/prep-tauri.js &
 ### Tauri auto-update
 The app reads `https://github.com/Vyto-Line/StickyPad/releases/latest/download/latest.json`. That file (made by `scripts/make-latest-json.js` in the *Tauri build (preview)* workflow on a `v*` tag) holds the newest version, the installer link and its signature. `src-tauri/src/update.rs` checks it a few seconds after start and every 6 hours (unless *automatic updates* is off), keeps the same states and `update:event` messages as the Electron `updater.js`, downloads when you press Download, verifies the signature against `plugins.updater.pubkey` in `tauri.conf.json`, and installs when you press Restart.
 One-time setup of the signing key: `npx @tauri-apps/cli@2 signer generate -w stickypad.key`, put the public key (the `.pub` file's text) into `tauri.conf.json` instead of `UNSET`, and add the repository secrets `TAURI_SIGNING_PRIVATE_KEY` (the key file's text) and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`. Keep a copy of the private key somewhere safe: if it is lost, installed copies can never be updated. Without the secret the workflow still builds, just without update files.
+
+## Logs (in the data folder)
+`ai.log`, `perf.log`, `update.log` and `crash.log`: plain text, times and sizes only, opened from *Settings > About* / *AI*.
