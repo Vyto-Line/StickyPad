@@ -92,3 +92,7 @@ Only 3: `electron-updater ^6.3.9`, `electron ^33`, `electron-builder ^25`. Elect
 
 ### Suggested order
 2 (dead code) -> 3 (leaks) -> 4 (tests) -> 6 (docs) -> 5 (split, one module at a time) -> 7 (Electron upgrade, with a Windows test). Home-window speed-up (item 1 above) only if Alex has hundreds or thousands of notes.
+
+### Progress (2026-10-21)
+- Steps 2 and 3 done in 1.14.42 (dead handlers, unused exports, `seeThrough` freed on close; `histT` was already fine). Unused CSS left alone on purpose.
+- Step 4 started: `tests/handlers.test.js` covers lock/unlock/relock/removeLock, groups, trash restore/purge/empty, chat history, accessibility settings (no release needed, tests only). Still untested: all:*, search:*, ai:*, ollama:*, theme:set, update:*, settings:open, home:go, app:info.
