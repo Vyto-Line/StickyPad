@@ -1663,7 +1663,11 @@ app.on('second-instance', (e, argv) => {
   const files = convert.noteFileArgs(argv);   // a .stickypad file was double-clicked while StickyPad is already running
   if (files.length) { importFiles(files); return; }
   raiseUntil = Date.now() + 5000;   // a second launch (the shortcut was clicked while StickyPad runs in the tray): bring the windows to the front
-  if (settings.launch === 'all') { openAll(); raise(homeWin); } else showAll(); });
+  // The app is already running (in the tray): starting it again does what "When StickyPad starts" says, as on a normal start.
+  const mode = settings.launch;
+  if (mode !== 'all') showAll();
+  if (mode === 'all' || mode === 'both') { openAll(); raise(homeWin); }
+});
 app.whenReady().then(async () => {
   watchStalls();
   DATA = datadir.resolve(app.getPath('userData'));

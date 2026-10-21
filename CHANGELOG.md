@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.14.46
+- **"When StickyPad starts" now also works when you start StickyPad while it is already running in the tray.** Before, starting it again only brought the notes forward, whatever the setting was, so "Open the All notes window" and "Open both" seemed to do nothing. Now: *Open my notes* shows the notes, *Open the All notes window* opens Home, *Open both* does both.
+- Not tried on a real Windows PC yet.
+
 ## 1.14.45
 - **StickyPad comes to the front when it starts.** The start-up splash never takes the front, so on Windows the notes and Home could open hidden behind other programs. For the first seconds after start-up (and when you click StickyPad's shortcut while it already runs in the tray), every window is now raised to the front, without stealing what you are typing. This applies whatever "When StickyPad starts" is set to.
 - **More actions in the search window (Ctrl+Alt+F, or `>`):** every Settings page (General, Appearance, Notes, Keyboard shortcuts, Accessibility, Folders, About), the accessibility options (bigger or smaller interface, high contrast, bigger buttons, keyboard focus, reduced motion, easier-to-read notes, screen reader; each turns on or off; and "back to the defaults"), "Print the note I was just in", "Check for updates", and the performance, AI and update logs.
