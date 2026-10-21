@@ -214,6 +214,7 @@ $('#lowMemRestart').onclick = () => api.settingsAction('restartApp');
 $('#whatsBtn').onclick = () => api.settingsAction('openWhatsNew');
 $('#welcomeBtn').onclick = () => api.settingsAction('openWelcome');
 $('#aiLog').onclick = () => api.settingsAction('openAiLog');
+$('#perfLog').onclick = () => api.settingsAction('openPerfLog');
 $('#updLog').onclick = () => api.settingsAction('openUpdateLog');
 $('#updPage').onclick = () => api.settingsAction('openReleases');
 api.onUpdateEvent(showUpdate);

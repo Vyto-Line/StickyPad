@@ -46,6 +46,7 @@ const H = require('./fake-electron');
   assert.ok(!(await h['words:get']({})).some(x => x.w === 'zebrafish'), 'words of a locked note are not offered');
   assert.ok(!fs.existsSync(path.join(tmp, 'userData', 'history', n0.id + '.json')), 'history file removed on lock');
   const ex2 = await h['note:export'](e); assert.strictEqual(ex2.ok, false);
+  const pl = await h['settings:action']({}, 'openPerfLog'); assert.ok(pl.ok && fs.existsSync(path.join(tmp, 'userData', 'perf.log')), 'performance log can be opened');
   const al = await h['settings:action']({}, 'openAiLog'); assert.ok(al.ok && fs.existsSync(path.join(tmp, 'userData', 'ai.log')), 'AI log can be opened');
   const ul = await h['settings:action']({}, 'openUpdateLog'); assert.ok(ul.ok && fs.existsSync(path.join(tmp, 'userData', 'update.log')), 'update log can be opened');
   const orl = await h['settings:action']({}, 'openReleases'); assert.ok(orl.ok && H.dialogCalls.some(c => c[0] === 'external' && /Vyto-Line\/StickyPad\/releases/.test(c[1])));

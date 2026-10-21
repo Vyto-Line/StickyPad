@@ -192,8 +192,9 @@ const flush = () => {
     const m = datadir.mtimeOf(file);
     // another PC (or program) changed the file since we last read or wrote it: keep its version in /conflicts before we replace it
     if (lastMtime && m && m !== lastMtime) { try { datadir.keepConflict(dataDir(), fs.readFileSync(file, 'utf8')); } catch {} }
-    const text = serialize(); lastBytes = text.length;
+    const t0 = Date.now(), text = serialize(); lastBytes = text.length; const t1 = Date.now();
     datadir.writeAtomic(file, text); lastMtime = datadir.mtimeOf(file); dirty = false;
+    if (Date.now() - t0 > 60) perfLog('SLOW SAVE  ' + (text.length / 1e6).toFixed(1) + ' MB: preparing ' + (t1 - t0) + ' ms, writing ' + (Date.now() - t1) + ' ms');
   } catch {}
 };
 // Writing the notes file takes longer the bigger it is (a 3.7 MB note makes it 7 MB), and it blocks every window while it runs. So a big file is written
@@ -311,8 +312,9 @@ function openNote(n) {
   seeThrough.set(n.id, solid);
   wins.set(n.id, w); byContents.set(w.webContents.id, n.id);
   if (n.pinned) w.setAlwaysOnTop(true, 'screen-saver');
+  const t0 = Date.now();
   w.loadFile('note.html', { query: { id: n.id } });
-  w.once('ready-to-show', () => { w.show(); pingAll(); });
+  w.once('ready-to-show', () => { w.show(); pingAll(); slowWindow('a note', t0); });
   const keep = (byHand) => {
     const m = notes[n.id]; if (!m || w.isDestroyed()) return;
     const ds = displayList();
@@ -362,12 +364,13 @@ function showAll() {   // brings every note to the front, reopening any that wer
 
 function utilWindow(ref, title, htmlFile, w, h, query) {
   if (ref && !ref.isDestroyed()) { ref.show(); ref.focus(); return ref; }
+  const t0 = Date.now();
   const win = new BrowserWindow({
     width: w, height: h, minWidth: 320, minHeight: 300, title, autoHideMenuBar: true, icon: iconPath, show: false,
     webPreferences: { preload, contextIsolation: true, nodeIntegration: false }
   });
   win.setMenu(null); win.loadFile(htmlFile, query ? { query } : undefined);
-  win.once('ready-to-show', () => { win.show(); win.focus(); });
+  win.once('ready-to-show', () => { win.show(); win.focus(); slowWindow(htmlFile, t0); });
   win.on('focus', focusguard.guard(win));   // makes sure text boxes receive typing (and never starts a focus fight between two windows)
   return win;
 }
@@ -539,13 +542,15 @@ ipcMain.handle('welcome:close', (e, o) => {
   const closeTour = () => { if (welcomeWin && !welcomeWin.isDestroyed()) welcomeWin.close(); };
   if (o && o.go === 'settings') openSettings(typeof o.section === 'string' ? o.section : undefined);
   else if (o && o.go === 'note') {
-    // The tour stays open until the new note is on screen. Closing it first let Windows give the focus to another window, and a note that is
-    // shown while it is not in front can stay hidden behind it ("Start with a note" then seemed to do nothing).
+    // The note is brought to the front when it appears. The tour closes as soon as the note is up, or after a short moment at the latest
+    // (closing it before the note shows let Windows hand the focus to another window, and a note shown then could stay hidden behind it).
     const n = makeNote(null), w = wins.get(n.id);
     if (w && !w.isDestroyed()) {
       let finished = false;
-      const fin = () => { if (finished) return; finished = true; try { if (!w.isDestroyed()) { w.show(); w.moveTop(); w.focus(); } } catch {} closeTour(); };
-      w.once('ready-to-show', () => setTimeout(fin, 120)); setTimeout(fin, 2500);   // (the second is only a safety net)
+      const front = () => { try { if (!w.isDestroyed()) { w.show(); w.moveTop(); w.focus(); } } catch {} };
+      const fin = () => { if (finished) return; finished = true; front(); closeTour(); };
+      w.once('ready-to-show', () => { front(); setTimeout(fin, 60); });
+      setTimeout(fin, 600);   // a slow PC: do not keep the tour on screen; the note still comes to the front when it is ready
       return;
     }
   }
@@ -1348,6 +1353,22 @@ function aiLog(line) {
   } catch {}
 }
 ai.setLogger(aiLog);
+// What was slow (Settings > About > Open performance log): windows that took long to appear, the app freezing for a moment, and slow saves.
+const perfLogFile = () => path.join(app.getPath('userData'), 'perf.log');
+function perfLog(line) {
+  try {
+    const f = perfLogFile(); let old = '';
+    try { old = fs.readFileSync(f, 'utf8'); } catch {}
+    if (old.length > 150000) old = old.slice(-100000);
+    const head = old ? '' : `StickyPad performance log. Only slow moments are listed here (a window that took over 0.5 s to appear, a freeze of the app over 0.3 s, a save over 60 ms).\nStickyPad ${app.getVersion()} on ${process.platform} ${process.arch}, ${Math.round(require('os').totalmem() / 1073741824)} GB RAM\n`;
+    fs.writeFileSync(f, old + head + new Date().toISOString() + '  v' + app.getVersion() + '  ' + line + '\n');
+  } catch {}
+}
+const slowWindow = (what, t0) => { const ms = Date.now() - t0; if (ms > 500) perfLog('SLOW WINDOW  ' + what + ' took ' + ms + ' ms to appear  (notes ' + Object.keys(notes).length + ', file ' + (lastBytes / 1e6).toFixed(1) + ' MB, open windows ' + BrowserWindow.getAllWindows().length + ')'); };
+function watchStalls() {   // the main process answers every window: when it is busy, everything feels slow
+  let last = Date.now();
+  setInterval(() => { const now = Date.now(), late = now - last - 250; last = now; if (late > 300) perfLog('FREEZE  the app was busy for ' + late + ' ms  (file ' + (lastBytes / 1e6).toFixed(1) + ' MB, open windows ' + BrowserWindow.getAllWindows().length + ')'); }, 250).unref();
+}
 ipcMain.handle('update:check', () => updater ? updater.check() : null);
 ipcMain.handle('update:download', () => updater ? updater.download() : null);
 ipcMain.handle('whatsnew:get', () => whatsNewData(whatsFrom));
@@ -1541,6 +1562,10 @@ ipcMain.handle('settings:action', (e, name, arg) => {
       const f = updateLogFile(); if (!fs.existsSync(f)) fs.writeFileSync(f, 'No update check has run yet. Press "Check now" in Settings > About, then open this file again.\n');
       shell.openPath(f); return { ok: true };
     }
+    if (name === 'openPerfLog') {
+      const f = perfLogFile(); if (!fs.existsSync(f)) fs.writeFileSync(f, 'Nothing slow has been recorded yet. If StickyPad feels slow, use it for a while and open this file again: windows that take long to appear, freezes and slow saves are listed here.\n');
+      shell.openPath(f); return { ok: true };
+    }
     if (name === 'openAiLog') {
       const f = aiLogFile(); if (!fs.existsSync(f)) fs.writeFileSync(f, 'Nothing has been recorded yet. Use the AI (chat, summarize, fix grammar...) and open this file again: every request and every problem is listed here.\n');
       shell.openPath(f); return { ok: true };
@@ -1579,6 +1604,7 @@ app.on('second-instance', (e, argv) => {
   if (files.length) { importFiles(files); return; }
   if (settings.launch === 'all') openAll(); else showAll(); });
 app.whenReady().then(async () => {
+  watchStalls();
   DATA = datadir.resolve(app.getPath('userData'));
   // The notes were moved to another folder (OneDrive, Dropbox...) but it cannot be reached right now: it may only be slow to start after a restart.
   // Wait a little. If it stays away, ask, instead of quietly starting with an empty set.

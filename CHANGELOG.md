@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.14.41
+- **A performance log: Settings > About > Open performance log.** If StickyPad feels slow, it writes down what was slow: a window that took more than half a second to appear (the tour, a note, Home), the app freezing for more than 0.3 seconds, and a save that took more than 60 ms, each with the size of the notes file and the number of open windows. It holds only times and sizes, never your notes, so you can send it to me and I can see where the time goes.
+- **"Start with a note" no longer waits for the note.** The tour now closes after at most 0.6 seconds, and the new note still comes to the front as soon as it has appeared.
+- Not tried on a real Windows PC yet.
+
 ## 1.14.40
 - **"Start with a note" at the end of the tour opens the note.** The tour used to close at once, and Windows could hand the focus to another window while the new note was still appearing, leaving the note hidden behind it. The tour now stays until the new note is on screen, then brings it to the front and closes.
 - **Less lag with long notes.** A note of 20,000 letters or more (about 3,500 words) is now drawn in short blocks, so typing in a 190,000-letter note costs 33 ms a key instead of 130 ms. A very big notes file (a huge note makes it several MB) is also written to the disk less often while you type (every 1 to 2 seconds instead of every 0.3 s); it is always written at once when you close StickyPad.
