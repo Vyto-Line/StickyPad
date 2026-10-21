@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.14.37
+- **All notes now opens with Ctrl+Alt+Q.** Ctrl+Alt+A is a screenshot shortcut in several other programs, which then kept it for themselves and StickyPad never got it. If you changed the key yourself in Settings > Shortcuts, your choice is kept.
+- **The shortcut named in the sidebar and in the tray menu is always the real one.** The line at the bottom of the sidebar reads "Ctrl+Alt+Q opens this window from anywhere" (using whatever key you set), and the tray menu shows your current keys instead of fixed text.
+- Not tried on a real Windows PC yet.
+
 ## 1.14.36
 - **The note's scroll bar can be grabbed.** The built-in scroll bar was only 8 pixels wide and, on Windows, the pointer stayed a text cursor over it, so a huge note could not be scrolled by dragging. A note now has StickyPad's own scroll bar: a 16 pixel grab area with an ordinary arrow pointer, kept clear of the window's resize border. Drag the thumb, click above or below it to move one page, or use the mouse wheel over it; the text cursor stays where it was. The mouse wheel, Page Up/Down and the keyboard scroll the note as before.
 - Not tried on a real Windows PC yet.

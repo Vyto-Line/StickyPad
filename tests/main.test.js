@@ -61,10 +61,10 @@ const H = require('./fake-electron');
   fs.mkdirSync(path.join(tmp, 'userData', 'images'), { recursive: true }); fs.writeFileSync(path.join(tmp, 'userData', 'images', 'aaaaaa.png'), Buffer.from([137, 80, 78, 71]));
   // ---- 1.14.1: shortcuts, clipboard note, links, title, ask-all-notes, import from other apps ----
   const KEYS = require('../keys');
-  let st2 = await h['settings:set']({}, { keys: { g_new: 'ctrl+alt+q', g_all: 'Ctrl+Alt+Q', n_find: 'Ctrl+Z', g_chat: 'Ctrl+Alt+H' } });
-  assert.strictEqual(st2.keys.g_new, 'Ctrl+Alt+Q'); assert.strictEqual(st2.keys.g_all, 'Ctrl+Alt+A', 'clashing keys keep the default'); assert.strictEqual(st2.keys.n_find, 'Ctrl+F', 'reserved keys are refused'); assert.strictEqual(st2.keys.g_chat, 'Ctrl+Alt+H');
-  assert.ok(electron.__reg['Control+Alt+Q'] && electron.__reg['Control+Alt+H'] && !electron.__reg['Control+Alt+N'], 'global shortcuts re-registered with the new keys');
-  assert.ok((await h['note:get'](e)).keys.g_new === 'Ctrl+Alt+Q', 'notes get the shortcuts too'); assert.ok(w.webContents.sent.some(m => m[0] === 'keys:changed' && m[1].g_new === 'Ctrl+Alt+Q'), 'open notes are told');
+  let st2 = await h['settings:set']({}, { keys: { g_new: 'ctrl+alt+x', g_all: 'Ctrl+Alt+X', n_find: 'Ctrl+Z', g_chat: 'Ctrl+Alt+H' } });
+  assert.strictEqual(st2.keys.g_new, 'Ctrl+Alt+X'); assert.strictEqual(st2.keys.g_all, 'Ctrl+Alt+Q', 'clashing keys keep the default'); assert.strictEqual(st2.keys.n_find, 'Ctrl+F', 'reserved keys are refused'); assert.strictEqual(st2.keys.g_chat, 'Ctrl+Alt+H');
+  assert.ok(electron.__reg['Control+Alt+X'] && electron.__reg['Control+Alt+H'] && !electron.__reg['Control+Alt+N'], 'global shortcuts re-registered with the new keys');
+  assert.ok((await h['note:get'](e)).keys.g_new === 'Ctrl+Alt+X', 'notes get the shortcuts too'); assert.ok(w.webContents.sent.some(m => m[0] === 'keys:changed' && m[1].g_new === 'Ctrl+Alt+X'), 'open notes are told');
   electron.__failAccels.add('Control+Alt+V'); st2 = await h['settings:set']({}, { shortcuts: true, keys: {} }); assert.deepStrictEqual(st2.keysFailed, ['g_clip'], 'a shortcut Windows refuses is reported');
   electron.__failAccels.clear(); st2 = await h['settings:set']({}, { keys: {} }); assert.deepStrictEqual(st2.keys, KEYS.DEFAULTS); assert.deepStrictEqual(st2.keysFailed, []);
   // note from clipboard

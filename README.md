@@ -70,7 +70,7 @@ A **.stickypad** file also keeps the note's look and settings (colour, font, siz
 ### Home: notes, trash, AI chat and settings in one window
 <img align="right" width="300" src="docs/images/feature_all.png" alt="The All notes window with folders and coloured cards">
 
-Ctrl+Alt+A, the tray icon, or the **house button** at the left of any note's title bar opens the **Home** window. A sidebar switches between **Notes** (every note as a card, with search, *Open all* per folder and *Tidy up*; **folder chips** show one folder at a time, and dropping a card on a chip moves the note there), **Trash**, **Ask the AI** (the chat) and **Settings**. It is always the same one window, so nothing gets lost behind others. Closed notes are greyed out; click one to open it.
+Ctrl+Alt+Q, the tray icon, or the **house button** at the left of any note's title bar opens the **Home** window. A sidebar switches between **Notes** (every note as a card, with search, *Open all* per folder and *Tidy up*; **folder chips** show one folder at a time, and dropping a card on a chip moves the note there), **Trash**, **Ask the AI** (the chat) and **Settings**. It is always the same one window, so nothing gets lost behind others. Closed notes are greyed out; click one to open it.
 
 ### Search all notes
 Press **Ctrl+Alt+F** (or *Search notes…* in the tray menu) from anywhere: a small search window opens in the middle of your screen. Type a few letters and the notes that contain **all** your words appear at once, best match first, each with a short piece of its text and the matching words marked. **Up and Down** choose, **Enter** opens the note, **Esc** (or a click elsewhere) closes it. It reads the **whole text** of every note, ignores capitals and accents (so *καλημερα* finds *Καλημέρα*), and notes with a lock are found by their title only. The search box in the Home window uses the same search.
@@ -166,7 +166,7 @@ Every shortcut below can be changed in **Settings > Shortcuts**: press *Change*,
 | Anywhere in Windows (Settings > Shortcuts can turn these off) | |
 |---|---|
 | Ctrl+Alt+N | new note |
-| Ctrl+Alt+A | all notes |
+| Ctrl+Alt+Q | all notes |
 | Ctrl+Alt+C | AI chat |
 | Ctrl+Alt+S | settings |
 | Ctrl+Alt+V | new note from the clipboard |

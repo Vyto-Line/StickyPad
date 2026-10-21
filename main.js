@@ -553,10 +553,10 @@ function buildMenu() {
   const launch = (label, v) => ({ label, type: 'radio', checked: settings.launch === v, click: () => setPrefs({ launch: v }) });
   return Menu.buildFromTemplate([
     { label: 'Search notes…  (' + curKeys().g_find + ')', click: () => toggleQuick() },
-    { label: 'All notes…  (Ctrl+Alt+A)', click: () => openAll() },
-    { label: 'Settings…  (Ctrl+Alt+S)', click: () => openSettings() },
-    { label: 'AI chat…  (Ctrl+Alt+C)', click: () => openChat() },
-    { label: 'New note  (Ctrl+Alt+N)', click: () => makeNote(null) },
+    { label: 'All notes…  (' + curKeys().g_all + ')', click: () => openAll() },
+    { label: 'Settings…  (' + curKeys().g_settings + ')', click: () => openSettings() },
+    { label: 'AI chat…  (' + curKeys().g_chat + ')', click: () => openChat() },
+    { label: 'New note  (' + curKeys().g_new + ')', click: () => makeNote(null) },
     { label: 'Show all notes', click: showAll },
     { label: 'Tidy up notes', click: tidy },
     { label: `Trash (${trash.length})`, click: () => openAll('trash') },

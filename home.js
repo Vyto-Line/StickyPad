@@ -22,7 +22,11 @@
     b.innerHTML = icon + '<span>' + label + '</span>' + (id === 'trash' ? '<em id="hTrashN"></em>' : '');
     b.onclick = () => go(id); nav.appendChild(b); btns[id] = b;
   }
-  const foot = document.createElement('div'); foot.className = 'hfoot'; foot.textContent = 'Ctrl+Alt+A opens this window from anywhere.'; nav.appendChild(foot);
+  const foot = document.createElement('div'); foot.className = 'hfoot'; foot.textContent = 'Opens this window from anywhere.';
+  const keyHint = k => { foot.textContent = (k || 'The shortcut') + ' opens this window from anywhere.'; };
+  keyHint(window.StickyKeys && StickyKeys.DEFAULTS.g_all);   // the real key is read next (it can be changed in Settings > Shortcuts)
+  if (api.welcomeGet) api.welcomeGet().then(r => { if (r && r.keys && r.keys.g_all) keyHint(r.keys.g_all); }).catch(() => {});
+  if (api.onKeys) api.onKeys(m => { if (m && m.g_all) keyHint(m.g_all); }); nav.appendChild(foot);
 
   const main = document.createElement('div'); main.className = 'homeMain';
   main.style.flexDirection = getComputedStyle(body).flexDirection;   // keep the page's own layout (column, or row for Settings)

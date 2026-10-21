@@ -58,5 +58,6 @@ with sync_playwright() as p:
     pg.screenshot(path=os.path.join(OUT,'home_chat_chip.png'))
     pg=page('all.html','?tab=trash'); ok(pg.eval_on_selector('#homeNav .hitem.on','e=>e.dataset.go')=='trash','opening with ?tab=trash highlights Trash')
     pg=page('all.html',w=800,h=520); ok(pg.is_visible('#sections') or pg.is_visible('#empty'),'fits the smallest window (800x520)')
+    pg=page('all.html'); pg.wait_for_timeout(300); ft=pg.inner_text('.hfoot'); ok(ft=='Ctrl+Alt+Q opens this window from anywhere.','the sidebar names the real shortcut: %r'%ft)
     b.close()
 print('FAILS:',fails); sys.exit(1 if fails else 0)

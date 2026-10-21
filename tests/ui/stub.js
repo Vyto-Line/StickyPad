@@ -18,7 +18,7 @@
     prefs: async p => { S.calls.push(['prefs', JSON.parse(JSON.stringify(p))]); return p; },
     themeSet: async id => { S.calls.push(['themeSet', id]); return id; },
     themeApplyAll: async id => { S.calls.push(['themeApplyAll', id]); return id; },
-    welcomeGet: async () => ({ keys: window.__KEYS || { g_new: 'Ctrl+Alt+N', g_all: 'Ctrl+Alt+A', g_find: 'Ctrl+Alt+F' }, name: window.__NAME || '', fresh: window.__FRESH !== false }),
+    welcomeGet: async () => ({ keys: window.__KEYS || { g_new: 'Ctrl+Alt+N', g_all: 'Ctrl+Alt+Q', g_find: 'Ctrl+Alt+F' }, name: window.__NAME || '', fresh: window.__FRESH !== false }),
     welcomeClose: async o => { S.calls.push(['welcomeClose', o || {}]); },
     dropFiles: async files => { S.calls.push(['dropFiles', files.map(f => f.name)]); return window.__DROP || { ok: true, count: files.length, failed: 0 }; },
     searchClose: async () => { S.calls.push(['searchClose']); },
