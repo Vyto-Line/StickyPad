@@ -293,6 +293,19 @@ function cleanBounds(b) {
 }
 // Windows puts a window opened by a program that is not in front BEHIND the other programs (the start-up splash never takes the front,
 // so the notes and Home used to appear hidden behind other windows). This raises a window without stealing the typing focus.
+// A hidden window is shown when the page is ready. "ready-to-show" alone is not reliable on every PC (the search window, the Home window
+// and notes could stay hidden), so whichever comes first of ready-to-show, the page finishing loading, or a timer shows it.
+function onceReady(win, label, fn) {
+  let done = false;
+  const go = why => {
+    if (done || win.isDestroyed()) return; done = true;
+    if (why !== 'ready') { try { perfLog('WINDOW ' + label + ' was shown by ' + why + ', ready-to-show had not come'); } catch {} }
+    fn();
+  };
+  win.once('ready-to-show', () => go('ready'));
+  try { win.webContents.once('did-finish-load', () => go('page load')); } catch {}
+  setTimeout(() => go('the timer'), 1500);
+}
 let raiseUntil = 0;   // for a few seconds after start-up (and after a second launch) every window that appears is raised
 function raise(w) {
   try {
@@ -328,7 +341,7 @@ function openNote(n) {
   if (n.pinned) w.setAlwaysOnTop(true, 'screen-saver');
   const t0 = Date.now();
   w.loadFile('note.html', { query: { id: n.id } });
-  w.once('ready-to-show', () => { w.show(); if (raiseNow()) raise(w); pingAll(); slowWindow('a note', t0); });
+  onceReady(w, 'note', () => { w.show(); if (raiseNow()) { raise(w); setTimeout(() => raise(w), 400); } pingAll(); slowWindow('a note', t0); });
   const keep = (byHand) => {
     const m = notes[n.id]; if (!m || w.isDestroyed()) return;
     const ds = displayList();
@@ -384,7 +397,7 @@ function utilWindow(ref, title, htmlFile, w, h, query) {
     webPreferences: { preload, contextIsolation: true, nodeIntegration: false }
   });
   win.setMenu(null); win.loadFile(htmlFile, query ? { query } : undefined);
-  win.once('ready-to-show', () => { win.show(); win.focus(); if (raiseNow()) raise(win); slowWindow(htmlFile, t0); });
+  onceReady(win, htmlFile, () => { win.show(); win.focus(); if (raiseNow()) { raise(win); setTimeout(() => raise(win), 400); } slowWindow(htmlFile, t0); });
   win.on('focus', focusguard.guard(win));   // makes sure text boxes receive typing (and never starts a focus fight between two windows)
   return win;
 }
@@ -562,7 +575,7 @@ ipcMain.handle('welcome:close', (e, o) => {
       let finished = false;
       const front = () => { try { if (!w.isDestroyed()) { w.show(); w.moveTop(); w.focus(); } } catch {} };
       const fin = () => { if (finished) return; finished = true; front(); closeTour(); };
-      w.once('ready-to-show', () => { front(); setTimeout(fin, 60); });
+      onceReady(w, 'tour', () => { front(); setTimeout(fin, 60); });
       setTimeout(fin, 600);   // a slow PC: do not keep the tour on screen; the note still comes to the front when it is ready
       return;
     }
@@ -944,7 +957,7 @@ ipcMain.handle('grp:move', (e, noteId, gid) => {
 ipcMain.handle('all:open', (e, tab) => openAll(tab === 'trash' ? 'trash' : undefined));
 ipcMain.handle('all:new', () => {   // from Home: the new note must come to the front, not open behind the Home window
   const n = makeNote(null), w = wins.get(n.id);
-  if (w && !w.isDestroyed()) w.once('ready-to-show', () => { if (!w.isDestroyed()) { w.show(); w.focus(); } });
+  if (w && !w.isDestroyed()) onceReady(w, 'new note', () => { w.show(); w.focus(); });
 });
 ipcMain.handle('all:tidy', () => tidy());
 const trashList = () => trash.map(t => ({

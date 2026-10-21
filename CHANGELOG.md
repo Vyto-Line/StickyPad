@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.14.47
+- **Home, notes and the tour can no longer stay hidden at start-up.** A hidden window waited for one signal ("ready to show") before appearing, and on some PCs that signal does not come: the notes appeared but the Home window did not. Every window now appears at the first of three signals (ready to show, page loaded, or 1.5 s), and at start-up it is raised to the front twice (right away and 0.4 s later). If the first signal was missing, the performance log says so (a `WINDOW ... was shown by` line), which tells me what Windows is doing on your PC.
+- Not tried on a real Windows PC yet.
+
 ## 1.14.46
 - **"When StickyPad starts" now also works when you start StickyPad while it is already running in the tray.** Before, starting it again only brought the notes forward, whatever the setting was, so "Open the All notes window" and "Open both" seemed to do nothing. Now: *Open my notes* shows the notes, *Open the All notes window* opens Home, *Open both* does both.
 - Not tried on a real Windows PC yet.
