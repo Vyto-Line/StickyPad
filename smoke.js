@@ -1,11 +1,11 @@
 // A real-Electron smoke test: starts StickyPad's main.js in a throw-away data folder, waits, and prints what really happened
 // (Electron/Chromium versions, command-line switches, windows and whether they are visible, shortcuts, logs).
-// Run:  npx electron tools/smoke.js        (used by .github/workflows/smoke.yml; it needs a real display, so not for the cloud sandbox)
+// Run:  npx electron smoke.js        (used by .github/workflows/smoke.yml; it needs a real display, so not for the cloud sandbox)
 const { app, BrowserWindow, globalShortcut } = require('electron');
 const path = require('path'), fs = require('fs'), os = require('os');
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'sp-smoke-'));
 app.setPath('userData', tmp);
-require(path.join(__dirname, '..', 'main.js'));
+require(path.join(__dirname, 'main.js'));
 const read = f => { try { return fs.readFileSync(path.join(tmp, f), 'utf8').trim().split('\n').slice(-20); } catch { return null; } };
 setTimeout(() => {
   const rep = {

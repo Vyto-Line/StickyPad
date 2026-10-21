@@ -12,7 +12,7 @@ jobs:
       - name: Start the real app and report
         shell: bash
         run: |
-          npx electron tools/smoke.js 2>&1 | tee smoke.txt
+          npx electron smoke.js 2>&1 | tee smoke.txt
           # the report is also written as a notice, so it can be read from the run's annotations without downloading anything
           msg=$(cat smoke.txt | sed 's/%/%25/g' | awk 'BEGIN{ORS="%0A"}{print}')
           echo "::notice title=SMOKE-REPORT::${msg:0:60000}"
