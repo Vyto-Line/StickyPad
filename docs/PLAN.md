@@ -30,7 +30,7 @@
 
 ## Still wanted, no date
 - Test on a real Windows PC (WINDOWS_CHECKLIST.md). The performance and AI logs help here.
-- Code signing the installer (removes the SmartScreen warning).
+- Code signing the installer: postponed by Alex (2026-10-22) until more people download the app. Options found: SignPath Foundation (free for open source, MIT qualifies, needs verifiable reputation and a Code signing policy section on the homepage; publisher shows as SignPath Foundation) or Azure Artifact Signing ($9.99/month, individuals only in the US/Canada, organizations in the US/Canada/EU/UK).
 - Tauri auto-updater needs a signing key from Alex (only if the Tauri build comes back).
 
 ## Scrapped
