@@ -16,7 +16,7 @@ with sync_playwright() as p:
         pg=page(f)
         ok(pg.is_visible('#homeNav'),f+': sidebar shown')
         names=pg.eval_on_selector_all('#homeNav .hitem','e=>e.map(x=>x.textContent.trim())')
-        ok(names[:4]==['Notes','Trash','Ask the AI','Settings'],f+': items %s'%names)
+        ok(names[:4]==['Home','Trash','Ask the AI','Settings'],f+': items %s'%names)
         ok(pg.eval_on_selector('#homeNav .hitem.on','e=>e.dataset.go')==cur,f+': "%s" is highlighted'%cur)
         box=pg.eval_on_selector('.homeMain','e=>{const r=e.getBoundingClientRect();return [r.width,r.height]}')
         ok(box[1]>=670 and box[0]>=780,f+': page fills the rest of the window %s'%box)
