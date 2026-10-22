@@ -3,9 +3,17 @@ const q = $('#q'), list = $('#list');
 let rows = [], sel = 0, seq = 0, timer = null;
 
 // Pieces of text with the matching parts marked (built with text nodes, never as HTML).
+// A checklist item reaches us as "☐ text" or "☑ text"; it is drawn as the same round tick circle the note itself uses.
+function addText(el, t) {
+  String(t).split(/([☐☑])\s?/).forEach(x => {
+    if (x === '☐' || x === '☑') {
+      const c = document.createElement('span'); c.className = x === '☑' ? 'cb done' : 'cb'; c.setAttribute('role', 'img'); c.setAttribute('aria-label', x === '☑' ? 'done' : 'to do'); el.appendChild(c);
+    } else if (x) el.appendChild(document.createTextNode(x));
+  });
+}
 function fill(el, segs) {
   (segs || []).forEach(p => {
-    if (p.h) { const m = document.createElement('mark'); m.textContent = p.t; el.appendChild(m); } else el.appendChild(document.createTextNode(p.t));
+    if (p.h) { const m = document.createElement('mark'); addText(m, p.t); el.appendChild(m); } else addText(el, p.t);
   });
 }
 const ago = ts => {
