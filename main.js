@@ -603,7 +603,7 @@ function buildMenu() {
   const launch = (label, v) => ({ label, type: 'radio', checked: settings.launch === v, click: () => setPrefs({ launch: v }) });
   return Menu.buildFromTemplate([
     { label: 'Search notes…  (' + curKeys().g_find + ')', click: () => toggleQuick() },
-    { label: 'All notes…  (' + curKeys().g_all + ')', click: () => openAll() },
+    { label: 'Home…  (' + curKeys().g_all + ')', click: () => openAll() },
     { label: 'Settings…  (' + curKeys().g_settings + ')', click: () => openSettings() },
     { label: 'AI chat…  (' + curKeys().g_chat + ')', click: () => openChat() },
     { label: 'New note  (' + curKeys().g_new + ')', click: () => makeNote(null) },
@@ -611,7 +611,7 @@ function buildMenu() {
     { label: 'Tidy up notes', click: tidy },
     { label: `Trash (${trash.length})`, click: () => openAll('trash') },
     { type: 'separator' },
-    { label: 'When StickyPad starts', submenu: [launch('Open my notes', 'notes'), launch('Open the All notes window', 'all'), launch('Open both', 'both')] },
+    { label: 'When StickyPad starts', submenu: [launch('Open my notes', 'notes'), launch('Open Home only', 'all'), launch('Open both', 'both')] },
     { label: 'Startup animation', type: 'checkbox', checked: !!settings.splash, click: i => setPrefs({ splash: i.checked }) },
     { label: 'Hide from taskbar', type: 'checkbox', checked: !!settings.hideTaskbar, click: i => setHide(i.checked) },
     { label: 'Snap notes to edges and each other', type: 'checkbox', checked: !!settings.snap, click: i => setSnap(i.checked) },

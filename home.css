@@ -3,21 +3,21 @@ body.homed{flex-direction:row!important;border:0!important}
 .homeMain{flex:1;min-width:0;height:100%;display:flex;overflow:hidden}
 #homeNav{flex:none;width:172px;height:100%;display:flex;flex-direction:column;gap:2px;padding:14px 10px;background:var(--nav,var(--card,#fff));border-right:1px solid var(--line,#e0e3ee)}
 .hbrand{font-weight:800;font-size:15px;letter-spacing:-.01em;padding:2px 10px 14px}
-.hitem{display:flex;align-items:center;gap:10px;width:100%;text-align:left;font:inherit;font-size:13.5px;font-weight:600;color:var(--mute,#6b7288);background:none;border:0;border-radius:9px;padding:9px 10px;cursor:pointer}
+.hitem{display:flex;align-items:center;gap:10px;width:100%;text-align:left;font:inherit;font-size:13.5px;font-weight:600;color:var(--mute,#656c82);background:none;border:0;border-radius:9px;padding:9px 10px;cursor:pointer}
 .hitem:hover{background:var(--hover,#e8ebf6);color:var(--fg,#1c2030)}
 .hitem.on{background:var(--card,#fff);color:var(--fg,#1c2030);box-shadow:0 0 0 1px var(--line,#e0e3ee)}
-.hitem em{margin-left:auto;font-style:normal;font-size:11px;font-weight:700;color:var(--mute,#6b7288)}
+.hitem em{margin-left:auto;font-style:normal;font-size:11px;font-weight:700;color:var(--mute,#656c82)}
 .hitem em:empty{display:none}
 .hitem:focus-visible{outline:2px solid var(--accent,#4263eb);outline-offset:1px}
-.hsupport{display:flex;align-items:center;gap:6px;width:100%;margin-top:auto;font:inherit;font-size:12px;font-weight:600;white-space:nowrap;color:var(--mute,#6b7288);background:none;border:1px dashed var(--line,#d5d9e8);border-radius:9px;padding:8px;cursor:pointer;text-align:left}
+.hsupport{display:flex;align-items:center;gap:6px;width:100%;margin-top:auto;font:inherit;font-size:12px;font-weight:600;white-space:nowrap;color:var(--mute,#656c82);background:none;border:1px dashed var(--line,#d5d9e8);border-radius:9px;padding:8px;cursor:pointer;text-align:left}
 .hsupport:hover{background:var(--hover,#e8ebf6);color:var(--fg,#1c2030)}
 .hsupport:focus-visible{outline:2px solid var(--accent,#4263eb);outline-offset:1px}
-.hfoot{padding:10px;font-size:11.5px;line-height:1.4;color:var(--mute,#6b7288)}
+.hfoot{padding:10px;font-size:11.5px;line-height:1.4;color:var(--mute,#656c82)}
 /* the pages' own switches for the same things are now in the sidebar */
 .homed .tabs2,.homed #chatBtn,.homed #gear{display:none!important}
 .homed #close{display:none!important}
 .hsubs{display:flex;flex-direction:column;gap:1px;margin:2px 0 6px}
-.hsub{text-align:left;font:inherit;font-size:12.5px;color:var(--mute,#6b7288);background:none;border:0;border-radius:7px;padding:6px 10px 6px 36px;cursor:pointer}
+.hsub{text-align:left;font:inherit;font-size:12.5px;color:var(--mute,#656c82);background:none;border:0;border-radius:7px;padding:6px 10px 6px 36px;cursor:pointer}
 .hsub:hover{background:var(--hover,#e8ebf6);color:var(--fg,#1c2030)}
 .hsub.on{color:var(--accent,#4263eb);font-weight:700}
 .hsub:focus-visible{outline:2px solid var(--accent,#4263eb);outline-offset:1px}
