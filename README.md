@@ -114,8 +114,11 @@ Notes of hundreds of thousands of lines open in a fraction of a second and type 
 ### If something is slow or wrong
 *Settings > About* opens three logs: the **performance log** (a window that took more than half a second, a freeze over 0.3 s, a slow save), the **update log** and the **AI log** (*Settings > AI*, what the model answered or why it did not). They hold only times, sizes and error text, never your notes.
 
+### Select several notes
+In Home, **Select** lets you choose notes (click, **Shift+click** for a range, **Ctrl+A** for all) and then **Print…**, **Move to folder…** or **Move to trash** them in one go.
+
 ### Printing
-Press **Ctrl+P** in a note, or right-click a note in Home > **Print…**. To print several notes together, press **Select notes to print** in Home, click the notes in the order you want, and press **Print…**.
+Press **Ctrl+P** in a note, or right-click a note in Home > **Print…**. To print several notes together, press **Select** in Home, click the notes in the order you want, and press **Print…**.
 A **Print options** window (with a preview) lets you choose the **style** (plain, boxed, or filled with the note's colour), the **layout** (real size from the top left corner, full width, 2 or 3 columns, one note per page), the text size, and whether to include titles and pictures. Your choices are remembered. Locked notes are not printed.
 
 ### Several screens

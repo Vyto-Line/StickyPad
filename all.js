@@ -1,6 +1,7 @@
 const $ = s => document.querySelector(s);
 const isDark = hex => (window.StickyThemes ? window.StickyThemes.wantsLightText(hex) : (() => { const n = parseInt(hex.slice(1), 16); return (0.299 * (n >> 16 & 255) + 0.587 * (n >> 8 & 255) + 0.114 * (n & 255)) / 255 < 0.5; })());
-let selecting = false, sel = [], printMsg = '';   // "Select notes to print": sel is the notes in the order they were chosen
+let selecting = false, sel = [], printMsg = '', lastPick = '';
+const shownIds = () => [...document.querySelectorAll('#sections .card[data-id]')].map(c => c.dataset.id);   // the notes on screen, in order   // "Select": sel is the notes in the order they were chosen (print uses that order)
 let data = { groups: [], notes: [], trash: [], greeting: 'Hello', emoji: '', prefs: {} };
 let view = new URLSearchParams(location.search).get('tab') === 'trash' ? 'trash' : 'notes';
 let folder = '*';   // which folder chip is chosen: '*' all, a folder id, or '-' for notes without a folder
@@ -19,7 +20,7 @@ function arm(btn, label, sure, action) {
 /* ---------- note cards ---------- */
 function card(n) {
   const lines = n.text.split('\n').map(l => l.trim()).filter(Boolean);
-  const b = document.createElement('button'); b.className = 'card' + (n.open ? '' : ' closed'); b.draggable = true;
+  const b = document.createElement('button'); b.className = 'card' + (n.open ? '' : ' closed'); b.draggable = true; b.dataset.id = n.id;
   b.style.background = n.color; b.style.color = isDark(n.color) ? '#f2f2f2' : '#1b1b1b';
   b.style.fontFamily = '"' + String(n.font).replace(/["\\]/g, '') + '", "Segoe UI", sans-serif';
   const t = document.createElement('span'); t.className = 't';
@@ -30,15 +31,17 @@ function card(n) {
   [n.locked ? '🔒 locked' : '', n.pinned ? '📌 pinned' : '', n.images ? '📷 ' + n.images : '', n.rolled ? 'rolled up' : '', n.open ? '' : 'closed'].filter(Boolean)
     .forEach(x => { const c = document.createElement('span'); c.className = 'chip'; c.textContent = x; badges.appendChild(c); });
   b.append(t, s, badges);
-  b.onclick = () => {
+  b.onclick = ev => {
     if (!selecting) { api.allShow(n.id); return; }
-    if (n.locked) return;   // a locked note cannot be printed
+    if (ev && ev.shiftKey && lastPick && lastPick !== n.id) {   // Shift+click: everything between the last note clicked and this one
+      const ids = shownIds(), x = ids.indexOf(lastPick), y = ids.indexOf(n.id);
+      if (x >= 0 && y >= 0) { ids.slice(Math.min(x, y), Math.max(x, y) + 1).forEach(id => { if (!sel.includes(id)) sel.push(id); }); draw(); return; }
+    }
     const k = sel.indexOf(n.id); if (k >= 0) sel.splice(k, 1); else sel.push(n.id);
-    draw();
+    lastPick = n.id; draw();
   };
   if (selecting) {
     b.draggable = false; b.setAttribute('aria-pressed', sel.includes(n.id));
-    if (n.locked) b.classList.add('nosel');
     if (sel.includes(n.id)) { b.classList.add('picked'); const nb = document.createElement('span'); nb.className = 'pick'; nb.textContent = sel.indexOf(n.id) + 1; nb.setAttribute('aria-label', 'Number ' + (sel.indexOf(n.id) + 1) + ' to print'); b.appendChild(nb); }
   }
   b.oncontextmenu = e => { e.preventDefault(); api.allContext(n.id); };
@@ -118,8 +121,9 @@ function draw() {
   $('#notesBar').hidden = inTrash; $('#trashBar').hidden = !inTrash;
   $('#printBar').hidden = !selecting; $('#selectBtn').hidden = selecting;
   sel = sel.filter(id => data.notes.some(x => x.id === id));   // a note that was deleted meanwhile drops out
-  $('#printGo').disabled = !sel.length;
-  if (!printMsg) $('#selInfo').textContent = sel.length ? sel.length + (sel.length === 1 ? ' note' : ' notes') + ' chosen: printed in the order of the numbers' : 'Click the notes to print, in the order you want them.';
+  $('#printGo').disabled = !sel.length; $('#selTrash').disabled = !sel.length; $('#selFolder').disabled = !sel.length;
+  if (selecting) fillFolders();
+  if (!printMsg) $('#selInfo').textContent = sel.length ? sel.length + (sel.length === 1 ? ' note' : ' notes') + ' chosen. Print uses the order of the numbers.' : 'Click notes to choose them (Shift+click for a range, Ctrl+A for all).';
   $('#sections').hidden = inTrash; $('#trashList').hidden = !inTrash;
 
   const total = data.notes.length;
@@ -196,9 +200,27 @@ arm($('#emptyBtn'), 'Empty trash', 'Sure? Cannot undo', () => api.trashEmpty());
 $('#q').addEventListener('input', () => { draw(); runSearch(); });
 $('#new').onclick = () => api.allNew();
 $('#tidy').onclick = () => api.tidy();
-function selectMode(on) { selecting = on; sel = []; printMsg = ''; draw(); }
+function selectMode(on) { selecting = on; sel = []; printMsg = ''; lastPick = ''; draw(); }
 $('#selectBtn').onclick = () => selectMode(true);
 $('#selDone').onclick = () => selectMode(false);
+$('#selAll').onclick = () => selectAll();
+function selectAll() { shownIds().forEach(id => { if (!sel.includes(id)) sel.push(id); }); draw(); }
+function fillFolders() {   // "Move to folder": the list of folders, rebuilt only when it changes
+  const f = $('#selFolder'), key = data.groups.map(g => g.id + g.name).join('|');
+  if (f.dataset.key === key && f.options.length) return; f.dataset.key = key; f.textContent = '';
+  const add = (v, t) => { const o = document.createElement('option'); o.value = v; o.textContent = t; f.appendChild(o); };
+  add('', 'Move to folder…'); add('-', 'No folder'); data.groups.forEach(g => add(g.id, '📁 ' + g.name));
+}
+$('#selFolder').onchange = async () => {
+  const v = $('#selFolder').value; if (v === '' || !sel.length) return;
+  const ids = sel.slice(); await Promise.all(ids.map(id => api.grpMove(id, v === '-' ? null : v)));
+  const to = v === '-' ? 'no folder' : (data.groups.find(g => g.id === v) || {}).name || 'the folder';
+  selectMode(false); await refresh(); $('#count').textContent = ids.length + (ids.length === 1 ? ' note' : ' notes') + ' moved to ' + to;
+};
+arm($('#selTrash'), 'Move to trash', 'Sure? They go to the trash', async () => {
+  if (!sel.length) return; const ids = sel.slice();
+  await Promise.all(ids.map(id => api.allTrash(id))); selectMode(false); await refresh();
+});
 $('#printGo').onclick = async () => {
   if (!sel.length) return;
   const r = await api.allPrint(sel.slice());
@@ -217,6 +239,7 @@ $('#gear').onclick = () => api.openSettings();
 document.addEventListener('keydown', e => {
   if (e.ctrlKey && e.key.toLowerCase() === 'n') { e.preventDefault(); api.allNew(); }
   if (e.key === 'Escape' && selecting && !e.target.closest('input')) selectMode(false);
+  if (selecting && e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === 'a' && !e.target.closest('input, textarea, select')) { e.preventDefault(); selectAll(); }
 });
 api.onAllChanged(refresh);
 api.onAllTab(setView);

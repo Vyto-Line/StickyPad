@@ -30,11 +30,14 @@
     <div class="links">
       <button id="showFolder" class="link">＋ New folder</button>
       <button id="tidy" class="link" title="Arrange open notes in rows, folder by folder">Tidy up notes</button>
-      <button id="selectBtn" class="link" title="Choose several notes and print them in one go">Select notes to print</button>
+      <button id="selectBtn" class="link" title="Choose several notes to print, move to a folder or move to the trash">Select</button>
     </div>
     <div class="bar" id="printBar" hidden>
       <span id="selInfo" class="muted" role="status" aria-live="polite"></span>
+      <button id="selAll" class="btn" title="Choose every note shown (Ctrl+A)">Select all</button>
       <button id="printGo" class="btn primary" disabled>Print…</button>
+      <select id="selFolder" class="field" disabled aria-label="Move the chosen notes to a folder"></select>
+      <button id="selTrash" class="btn danger" disabled>Move to trash</button>
       <button id="selDone" class="btn">Cancel</button>
     </div>
     <div class="bar" id="folderRow" hidden>

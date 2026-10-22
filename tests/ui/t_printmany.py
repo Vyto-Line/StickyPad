@@ -12,10 +12,10 @@ with sync_playwright() as p:
     b=p.chromium.launch(); errs=[]
     pg=b.new_page(viewport={'width':980,'height':680}); pg.on('pageerror',lambda e:errs.append(str(e)))
     pg.add_init_script('try{localStorage.clear()}catch(e){}'+STUB+';'+ALL); pg.goto('file://'+ROOT+'all.html'); pg.wait_for_timeout(400)
-    ok(not pg.is_visible('#printBar'),'the print bar is hidden at first')
+    ok(not pg.is_visible('#printBar'),'the select bar is hidden at first')
     pg.click('#selectBtn'); pg.wait_for_timeout(100)
     ok(pg.is_visible('#printBar') and pg.is_disabled('#printGo'),'select mode: bar shown, Print needs a note')
-    pg.click('.card >> text=Gamma'); pg.click('.card >> text=Alpha'); pg.click('.card >> text=Secret'); pg.wait_for_timeout(100)
+    pg.click('.card >> text=Gamma'); pg.click('.card >> text=Alpha'); pg.wait_for_timeout(100)
     nums=pg.eval_on_selector_all('.card.picked','els=>els.map(e=>e.querySelector(".t").textContent+":"+e.querySelector(".pick").textContent)')
     ok(nums==['Alpha:2','Gamma:1'],'numbers follow the order chosen %s'%nums)
     ok(not calls(pg,'allShow'),'in select mode a click does not open the note')

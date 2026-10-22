@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.14.52
+- **Select mode in Home (it was "Select notes to print").** Press **Select**, then click notes to choose them: each gets a number. **Shift+click** chooses a range, **Ctrl+A** or **Select all** chooses every note shown. With notes chosen you can **Print…**, **Move to folder…** or **Move to trash** (it asks once: press it twice). Locked notes can be moved or trashed (printing skips them). Esc or Cancel leaves select mode.
+- Not tried on a real Windows PC yet.
+
 ## 1.14.51
 - **The Print options preview now shows every chosen note** (it showed only the first 4 when you chose more). It shows the first page of what will print; long notes are shortened in the picture only.
 - Not tried on a real Windows PC yet.
