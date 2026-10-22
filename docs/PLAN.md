@@ -13,6 +13,11 @@
 - Clean-up: dead code removed, leak fixed, docs refreshed, tests for locking, folders, trash, chat history, accessibility.
 - Print one note (Ctrl+P), Trash drag and drop, Home "+ Note" opens in front, shortcuts row removed from Accessibility.
 
+## Planned for 1.15.0 (Alex, 2026-10-22; release in about two days)
+1. **AI group in the note panel** (mockups approved): "Chat about this note" moves into the AI category as a big button, with Summarize, Translate... and a "More AI actions..." list.
+2. **Translate menu**: Translate... opens a language menu (English, Greek, Spanish, French, German, Italian, Portuguese, Dutch, Turkish, Russian, Arabic, Chinese, Japanese, with search). The source language is detected by the app and shown as "Greek (Auto-detected)"; the note's own language is greyed out as "same as the note". Greek and English keep their tuned pipeline; other languages get a general prompt with the same safety checks. The last chosen language is remembered. Small local models are weaker outside Greek and English; say so in the menu.
+3. **Snap a note to a side of the screen** (new idea): drag a note to the left or right edge and it fills that half of the screen; drag it to the top edge and it fills the whole screen (like Windows snap). Not designed yet. To settle first: should it be off by default (Alex's rule: every option off by default), how a snapped note returns to its old size when dragged away, and how it works with several screens and with the existing "Snap to edges and other notes" setting. Make a mockup before building.
+
 ## Next
 1. Finish Select mode in Home: Export, Colour, Open/Close/Pin, Trash-tab Restore/Delete forever, drag a chosen group onto a folder or Trash.
 2. More tests (search, AI, update handlers).
