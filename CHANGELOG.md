@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.14.49
+- **StickyPad now runs on Electron 44 (Chromium 152) instead of Electron 33.** Electron is the engine inside StickyPad; version 33 no longer received security fixes. Nothing about your notes, settings or features changes. Checked on a real Windows machine in the cloud (start-up, both windows appear, all six global shortcuts register, no crash), on Electron 35, 36, 40, 44 and 45.
+- **The installer is bigger: about 99 MB instead of about 75 MB** (the newer Chromium is bigger). Two unused files (about 26 MB, DirectX shader compilers only used by WebGPU) are left out to keep it from being 106 MB. Updates after this one download only the changed parts, so they stay small.
+- Not tried on a real Windows PC yet, so this release needs a few days of normal use: start-up, Ctrl+Alt+F, the tour, printing, dragging, see-through notes, updates.
+
 ## 1.14.48
 - **Print several notes in one go.** In Home, press **Select notes to print**, then click the notes in the order you want them: each gets a number. Tick **Each note on its own page** if you want that, otherwise the notes follow one another on the same page (a thin line between them) and a new page starts only when one is full. Press **Print…** to open the Windows print window. Locked notes cannot be chosen. Esc or Cancel leaves select mode.
 - Not tried on a real Windows PC yet. Printing needs a try with a printer or "Microsoft Print to PDF".

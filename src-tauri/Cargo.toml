@@ -1,6 +1,6 @@
 [package]
 name = "stickypad"
-version = "1.14.48"
+version = "1.14.49"
 description = "Colourful sticky notes with a local AI helper"
 authors = ["Vyto-Line"]
 license = "MIT"
