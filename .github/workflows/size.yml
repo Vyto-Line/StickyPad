@@ -37,3 +37,16 @@ jobs:
           cd ../..
           msg=$(cat size.txt | sed 's/%/%25/g' | awk 'BEGIN{ORS="%0A"}{print}')
           echo "::notice title=SIZE-REPORT::${msg:0:60000}"
+      - name: Start the unpacked app for a few seconds and check it runs
+        shell: bash
+        run: |
+          ./dist/win-unpacked/StickyPad.exe &
+          sleep 14
+          {
+            echo "RUNNING: $(tasklist | grep -ci stickypad) StickyPad processes"
+            echo "PERF LOG:"; tail -n 6 "$APPDATA/StickyPad/perf.log" 2>/dev/null || echo "(none)"
+            echo "CRASH LOG:"; tail -n 6 "$APPDATA/StickyPad/crash.log" 2>/dev/null || echo "(none)"
+          } | tee run.txt
+          msg=$(cat run.txt | sed 's/%/%25/g' | awk 'BEGIN{ORS="%0A"}{print}')
+          echo "::notice title=RUN-REPORT::${msg:0:60000}"
+          taskkill //F //IM StickyPad.exe > /dev/null 2>&1 || true
