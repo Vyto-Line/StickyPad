@@ -122,7 +122,8 @@
         "repo": "StickyPad",
         "releaseType": "release"
       }
-    ]
+    ],
+    "afterPack": "tools/afterpack.js"
   },
   "license": "MIT",
   "repository": {
