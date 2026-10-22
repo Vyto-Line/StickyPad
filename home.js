@@ -8,7 +8,7 @@
   const here = page === 'chat.html' ? 'chat' : page === 'settings.html' ? 'settings' : 'notes';
   const ico = d => '<svg class="i" viewBox="0 0 24 24" aria-hidden="true">' + d + '</svg>';
   const ITEMS = [
-    ['notes', 'Notes', ico('<rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/>')],
+    ['notes', 'Home', ico('<path d="M4 11.2L12 4l8 7.2V19a1.5 1.5 0 0 1-1.5 1.5H15v-5.5H9v5.5H5.5A1.5 1.5 0 0 1 4 19z"/>')],
     ['trash', 'Trash', ico('<path d="M5 7h14M9.5 7V4.5h5V7M7 7l.9 12.5h8.2L17 7"/>')],
     ['chat', 'Ask the AI', ico('<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/>')],
     ['settings', 'Settings', ico('<circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/>')]
