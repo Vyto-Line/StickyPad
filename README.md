@@ -68,7 +68,7 @@ StickyPad quietly keeps **up to 30 older copies of each note** while you edit: a
 A **.stickypad** file also keeps the note's look and settings (colour, font, size, transparency, pin, folder, reminder, window size). **Drag and drop** works too: drop `.stickypad`, `.md` or `.txt` files on any StickyPad window to add them as notes. Text files saved as UTF-8, UTF-16 or the old Windows 8-bit format (including old Greek files) are read correctly. Pictures are included: **.stickypad** and Markdown files carry them inside the file, and importing puts them back. Plain text (.txt) files cannot hold pictures.
 
 ### Home: notes, trash, AI chat and settings in one window
-<img align="right" width="300" src="docs/images/feature_all.png" alt="The All notes window with folders and coloured cards">
+<img align="right" width="300" src="docs/images/feature_all.png" alt="The Home window with folders, coloured cards and the Support the project button">
 
 Ctrl+Alt+Q, the tray icon, or the **house button** at the left of any note's title bar opens the **Home** window. A sidebar switches between **Notes** (every note as a card, with search, *Open all* per folder and *Tidy up*; **folder chips** show one folder at a time, and dropping a card on a chip moves the note there), **Trash**, **Ask the AI** (the chat) and **Settings**. It is always the same one window, so nothing gets lost behind others. Closed notes are greyed out; click one to open it.
 
@@ -118,9 +118,13 @@ Notes of hundreds of thousands of lines open in a fraction of a second and type 
 *Settings > About* opens three logs: the **performance log** (a window that took more than half a second, a freeze over 0.3 s, a slow save), the **update log** and the **AI log** (*Settings > AI*, what the model answered or why it did not). They hold only times, sizes and error text, never your notes.
 
 ### Select several notes
+<img src="docs/images/feature_select.png" width="560" alt="Home in select mode: three numbered notes and the Print, Move to folder and Move to trash buttons">
+
 In Home, **Select** lets you choose notes (click, **Shift+click** for a range, **Ctrl+A** for all) and then **Print…**, **Move to folder…** or **Move to trash** them in one go.
 
 ### Printing
+<img src="docs/images/feature_print.png" width="420" alt="The Print options window with a preview of three notes printed as sticky notes">
+
 Press **Ctrl+P** in a note, or right-click a note in Home > **Print…**. To print several notes together, press **Select** in Home, click the notes in the order you want, and press **Print…**.
 A **Print options** window (with a preview) lets you choose the **style** (plain, boxed, or filled with the note's colour), the **layout** (real size from the top left corner, full width, 2 or 3 columns, one note per page), the text size, and whether to include titles and pictures. Your choices are remembered. Locked notes are not printed.
 

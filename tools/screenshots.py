@@ -88,6 +88,16 @@ with sync_playwright() as p:
       {id:'f',title:'Reading list',text:'Dune, The Left Hand of Darkness',color:'#E6D5FF',group:'g1',updated:Date.now()-5*864e5,open:false}],
       groups: [{id:'g1',name:'Home',collapsed:false},{id:'g2',name:'Work',collapsed:false}], trash: [], prefs: {} });'''
     pg = page(b, None, 900, 560, extra=allj); goto(pg, 'all.html'); shot(pg, 'feature_all'); pg.close()
+    # Select mode: numbered choice and the action bar
+    pg = page(b, None, 900, 560, extra=allj); goto(pg, 'all.html'); pg.click('#selectBtn')
+    for t in ('Groceries', 'Crete trip', 'Meeting'): pg.click('.card >> text=' + t)
+    pg.wait_for_timeout(300); shot(pg, 'feature_select'); pg.close()
+    # Print options with the preview
+    import json, subprocess
+    items = [dict(title=NOTES[k]['title'], blocks=NOTES[k]['blocks'], font='Segoe UI', color=NOTES[k]['color']) for k in ('groceries', 'ideas', 'greek')]
+    html = subprocess.run(['node', '-e', "const P=require('./print');const it=JSON.parse(process.argv[1]);process.stdout.write(P.build(it,'',P.cleanOpts({style:'sticky',layout:'actual',size:'normal'})))", json.dumps(items)], cwd=ROOT, capture_output=True, text=True, encoding='utf-8').stdout
+    pinfo = "window.__PINFO={count:3,skipped:0,many:true,titles:['Groceries','Crete trip','Σχέδιο'],opts:{style:'sticky',layout:'actual',size:'normal',title:true,pictures:true}};window.__PREVIEW=%s;" % json.dumps(html)
+    pg = page(b, None, 700, 800, extra=pinfo + "window.api.printPreview=async()=>window.__PREVIEW;"); goto(pg, 'printdlg.html'); pg.wait_for_timeout(700); shot(pg, 'feature_print'); pg.close()
     # settings window
     setj = "const o=window.api.settingsGet; window.api.settingsGet=async()=>({...(await o()),version:'1.14.11',notesCount:6,groups:[{id:'g1',name:'Home'},{id:'g2',name:'Work'}],autoBackup:true,backupCount:7,lastBackup:Date.now()-3600e3,dataPath:'C:/Users/you/OneDrive/StickyPad',dataCustom:true,autoUpdate:true,shortcuts:true,snap:true});"
     pg = page(b, None, 1030, 640, extra=setj); goto(pg, 'settings.html'); pg.click('[data-cat=data]'); pg.wait_for_timeout(300); shot(pg, 'feature_settings_data'); pg.click('[data-cat=about]'); pg.wait_for_timeout(300); shot(pg, 'feature_settings_about'); pg.close()
