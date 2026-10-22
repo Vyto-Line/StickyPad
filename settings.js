@@ -22,6 +22,7 @@ function fill() {
   $$('[data-pref]').forEach(el => { const v = S.prefs[el.dataset.pref]; if (el.type === 'checkbox') el.checked = !!v; else setIfIdle(el, v); });
   $$('[data-range]').forEach(el => { const k = el.dataset.range; el.value = S[k]; $('#' + k + 'Out').textContent = S[k] + (k === 'snapDistance' ? ' px' : ' px'); });
   $$('[data-num]').forEach(el => { el.value = String(S[el.dataset.num]); });
+  $('#quietMode').value = S.quiet.mode; $('#quietDelay').value = String(S.quiet.delay); $('#quietDelay').disabled = S.quiet.mode === 'off';
   $('#startup').disabled = !S.packaged; $('#startupNote').hidden = S.packaged;
   $('#trashInfo').textContent = S.trashCount ? `${S.trashCount} deleted note${S.trashCount === 1 ? '' : 's'} in the trash. Permanently deletes them.` : 'The trash is empty.';
   $('#emptyTrash').disabled = !S.trashCount;
@@ -127,6 +128,8 @@ $$('[data-range]').forEach(el => {
   el.oninput = () => { $('#' + el.dataset.range + 'Out').textContent = el.value + ' px'; };
   el.onchange = () => save({ [el.dataset.range]: Number(el.value) });
 });
+$('#quietMode').onchange = () => api.quietSet({ mode: $('#quietMode').value }).then(load);
+$('#quietDelay').onchange = () => api.quietSet({ delay: Number($('#quietDelay').value) }).then(load);
 $('#applyAll').onclick = async () => { await api.themeApplyAll(S.theme); const m = $('#applyMsg'); flash(m, 'Applied to all your notes ✓'); };
 arm($('#emptyTrash'), 'Empty trash', 'Sure? Cannot undo', async () => { const r = await api.settingsAction('emptyTrash'); if (r.info) { S = r.info; fill(); } });
 $('#backupNow').onclick = async () => { const b = $('#backupNow'); b.disabled = true; const r = await api.settingsAction('backupNow'); b.disabled = false; if (r.ok) { S = r.info; fill(); loadBackups(); b.textContent = 'Done ✓'; setTimeout(() => b.textContent = 'Back up now', 1800); } else $('#backupInfo').textContent = r.error || 'Backup failed.'; };

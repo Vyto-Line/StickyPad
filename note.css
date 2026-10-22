@@ -300,3 +300,8 @@ body.rolled #findbar{display:none}
 #sb[hidden]{display:none}
 #sbt{position:absolute;right:3px;width:8px;min-height:36px;border-radius:8px;background:var(--tint2);transition:width .12s,background .12s}
 #sb:hover #sbt,#sb.drag #sbt{width:11px;background:var(--line)}
+
+/* hide the buttons when idle (Settings > Notes): the space stays, so the text never jumps */
+header{transition:opacity .12s}
+html.quiet header{opacity:0;transition:opacity .7s ease .1s}
+html.a11y-motion.quiet header{transition:none}

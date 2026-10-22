@@ -75,7 +75,8 @@ const DEFAULT_SETTINGS = {
   snapDistance: 10, defaultSize: 16, trashDays: 30, shortcuts: true, keys: {}, chatHistory: true, autoBackup: true, lastBackup: 0, autoUpdate: true, whatsNew: true, seenVersion: '',
   print: { single: { style: 'box', layout: 'actual', size: 'normal', title: true, pictures: true }, many: { style: 'plain', layout: 'flow', size: 'normal', title: true, pictures: true } },   // Print options window: remembered choices
   ai: { provider: 'off', model: '', url: 'http://localhost:11434', keyEnc: '', keepAlive: '5m' },
-  access: { size: 100, contrast: false, read: false, motion: false, focus: false, big: false, sr: false }   // Settings > Accessibility: everything is off until you switch it on
+  access: { size: 100, contrast: false, read: false, motion: false, focus: false, big: false, sr: false },   // Settings > Accessibility: everything is off until you switch it on
+  quiet: { mode: 'off', delay: 10 }   // Settings > Notes: hide the note's buttons when idle (off until you switch it on)
 };
 let notes = {}, trash = [], groups = [], settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
 let welcomeWin = null, quickWin = null, allWin = null, settingsWin = null, tray = null, splashWin = null, whatsWin = null, whatsFrom = null, whatsMax = 3, memKey = null, chatWin = null, chatState = null;
@@ -1089,6 +1090,7 @@ function runCommand(id) {
     case 'welcome': openWelcome(); break;
     case 'settings-general': case 'settings-appearance': case 'settings-notes': case 'settings-shortcuts': case 'settings-access': case 'settings-folders': case 'settings-about': openSettings(id.slice(9)); break;
     case 'access-contrast': case 'access-big': case 'access-motion': case 'access-focus': case 'access-read': case 'access-sr': { const k = id.slice(7); setAccess({ [k]: !accessOf()[k] }); break; }
+    case 'quiet-toggle': setQuiet({ mode: quietOf().mode === 'off' ? 'away' : 'off' }); break;
     case 'access-bigger': case 'access-smaller': {
       const i = ACCESS_SIZES.indexOf(accessOf().size); setAccess({ size: ACCESS_SIZES[Math.max(0, Math.min(ACCESS_SIZES.length - 1, i + (id === 'access-bigger' ? 1 : -1)))] }); break;
     }
@@ -1619,7 +1621,7 @@ function allSettings() {
     autoBackup: !!settings.autoBackup, lastBackup: settings.lastBackup || 0, backupCount: backup.list(app.getPath('userData')).length,
     autoUpdate: settings.autoUpdate !== false, whatsNew: settings.whatsNew !== false, update: updater ? updater.get() : null,
     theme: settings.theme, mode: modeOf(), notesFollowMode: settings.notesFollowMode !== false, uiDark: uiDark(), prefs: prefs(), groups, notesCount: Object.keys(notes).length,
-    access: accessOf(), lowMemory: launchcfg.read(app.getPath('userData')).lowMemory, lowMemoryActive: LAUNCH.lowMemory, aiKeep: settings.ai.keepAlive || '5m'
+    access: accessOf(), quiet: quietOf(), lowMemory: launchcfg.read(app.getPath('userData')).lowMemory, lowMemoryActive: LAUNCH.lowMemory, aiKeep: settings.ai.keepAlive || '5m'
   };
 }
 /* ---------- accessibility: one set of options, applied by access.js in every window ---------- */
@@ -1643,6 +1645,19 @@ function setAccess(p) {
 }
 ipcMain.handle('access:get', () => accessOf());
 ipcMain.handle('access:set', (e, p) => setAccess(p));
+/* ---------- hide a note's buttons when idle ---------- */
+const quietLib = require('./quiet');
+const quietOf = () => quietLib.clean(settings.quiet);
+function setQuiet(p) {
+  const q = quietOf();
+  if (p && quietLib.MODES.includes(p.mode)) q.mode = p.mode;
+  if (p && quietLib.DELAYS.includes(p.delay)) q.delay = p.delay;
+  settings.quiet = q; save();
+  wins.forEach(w => { if (!w.isDestroyed()) w.webContents.send('quiet:changed', q); });
+  return q;
+}
+ipcMain.handle('quiet:get', () => quietOf());
+ipcMain.handle('quiet:set', (e, p) => setQuiet(p));
 const clampInt = (v, lo, hi) => Math.min(hi, Math.max(lo, Math.round(Number(v))));
 ipcMain.handle('settings:open', (e, section) => openSettings(typeof section === 'string' ? section : undefined));
 ipcMain.handle('settings:get', () => allSettings());

@@ -26,6 +26,7 @@ const COMMANDS = [
   { id: 'settings-folders', label: 'Settings: Folders', hint: 'Organise your notes in folders', words: 'groups organise organize' },
   { id: 'settings-about', label: 'Settings: About and updates', hint: 'Version, check for updates, logs', words: 'version update upgrade release' },
   { id: 'updates', label: 'Check for updates', hint: 'Settings → About', words: 'new version upgrade release' },
+  { id: 'quiet-toggle', label: 'Hide note buttons when idle (turn on or off)', hint: 'Only the text stays on screen until you move the mouse or type', words: 'fade idle title bar clean minimal quiet hide ui' },
   { id: 'access-bigger', label: 'Make the interface bigger', hint: 'Text and buttons of every window, one step up', words: 'accessibility zoom text size larger increase' },
   { id: 'access-smaller', label: 'Make the interface smaller', hint: 'Text and buttons of every window, one step down', words: 'accessibility zoom text size decrease' },
   { id: 'access-contrast', label: 'High contrast (turn on or off)', hint: 'Stronger text and borders, solid colours', words: 'accessibility contrast' },

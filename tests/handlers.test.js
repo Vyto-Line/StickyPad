@@ -111,6 +111,15 @@ const H = require('./fake-electron');
   await h['search:run']({}, 'access-smaller'); await wait(150); assert.strictEqual((await h['access:get']()).size, 100, 'cannot go below the smallest size');
   await h['access:set']({}, { big: true, sr: true }); await h['search:run']({}, 'access-reset'); await wait(150);
   const ar = await h['access:get'](); assert.ok(!ar.big && !ar.sr && ar.size === 100, 'reset turns everything off');
+  // ---- hide the note's buttons when idle: off by default, saved, broadcast, bad values ignored ----
+  let qt = await h['quiet:get'](); assert.deepStrictEqual(qt, { mode: 'off', delay: 10 }, 'off by default');
+  qt = await h['quiet:set']({}, { mode: 'both', delay: 3, junk: 1 }); assert.deepStrictEqual(qt, { mode: 'both', delay: 3 });
+  qt = await h['quiet:set']({}, { mode: 'sometimes', delay: 7 }); assert.deepStrictEqual(qt, { mode: 'both', delay: 3 }, 'invalid values are ignored');
+  assert.ok(wins.some(w => w.webContents.sent.some(m => m[0] === 'quiet:changed')), 'open notes are told');
+  await h['search:run']({}, 'quiet-toggle'); await wait(150); assert.strictEqual((await h['quiet:get']()).mode, 'off', 'the action switches it off');
+  await h['search:run']({}, 'quiet-toggle'); await wait(150); assert.strictEqual((await h['quiet:get']()).mode, 'away', 'and on (mouse away) again');
+  await h['quiet:set']({}, { mode: 'off' });
+
   await h['search:run']({}, 'log-perf'); await wait(150); assert.ok(fs.existsSync(path.join(tmp, 'userData', 'perf.log')), 'the log action opens the log');
   console.log('handlers ok');
 })().catch(e => { console.error(e); process.exit(1); });

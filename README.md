@@ -103,6 +103,9 @@ Under *Look*, a **Transparency** bar makes the note see-through (0 to 70%), one 
 - **Long notes** are processed in pieces, so even a very large note is handled completely.
 - **Greek** has dedicated rules (accents, final ς, spelling) and a guard: if the model answers in English or rewrites your text too heavily, the answer is discarded and your original stays.
 
+### Quiet notes
+*Settings > Notes > Hide the note's buttons when idle* (off by default). When a note is idle its title bar and buttons fade away and only the text stays; moving the mouse, clicking or typing brings them back. Idle can mean the mouse is away and you are not typing, the note is not in use (another window is active), or either. The buttons stay when a panel, search or lock screen is open, and with Screen reader or High contrast on.
+
 ### Accessibility
 *Settings > Accessibility* (also offered in the first-start tour). Everything is **off by default**:
 - **Text size** (100, 115, 130, 150 %) for every window, **high contrast**, **bigger buttons**, **a clear focus outline** for keyboard users, **reduced motion** (no splash or animations), and **screen-reader announcements** for things that change (find results, AI answers, errors).

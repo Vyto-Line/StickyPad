@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld('api', {
   trashRestore: call('trash:restore'), trashPurge: call('trash:purge'), trashEmpty: call('trash:empty'),
   prefs: call('app:prefs'),
   openSettings: call('settings:open'), settingsGet: call('settings:get'), settingsSet: call('settings:set'), settingsAction: call('settings:action'),
+  quietGet: call('quiet:get'), quietSet: call('quiet:set'), onQuiet: cb => ipcRenderer.on('quiet:changed', (e, q) => cb(q)),
   onSettingsSection: cb => ipcRenderer.on('settings:section', (e, s) => cb(s)),
   themeSet: call('theme:set'), themeApplyAll: call('theme:applyAll'),
   onReload: cb => ipcRenderer.on('note:reload', () => cb()),

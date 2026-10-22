@@ -15,4 +15,5 @@ console.log('commands ok');
 // the newer actions: settings pages, accessibility, logs, print
 assert.ok(ids('accessibility').length >= 1 && C.match('> access').length >= 8, 'accessibility actions are found');
 assert.ok(C.match('> perf').some(c => c.id === 'log-perf') && C.match('> shortcuts').some(c => c.id === 'settings-shortcuts'), 'logs and settings pages are found');
+assert.ok(C.byId('quiet-toggle'), 'the idle-buttons switch is an action');
 assert.ok(C.byId('print') && C.byId('access-bigger') && C.byId('access-reset'), 'print and text size are actions');

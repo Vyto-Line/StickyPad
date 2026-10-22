@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.14.53
+- **Hide a note's buttons when idle (new, off by default).** The title bar, buttons and topic fade away and only the note's text and colour stay. Moving the mouse over the note, clicking or typing brings them back at once. Choose it in *Settings > Notes > Hide the note's buttons when idle*:
+  - **Mouse away and not typing** (hides when the mouse is off the note and you have not typed for a while),
+  - **Note not in use** (hides when another window is active),
+  - **Either of these.**
+  - *Hide them after* 3, 10 or 30 seconds. Also in the Ctrl+Alt+F search: "Hide note buttons when idle".
+- The buttons stay visible while the note's panel, search, AI result, lock screen or topic is open, on a rolled-up note, and when Screen reader or High contrast is on.
+- Not tried on a real Windows PC yet.
+
 ## 1.14.52
 - **Select mode in Home (it was "Select notes to print").** Press **Select**, then click notes to choose them: each gets a number. **Shift+click** chooses a range, **Ctrl+A** or **Select all** chooses every note shown. With notes chosen you can **Print…**, **Move to folder…** or **Move to trash** (it asks once: press it twice). Locked notes can be moved or trashed (printing skips them). Esc or Cancel leaves select mode.
 - Not tried on a real Windows PC yet.
