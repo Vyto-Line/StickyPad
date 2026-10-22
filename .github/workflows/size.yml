@@ -1,0 +1,39 @@
+name: Installer size report
+on:
+  workflow_dispatch:
+    inputs:
+      electron:
+        description: 'Electron version to measure (empty = package.json)'
+        required: false
+        default: ''
+jobs:
+  size:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm install
+      - name: Use another Electron version (not saved)
+        if: ${{ inputs.electron != '' }}
+        run: npm install --no-save electron@${{ inputs.electron }}
+      - name: Build the unpacked app and report sizes
+        shell: bash
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: |
+          npx electron-builder --win --dir --publish never
+          cd dist/win-unpacked
+          {
+            echo "ELECTRON $(node -p "require('../../node_modules/electron/package.json').version")"
+            echo "TOTAL_MB $(du -sm . | cut -f1)"
+            echo "TOP FILES (MB, path):"
+            find . -type f -printf '%s %p\n' | sort -rn | head -30 | awk '{printf "%.1f %s\n", $1/1048576, $2}'
+            echo "RESOURCES:"
+            find resources -type f -printf '%s %p\n' | sort -rn | head -8 | awk '{printf "%.1f %s\n", $1/1048576, $2}'
+            echo "LOCALES_MB $(du -sm locales 2>/dev/null | cut -f1)"
+          } | tee ../../size.txt
+          cd ../..
+          msg=$(cat size.txt | sed 's/%/%25/g' | awk 'BEGIN{ORS="%0A"}{print}')
+          echo "::notice title=SIZE-REPORT::${msg:0:60000}"
