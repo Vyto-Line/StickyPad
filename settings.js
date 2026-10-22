@@ -219,6 +219,7 @@ $('#welcomeBtn').onclick = () => api.settingsAction('openWelcome');
 $('#aiLog').onclick = () => api.settingsAction('openAiLog');
 $('#perfLog').onclick = () => api.settingsAction('openPerfLog');
 $('#updLog').onclick = () => api.settingsAction('openUpdateLog');
+$('#kofi').onclick = () => api.openLink('https://ko-fi.com/vyto');
 $('#updPage').onclick = () => api.settingsAction('openReleases');
 api.onUpdateEvent(showUpdate);
 async function dataMove(name) { const r = await api.settingsAction(name); if (!r.ok && !r.cancelled) $('#dataMsg').textContent = r.error || 'Could not change the folder.'; }

@@ -12,7 +12,7 @@ Each note is its own small window on your desktop. Everything is stored on your 
 - **Tells you about updates** from this repository's Releases: you press **Download**, then **Restart to update** when it is ready.
 - **Easy on memory**: Low memory mode (on by default) and an AI model that only stays loaded while you use it. *Settings > About > Measure* shows what StickyPad uses.
 
-[Download the latest installer](../../releases/latest) · [What's new](CHANGELOG.md) · [Report a problem](../../issues)
+[Download the latest installer](../../releases/latest) · [What's new](CHANGELOG.md) · [Report a problem](../../issues) · [☕ Buy me a coffee](https://ko-fi.com/vyto)
 
 ---
 

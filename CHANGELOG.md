@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.14.54
+- **Support StickyPad (optional).** *Settings > About* has a **Buy me a coffee** button that opens https://ko-fi.com/vyto in your browser. The GitHub page now shows a Sponsor button and a link too. Nothing is added to the app's screens or notes, and StickyPad never asks.
+- Not tried on a real Windows PC yet.
+
 ## 1.14.53
 - **Hide a note's buttons when idle (new, off by default).** The title bar, buttons and topic fade away and only the note's text and colour stay. Moving the mouse over the note, clicking or typing brings them back at once. Choose it in *Settings > Notes > Hide the note's buttons when idle*:
   - **Mouse away and not typing** (hides when the mouse is off the note and you have not typed for a while),
