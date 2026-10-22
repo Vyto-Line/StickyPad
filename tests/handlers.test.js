@@ -37,6 +37,24 @@ const H = require('./fake-electron');
   assert.ok(pm.ok === false && pm.skipped === 1 && /Locked/.test(pm.error), 'a locked note is skipped, unknown ids ignored: ' + JSON.stringify(pm));
   await h['note:removeLock'](pr.e, 'longpass');
 
+  // ---- Print options window: opened for one or several notes, remembers the choices ----
+  const p1 = await mk('One'), p2 = await mk('Two');
+  const before = wins.length;
+  const r1 = await h['note:print'](p1.e); assert.ok(r1.ok && r1.dialog, 'a note opens the Print options window');
+  const dlg = wins[wins.length - 1]; assert.strictEqual(wins.length, before + 1); assert.strictEqual(dlg.o.title, 'Print');
+  let info = await h['print:info'](H.ev(dlg));
+  assert.ok(info.count === 1 && !info.many && info.titles[0] === 'One', JSON.stringify(info));
+  assert.deepStrictEqual(info.opts, { style: 'box', layout: 'actual', size: 'normal', title: true, pictures: true }, 'one note starts boxed, real size');
+  const pv = await h['print:preview'](H.ev(dlg), { style: 'sticky', layout: 'cols2' }); assert.ok(pv.includes('<section') && pv.includes('background:#'), 'preview shows the chosen style');
+  const go = await h['print:go'](H.ev(dlg), { style: 'plain', layout: 'bogus', size: 'large', title: false });   // (the fake window cannot print, but the choices are kept)
+  assert.strictEqual(go.ok, false);
+  await h['note:print'](p1.e); info = await h['print:info'](H.ev(wins[wins.length - 1]));
+  assert.deepStrictEqual(info.opts, { style: 'plain', layout: 'flow', size: 'large', title: false, pictures: true }, 'choices are remembered; an unknown layout becomes the default');
+  const r2 = await h['all:print']({}, [p1.id, p2.id, 'nope']); assert.ok(r2.ok && r2.count === 2, 'Home opens it for several notes');
+  info = await h['print:info'](H.ev(wins[wins.length - 1]));
+  assert.ok(info.many && info.count === 2 && info.opts.layout === 'flow' && info.opts.style === 'plain', 'several notes have their own remembered choices: ' + JSON.stringify(info.opts));
+  assert.strictEqual((await h['print:info']({ sender: { id: 99999 } })).count, 0, 'a window without a job prints nothing');
+
   // ---- groups: new, rename, move, delete frees the notes ----
   assert.strictEqual(await h['grp:new']({}, '   '), null, 'empty name refused');
   const gid = await h['grp:new']({}, 'Work'); assert.ok(gid);

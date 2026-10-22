@@ -201,7 +201,7 @@ $('#selectBtn').onclick = () => selectMode(true);
 $('#selDone').onclick = () => selectMode(false);
 $('#printGo').onclick = async () => {
   if (!sel.length) return;
-  const r = await api.allPrint(sel.slice(), { newPage: $('#newPage').checked });
+  const r = await api.allPrint(sel.slice());
   if (r && r.ok) { selectMode(false); return; }
   if (r && r.cancelled) return;
   printMsg = (r && r.error) || 'Printing did not start.'; $('#selInfo').textContent = printMsg; setTimeout(() => { printMsg = ''; draw(); }, 5000);

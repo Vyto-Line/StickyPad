@@ -73,6 +73,7 @@ const dataDir = () => DATA || app.getPath('userData');
 const DEFAULT_SETTINGS = {
   hideTaskbar: true, snap: true, launch: 'notes', splash: true, name: '', lang: 'en', theme: 'classic',
   snapDistance: 10, defaultSize: 16, trashDays: 30, shortcuts: true, keys: {}, chatHistory: true, autoBackup: true, lastBackup: 0, autoUpdate: true, whatsNew: true, seenVersion: '',
+  print: { single: { style: 'box', layout: 'actual', size: 'normal', title: true, pictures: true }, many: { style: 'plain', layout: 'flow', size: 'normal', title: true, pictures: true } },   // Print options window: remembered choices
   ai: { provider: 'off', model: '', url: 'http://localhost:11434', keyEnc: '', keepAlive: '5m' },
   access: { size: 100, contrast: false, read: false, motion: false, focus: false, big: false, sr: false }   // Settings > Accessibility: everything is off until you switch it on
 };
@@ -655,26 +656,56 @@ async function printHtml(html, tag) {   // opens the Windows print window for a 
   } catch (err) { return { ok: false, error: 'Printing did not start.' }; }
   finally { try { if (w && !w.isDestroyed()) w.destroy(); } catch {} try { fs.unlinkSync(file); } catch {} }
 }
+// ---- the Print options window (one window for Home and for Ctrl+P) ----
+const printJobs = new Map();   // dialog window id -> the note ids it prints
+const printItems = ids => {
+  const items = []; let skipped = 0;
+  for (const id of [...new Set(Array.isArray(ids) ? ids.filter(x => typeof x === 'string') : [])].slice(0, 300)) {
+    const n = notes[id]; if (!n) continue;
+    if (!isOpen(n) || !hasContent(n)) { skipped++; continue; }
+    items.push({ title: n.title, blocks: blocksOf(n), font: n.font, color: n.color, width: n.bounds && n.bounds.width });
+  }
+  return { items, skipped };
+};
+const printSaved = many => { const k = many ? 'many' : 'single'; return printer.cleanOpts((settings.print && settings.print[k]) || DEFAULT_SETTINGS.print[k]); };
+function openPrintDialog(ids) {
+  const { items, skipped } = printItems(ids);
+  if (!items.length) return { ok: false, skipped, error: skipped ? 'Locked and empty notes cannot be printed.' : 'Choose at least one note.' };
+  const okIds = [...new Set(ids.filter(id => notes[id] && isOpen(notes[id]) && hasContent(notes[id])))].slice(0, 300);
+  const w = utilWindow(null, 'Print', 'printdlg.html', 660, 720), wcid = w.webContents.id;
+  w.setMenu(null);
+  printJobs.set(wcid, okIds);
+  w.on('closed', () => printJobs.delete(wcid));
+  return { ok: true, dialog: true, skipped, count: items.length };
+}
 async function printNote(n) {
   if (!n) return { ok: false };
   if (!isOpen(n)) return { ok: false, error: 'Unlock the note first.' };
   if (!hasContent(n)) return { ok: false, error: 'This note is empty.' };
-  return printHtml(printer.buildHtml(n.title, blocksOf(n), imgBase(), n.font), n.id);
+  return openPrintDialog([n.id]);
 }
-// Several notes in one print job, in the order of ids. Locked and empty notes are skipped (and counted).
-async function printNotes(ids, newPage) {
-  const list = []; let skipped = 0;
-  for (const id of [...new Set(Array.isArray(ids) ? ids.filter(x => typeof x === 'string') : [])].slice(0, 300)) {
-    const n = notes[id]; if (!n) continue;
-    if (!isOpen(n) || !hasContent(n)) { skipped++; continue; }
-    list.push({ title: n.title, blocks: blocksOf(n), font: n.font });
-  }
-  if (!list.length) return { ok: false, skipped, error: skipped ? 'Locked and empty notes cannot be printed.' : 'Choose at least one note.' };
-  const r = await printHtml(printer.buildMany(list, imgBase(), { newPage: !!newPage }), 'many');
-  return { ...r, skipped, count: list.length };
-}
+const jobOf = e => printJobs.get(e.sender.id) || [];
+ipcMain.handle('print:info', e => {
+  const ids = jobOf(e), { items, skipped } = printItems(ids), many = items.length > 1;
+  return { count: items.length, skipped, many, titles: items.slice(0, 6).map(it => String(it.title || '').trim() || String((it.blocks.find(b => b.t === 'text' || b.t === 'check') || {}).v || 'Note').split('\n')[0].slice(0, 40)), opts: printSaved(many) };
+});
+ipcMain.handle('print:preview', (e, opts) => {   // the first few notes, shortened, for the picture in the window
+  const { items } = printItems(jobOf(e).slice(0, 4));
+  const small = items.map(it => ({ ...it, blocks: it.blocks.map(b => b.t === 'text' ? { ...b, v: b.v.slice(0, 600) } : b).slice(0, 14) }));
+  return printer.build(small, imgBase(), opts).replace('</style>', 'body{padding:15mm;box-sizing:border-box}.nt{margin-top:0}</style>');
+});
+ipcMain.handle('print:go', async (e, opts) => {
+  const ids = jobOf(e), { items, skipped } = printItems(ids);
+  if (!items.length) return { ok: false, skipped, error: 'Nothing to print.' };
+  const o = printer.cleanOpts(opts), many = items.length > 1;
+  settings.print = { ...(settings.print || {}), [many ? 'many' : 'single']: o }; save();
+  const r = await printHtml(printer.build(items, imgBase(), o), 'job');
+  if (r.ok) { try { const w = BrowserWindow.fromWebContents(e.sender); if (w && !w.isDestroyed()) w.close(); } catch {} }
+  return { ...r, skipped, count: items.length };
+});
+ipcMain.handle('print:close', e => { try { const w = BrowserWindow.fromWebContents(e.sender); if (w && !w.isDestroyed()) w.close(); } catch {} });
 ipcMain.handle('note:print', e => printNote(notes[idOf(e)]));
-ipcMain.handle('all:print', (e, ids, opts) => printNotes(ids, opts && opts.newPage));
+ipcMain.handle('all:print', (e, ids) => openPrintDialog(Array.isArray(ids) ? ids : []));
 ipcMain.handle('note:export', async e => {
   const n = notes[idOf(e)]; if (!n) return { ok: false };
   if (!isOpen(n)) return { ok: false, error: 'Unlock the note first.' };

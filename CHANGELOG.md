@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.14.50
+- **Print options.** Printing a note (Ctrl+P, the panel's Print… button, or right-click > Print… in Home) and printing several notes now open a **Print options** window with a preview before the Windows print window:
+  - **Style:** *Plain* (text only), *Boxed* (a thin frame around each note, like a note on screen) or *Sticky note* (the frame filled with the note's own colour; uses more ink).
+  - **Layout:** *Real size* (each note as big as on screen, starting at the top left corner, several side by side), *Full width*, *2 columns*, *3 columns* or *One note per page*.
+  - **Text size** (small, normal, large) and whether to include **titles** and **pictures**.
+  - Your choices are remembered separately for one note (starts as a box at real size, top left) and for several notes (starts plain, full width).
+- In Home, "Each note on its own page" moved into the Print options window as "One note per page".
+- Not tried on a real Windows PC yet. Printing needs a try with a printer or "Microsoft Print to PDF".
+
 ## 1.14.49
 - **StickyPad now runs on Electron 44 (Chromium 152) instead of Electron 33.** Electron is the engine inside StickyPad; version 33 no longer received security fixes. Nothing about your notes, settings or features changes. Checked on a real Windows machine in the cloud (start-up, both windows appear, all six global shortcuts register, no crash), on Electron 35, 36, 40, 44 and 45.
 - **The installer is bigger: about 99 MB instead of about 75 MB** (the newer Chromium is bigger). Two unused files (about 26 MB, DirectX shader compilers only used by WebGPU) are left out to keep it from being 106 MB. Updates after this one download only the changed parts, so they stay small.

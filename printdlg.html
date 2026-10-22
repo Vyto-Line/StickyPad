@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src data: file:; frame-src about:">
+<title>Print</title>
+<link rel="stylesheet" href="printdlg.css">
+<script src="apptheme.js"></script>
+<script src="access.js"></script>
+</head>
+<body>
+<main>
+  <section class="opts">
+    <h1 id="head">Print</h1>
+    <p id="what" class="muted"></p>
+
+    <fieldset><legend>Style</legend>
+      <label class="ch"><input type="radio" name="style" value="plain"><span class="sw plain"></span><b>Plain</b><i>Text only, black on white</i></label>
+      <label class="ch"><input type="radio" name="style" value="box"><span class="sw box"></span><b>Boxed</b><i>A thin frame around each note</i></label>
+      <label class="ch"><input type="radio" name="style" value="sticky"><span class="sw sticky"></span><b>Sticky note</b><i>Filled with the note's colour (uses more ink)</i></label>
+    </fieldset>
+
+    <fieldset id="layoutSet"><legend>Layout</legend>
+      <label class="ch" data-l="actual"><input type="radio" name="layout" value="actual"><b>Real size</b><i>As big as on screen, from the top left corner</i></label>
+      <label class="ch" data-l="flow"><input type="radio" name="layout" value="flow"><b>Full width</b><i>Across the page, one after another</i></label>
+      <label class="ch" data-l="cols2" data-many><input type="radio" name="layout" value="cols2"><b>2 columns</b><i>Side by side, in the order you chose</i></label>
+      <label class="ch" data-l="cols3" data-many><input type="radio" name="layout" value="cols3"><b>3 columns</b><i>Smaller notes, three across</i></label>
+      <label class="ch" data-l="page" data-many><input type="radio" name="layout" value="page"><b>One note per page</b><i>Each note starts on a new page</i></label>
+    </fieldset>
+
+    <fieldset class="row"><legend>Text size</legend>
+      <label class="pill"><input type="radio" name="size" value="small"><span>Small</span></label>
+      <label class="pill"><input type="radio" name="size" value="normal"><span>Normal</span></label>
+      <label class="pill"><input type="radio" name="size" value="large"><span>Large</span></label>
+    </fieldset>
+
+    <fieldset class="row"><legend>Include</legend>
+      <label class="tick"><input id="inTitle" type="checkbox"> Titles</label>
+      <label class="tick"><input id="inPics" type="checkbox"> Pictures</label>
+    </fieldset>
+
+    <p id="msg" class="muted" role="status" aria-live="polite"></p>
+    <div class="btns"><button id="go" class="btn primary">Print…</button><button id="cancel" class="btn">Cancel</button></div>
+  </section>
+  <aside class="pv" aria-label="Preview"><div class="paper" id="paper"><iframe id="frame" title="Preview" tabindex="-1" sandbox=""></iframe></div><p class="muted small">Preview (shortened). The Windows print window comes next.</p></aside>
+</main>
+<script src="printdlg.js"></script>
+</body>
+</html>
