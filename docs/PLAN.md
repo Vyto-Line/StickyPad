@@ -26,6 +26,7 @@
 
 ## Set aside by Alex (only when he asks)
 - Split main.js and note.js.
+- Electron 45 and later: stay on 44 for now (decided 2026-10-22). Before 46, move safeStorage to the async methods.
 
 ## Still wanted, no date
 - Test on a real Windows PC (WINDOWS_CHECKLIST.md). The performance and AI logs help here.
