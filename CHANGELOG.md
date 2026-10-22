@@ -2,10 +2,10 @@
 
 ## 1.14.56
 - **Smoother first-start tour.** Next and Back now slide the old step out and the new one in (the way you are going), and the card eases to its new size instead of jumping. Quick clicks land on the right step. With *Reduce motion* on, steps change at once.
-- **The note's scroll bar is closer to the edge.** It sat too far from the right side of the note (16 px); it is now 11 px in, still clear of the border Windows uses to resize a window. If it ever cannot be grabbed, tell me.
+- **The note's scroll bar is closer to the edge.** It sat too far from the right side of the note; it now sits closer, while still being easy to grab.
 - **Settings are easier for screen readers.** Every switch and slider now takes the name and description of its row (20 of them had no name).
 - **"All notes" is now called "Home" everywhere:** the window title, Settings texts, the tray menu, the "When StickyPad starts" option and the shortcut list.
-- **The grey helper text is a shade darker**, so it is easier to read (contrast 4.75 : 1, was 4.3 : 1).
+- **The grey helper text is a shade darker**, so it is easier to read.
 - Not tried on a real Windows PC yet.
 
 ## 1.14.55
