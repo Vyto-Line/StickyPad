@@ -17,7 +17,7 @@ with sync_playwright() as p:
     b = p.chromium.launch()
     # a normal note is untouched
     small = make(500); pg = page(b, [{'t': 'text', 'v': small}])
-    ok(pg.evaluate("innerWidth - ed.getBoundingClientRect().right") >= 12, 'ordinary notes keep the scroll bar away from the edge too')
+    ok(pg.evaluate("innerWidth - ed.getBoundingClientRect().right") >= 6, 'ordinary notes keep the scroll bar away from the edge too')
     ok(pg.evaluate("document.querySelectorAll('#ed .chunk').length") == 0, 'a normal note is one piece, as before')
     # a medium note (100,000 letters) is cut into short blocks too: one block of that size took 130 ms for every key
     pg = page(b, [{'t': 'text', 'v': make(14000)[:100000]}]); ok(pg.evaluate("document.querySelectorAll('#ed .chunk').length") > 20, 'a 100,000-letter note is shown in short blocks')
@@ -30,7 +30,7 @@ with sync_playwright() as p:
     bl = saved(pg); ok(bl and bl[0]['t'] == 'text' and bl[0]['v'] == 'Q' + text and bl[1]['t'] == 'check' and bl[1]['v'] == 'after', 'the saved text is exactly the original plus the typed letter (%d vs %d chars)' % (len(bl[0]['v']) if bl else -1, ln + 1))
     lay = pg.evaluate("() => { const b = note.blocks; const t0 = performance.now(); render(b); ed.getBoundingClientRect(); ed.scrollHeight; return performance.now() - t0; }")
     ok(lay < 250, 'drawing the huge note takes %d ms (it was about 500)' % lay)
-    ok(pg.evaluate("innerWidth - ed.getBoundingClientRect().right") >= 12, 'the scroll bar is 12+ px inside the window edge (the window resize border no longer covers it)')
+    ok(pg.evaluate("innerWidth - ed.getBoundingClientRect().right") >= 6, 'the scroll bar is 6+ px inside the window edge (beyond the 5 px resize band)')
     # reading the note back out is fast, and the kept copy never goes stale
     sr = pg.evaluate("() => { const t0 = performance.now(); memoBlocks = null; serializeNow(); return performance.now() - t0; }")
     ok(sr < 150, 'reading the huge note back out takes %d ms (it was about 880 for 3.7 MB)' % sr)
