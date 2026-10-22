@@ -31,13 +31,13 @@
   <section class="cat" id="cat-general" data-title="General">
     <h2>General</h2>
     <div class="row"><div class="lbl"><b>Start with Windows</b><span>Open StickyPad automatically when you sign in.</span><span id="startupNote" class="warn" hidden>Available in the installed app (build it with build.bat).</span></div><div class="ctl"><input id="startup" class="toggle" type="checkbox" data-set="startup"></div></div>
-    <div class="row"><div class="lbl"><b>When StickyPad starts</b><span>What opens on launch.</span></div><div class="ctl"><select id="launch" class="field" data-pref="launch"><option value="notes">Open my notes</option><option value="all">Open the All notes window only</option><option value="both">Open both</option></select></div></div>
+    <div class="row"><div class="lbl"><b>When StickyPad starts</b><span>What opens on launch.</span></div><div class="ctl"><select id="launch" class="field" data-pref="launch"><option value="notes">Open my notes</option><option value="all">Open Home only</option><option value="both">Open both</option></select></div></div>
     <div class="row"><div class="lbl"><b>Startup animation</b><span>The short intro with the greeting (about 2.7 seconds).</span></div><div class="ctl"><input id="splash" class="toggle" type="checkbox" data-pref="splash"></div></div>
     <div class="row"><div class="lbl"><b>Suggest a reminder for dates</b><span>When a note says something like "tomorrow at 5pm" or "15/11 10:00", a small bar offers to set a reminder for it.</span></div><div class="ctl"><input id="suggestDates" class="toggle" type="checkbox" data-set="suggestDates"></div></div>
     <div class="row"><div class="lbl"><b>Text prediction</b><span>While you type, a small list offers words you have used before in your notes. Press Tab to finish the word, Esc to dismiss. Applies to notes you open from now on. Notes with a lock are never read.</span></div><div class="ctl"><input id="predictWords" class="toggle" type="checkbox" data-set="predictWords"></div></div>
     <div class="row"><div class="lbl"><b>Low memory mode</b><span id="lowMemInfo">Draws windows without the graphics card process and tunes the engine for size. Uses noticeably less memory; applies after a restart.</span></div><div class="ctl"><input id="lowMemory" class="toggle" type="checkbox" data-set="lowMemory"><button id="lowMemRestart" class="btn" hidden>Restart now</button></div></div>
     <div class="row"><div class="lbl"><b>Hide notes from the taskbar</b><span>Notes stay open but no longer take space on the taskbar. Use the tray icon to find them.</span></div><div class="ctl"><input id="hideTaskbar" class="toggle" type="checkbox" data-set="hideTaskbar"></div></div>
-    <div class="row"><div class="lbl"><b>Your name</b><span>Shown in the greeting at the top of All notes and in the startup animation.</span></div><div class="ctl"><input id="name" class="field" data-pref="name" maxlength="30" placeholder="Optional" autocomplete="off" spellcheck="false"></div></div>
+    <div class="row"><div class="lbl"><b>Your name</b><span>Shown in the greeting at the top of Home and in the startup animation.</span></div><div class="ctl"><input id="name" class="field" data-pref="name" maxlength="30" placeholder="Optional" autocomplete="off" spellcheck="false"></div></div>
     <div class="row"><div class="lbl"><b>Greeting language</b><span>Good morning / Καλημέρα.</span></div><div class="ctl"><select id="lang" class="field" data-pref="lang"><option value="en">English</option><option value="el">Ελληνικά</option></select></div></div>
   </section>
 
@@ -105,7 +105,7 @@
 
   <section class="cat" id="cat-folders" data-title="Folders">
     <h2>Folders</h2>
-    <div class="row"><div class="lbl"><b>New folder</b><span>Folders group your notes in the All notes window.</span></div><div class="ctl"><input id="newFolder" class="field" maxlength="40" placeholder="Folder name" autocomplete="off" spellcheck="false"><button id="addFolder" class="btn primary">Add</button></div></div>
+    <div class="row"><div class="lbl"><b>New folder</b><span>Folders group your notes in Home.</span></div><div class="ctl"><input id="newFolder" class="field" maxlength="40" placeholder="Folder name" autocomplete="off" spellcheck="false"><button id="addFolder" class="btn primary">Add</button></div></div>
     <div id="folderList"></div>
   </section>
 

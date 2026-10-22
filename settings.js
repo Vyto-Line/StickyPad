@@ -14,6 +14,16 @@ function arm(btn, label, sure, action) {
 }
 const flash = (el, text, ms = 2500) => { el.textContent = text; clearTimeout(el._t); el._t = setTimeout(() => { el.textContent = el.dataset.default || ''; }, ms); };
 
+/* ---------- names for screen readers: every switch, slider and list takes the name (and the grey description) of its row ---------- */
+$$('.row').forEach((row, i) => {
+  const b = row.querySelector('.lbl b'), d = row.querySelector('.lbl span'); if (!b) return;
+  const ctls = [...row.querySelectorAll('.ctl input:not([type=hidden]), .ctl select, .ctl textarea')].filter(e => !e.getAttribute('aria-label') && !e.getAttribute('aria-labelledby'));
+  if (ctls.length !== 1) return;   // a row with several controls names them itself
+  if (!b.id) b.id = 'rl' + i;
+  ctls[0].setAttribute('aria-labelledby', b.id);
+  if (d && !ctls[0].getAttribute('aria-describedby')) { if (!d.id) d.id = 'rd' + i; ctls[0].setAttribute('aria-describedby', d.id); }
+});
+
 /* ---------- showing the current values ---------- */
 function setIfIdle(el, v) { if (document.activeElement !== el) el.value = v; }
 function fill() {

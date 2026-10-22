@@ -24,6 +24,9 @@
 ## Done 2026-10-21/22 (v1.14.44 to v1.14.47)
 - Ctrl+Alt+F reliable (focus kept, cannot stay hidden); more actions in the search window; windows always appear and come to the front at start-up; "When StickyPad starts" works when started again from the tray.
 
+## Waiting on branch `polish-1` (not released; Alex wants to hold it until his other ideas are ready)
+- Settings controls named for screen readers (20 switches and sliders), "All notes" renamed to "Home" in the window title, Settings texts, tray menu, launch option and shortcut list, grey helper text darkened to meet 4.5:1 contrast. Also in the audit, not done: print error reason; note title in Alt+Tab.
+
 ## Set aside by Alex (only when he asks)
 - Split main.js and note.js.
 - Electron 45 and later: stay on 44 for now (decided 2026-10-22). Before 46, move safeStorage to the async methods.
