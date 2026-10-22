@@ -22,6 +22,8 @@
 
 5. **Rename the sidebar item "Ask the AI" to "AI chat"** (chosen by Alex, 2026-10-22; it matches the chat window title, the shortcut list and the search command). Tests that look for "Ask the AI" (tests/ui/t_home.py) and the README need the new name.
 
+6. **Text formatting: Bold, Italic, Underline, Strikethrough, Highlight, Clear** (idea from Alex 2026-10-22, mockup made; proposed for its own release, 1.16.0, not 1.15.0). Plan: keep the plain text in `v` exactly as today (search, AI, print, export, history, word counts and old versions keep working) and add an optional list of marks to text and checklist blocks, e.g. `m: [[start, end, "b"], ...]`. A small toolbar appears over selected text (flips below when there is no room above); Ctrl+B / Ctrl+I / Ctrl+U shortcuts; Clear formatting. Things to handle: pasting (keep plain text, or keep bold and italic only), Find highlights, the huge-note drawing shortcut, AI edits (formatting in changed parts is dropped), print and Markdown export (**bold**), locked notes, history, .stickypad import and export, and tests for the new format. Lists and headings later, only if asked. This changes the notes format, so it needs a backup-safe migration test first (older versions must still open the note as plain text).
+
 ## Next
 1. Finish Select mode in Home: Export, Colour, Open/Close/Pin, Trash-tab Restore/Delete forever, drag a chosen group onto a folder or Trash.
 2. More tests (search, AI, update handlers).
