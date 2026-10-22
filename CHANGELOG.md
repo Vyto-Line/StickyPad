@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.14.51
+- **The Print options preview now shows every chosen note** (it showed only the first 4 when you chose more). It shows the first page of what will print; long notes are shortened in the picture only.
+- Not tried on a real Windows PC yet.
+
 ## 1.14.50
 - **Print options.** Printing a note (Ctrl+P, the panel's Print… button, or right-click > Print… in Home) and printing several notes now open a **Print options** window with a preview before the Windows print window:
   - **Style:** *Plain* (text only), *Boxed* (a thin frame around each note, like a note on screen) or *Sticky note* (the frame filled with the note's own colour; uses more ink).

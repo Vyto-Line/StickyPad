@@ -690,8 +690,8 @@ ipcMain.handle('print:info', e => {
   return { count: items.length, skipped, many, titles: items.slice(0, 6).map(it => String(it.title || '').trim() || String((it.blocks.find(b => b.t === 'text' || b.t === 'check') || {}).v || 'Note').split('\n')[0].slice(0, 40)), opts: printSaved(many) };
 });
 ipcMain.handle('print:preview', (e, opts) => {   // the first few notes, shortened, for the picture in the window
-  const { items } = printItems(jobOf(e).slice(0, 4));
-  const small = items.map(it => ({ ...it, blocks: it.blocks.map(b => b.t === 'text' ? { ...b, v: b.v.slice(0, 600) } : b).slice(0, 14) }));
+  const { items } = printItems(jobOf(e).slice(0, 30));   // every chosen note (the picture shows the first page); long text is shortened to keep it quick
+  const small = items.map(it => ({ ...it, blocks: it.blocks.map(b => b.t === 'text' ? { ...b, v: b.v.slice(0, 500) } : b).slice(0, 10) }));
   return printer.build(small, imgBase(), opts).replace('</style>', 'body{padding:15mm;box-sizing:border-box}.nt{margin-top:0}</style>');
 });
 ipcMain.handle('print:go', async (e, opts) => {
