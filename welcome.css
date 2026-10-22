@@ -70,10 +70,15 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
 .cf{fill:var(--c);transform-box:fill-box;animation:conf 2.6s ease-out infinite backwards;animation-delay:var(--d,0s)}
 @keyframes conf{0%{transform:translate(0,0);opacity:0}15%{opacity:1}100%{transform:translate(var(--x),-70px) scale(.5);opacity:0}}
 /* text slides in on every step */
-#card.swap #title{animation:rise2 .45s ease backwards .08s}
-#card.swap #text{animation:rise2 .45s ease backwards .16s}
-#card.swap #extra{animation:rise2 .45s ease backwards .24s}
-@keyframes rise2{from{transform:translateY(10px);opacity:0}}
+#card{transition:max-width .35s cubic-bezier(.4,0,.2,1),height .35s cubic-bezier(.4,0,.2,1)}
+#card.moving{overflow:hidden}
+#card > *{transition:opacity .15s ease,transform .15s ease}
+#card.out > *{opacity:0;transform:translateX(var(--dx,0px))}
+#card.swap #scene{animation:slidein .4s cubic-bezier(.2,.8,.2,1) backwards}
+#card.swap #title{animation:slidein .42s cubic-bezier(.2,.8,.2,1) backwards .04s}
+#card.swap #text{animation:slidein .42s cubic-bezier(.2,.8,.2,1) backwards .09s}
+#card.swap #extra{animation:slidein .42s cubic-bezier(.2,.8,.2,1) backwards .14s}
+@keyframes slidein{from{transform:translate(var(--dx,0px),var(--dy,10px));opacity:0}}
 #dots button{transition:width .25s ease,background .25s ease}
 @media (max-height:560px){#scene,#scene .sc{height:110px}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
