@@ -14,10 +14,10 @@
 - Print one note (Ctrl+P), Trash drag and drop, Home "+ Note" opens in front, shortcuts row removed from Accessibility.
 
 ## Next
-1. Electron upgrade (agreed 2026-10-22): audit and smoke tests done, see ELECTRON.md. A trial installer on the `electron-44` branch waits for Alex's test on his PC. Later: safeStorage to async before Electron 46.
+1. Finish Select mode in Home: Export, Colour, Open/Close/Pin, Trash-tab Restore/Delete forever, drag a chosen group onto a folder or Trash.
 2. More tests (search, AI, update handlers).
 3. Home window speed-up: only if Alex has hundreds or thousands of notes.
-4. Alex's further ideas.
+4. Alex's further ideas. Quiet notes (1.14.53): change only after Alex has used it and reports what feels wrong.
 
 (Print several notes at once: done in 1.14.48.)
 
@@ -39,6 +39,8 @@
 ## Alex's ideas (2026-10-21), status
 - Printing: single note done in 1.14.43 (Ctrl+P). Still open: print several notes at once, in a chosen order (Alex picked "one at a time" for now).
 - Home "+ Note" opens behind Home: fixed in 1.14.43.
+- Save as PDF in Print options: not needed (Windows has Microsoft Print to PDF) (2026-10-22).
+- Quiet notes extras (2026-10-22): no hide-while-typing, Home window never fades, no per-note switch.
 - Greeting hours: dropped by Alex on 2026-10-22 (no change).
 - Accessibility tab: shortcuts row removed (1.14.43).
 - Trash drag and drop (delete by dropping on Trash, restore by dropping on Notes): done in 1.14.43.
