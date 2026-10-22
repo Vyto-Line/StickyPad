@@ -14,7 +14,7 @@
 - Print one note (Ctrl+P), Trash drag and drop, Home "+ Note" opens in front, shortcuts row removed from Accessibility.
 
 ## Next
-1. Electron upgrade (Alex agreed on 2026-10-22): read breaking changes, raise a few versions at a time, a test installer for each, Alex checks start-up, Ctrl+Alt+F, tour, printing, dragging, updates. Also match electron-builder / electron-updater.
+1. Electron upgrade (agreed 2026-10-22): audit and smoke tests done, see ELECTRON.md. A trial installer on the `electron-44` branch waits for Alex's test on his PC. Later: safeStorage to async before Electron 46.
 2. More tests (search, AI, update handlers).
 3. Home window speed-up: only if Alex has hundreds or thousands of notes.
 4. Alex's further ideas.
