@@ -20,6 +20,8 @@
 
 4. **Chat list next to the AI chat** (mockup made 2026-10-22): several saved chats, each with a title (made from the first question, or a short AI-written title), listed on the left grouped Today / Yesterday / Earlier, with + New chat and Search chats. A "..." menu on each chat: Rename, Pin to top, Save as a note, Delete chat (asks once). "Delete all chats..." at the bottom. The open chat's title is shown at the top. Needs a new storage format: today there is one chat in chat.json (capped at 100 messages, cleared when "Remember chat history" is off); the old chat must move into the list as the first entry, and the history switch in Settings must still delete everything. Chats stay on this PC.
 
+5. **Rename the sidebar item "Ask the AI" to "AI chat"** (chosen by Alex, 2026-10-22; it matches the chat window title, the shortcut list and the search command). Tests that look for "Ask the AI" (tests/ui/t_home.py) and the README need the new name.
+
 ## Next
 1. Finish Select mode in Home: Export, Colour, Open/Close/Pin, Trash-tab Restore/Delete forever, drag a chosen group onto a folder or Trash.
 2. More tests (search, AI, update handlers).
