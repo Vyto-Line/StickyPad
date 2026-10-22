@@ -40,6 +40,7 @@
 - Printing: single note done in 1.14.43 (Ctrl+P). Still open: print several notes at once, in a chosen order (Alex picked "one at a time" for now).
 - Home "+ Note" opens behind Home: fixed in 1.14.43.
 - Save as PDF in Print options: not needed (Windows has Microsoft Print to PDF) (2026-10-22).
+- Note title in Alt+Tab: dropped by Alex (2026-10-22): many notes would clutter Alt+Tab; pinning a note is the way to keep one in view.
 - Quiet notes extras (2026-10-22): no hide-while-typing, Home window never fades, no per-note switch.
 - Greeting hours: dropped by Alex on 2026-10-22 (no change).
 - Accessibility tab: shortcuts row removed (1.14.43).
