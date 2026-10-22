@@ -9,7 +9,10 @@ body.homed{flex-direction:row!important;border:0!important}
 .hitem em{margin-left:auto;font-style:normal;font-size:11px;font-weight:700;color:var(--mute,#6b7288)}
 .hitem em:empty{display:none}
 .hitem:focus-visible{outline:2px solid var(--accent,#4263eb);outline-offset:1px}
-.hfoot{margin-top:auto;padding:10px;font-size:11.5px;line-height:1.4;color:var(--mute,#6b7288)}
+.hsupport{display:flex;align-items:center;gap:6px;width:100%;margin-top:auto;font:inherit;font-size:12px;font-weight:600;white-space:nowrap;color:var(--mute,#6b7288);background:none;border:1px dashed var(--line,#d5d9e8);border-radius:9px;padding:8px;cursor:pointer;text-align:left}
+.hsupport:hover{background:var(--hover,#e8ebf6);color:var(--fg,#1c2030)}
+.hsupport:focus-visible{outline:2px solid var(--accent,#4263eb);outline-offset:1px}
+.hfoot{padding:10px;font-size:11.5px;line-height:1.4;color:var(--mute,#6b7288)}
 /* the pages' own switches for the same things are now in the sidebar */
 .homed .tabs2,.homed #chatBtn,.homed #gear{display:none!important}
 .homed #close{display:none!important}
