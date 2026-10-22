@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.14.55
+- **The first item in the Home sidebar is now called "Home"** (it was "Notes"), with a small house icon. It is the same page as before: your notes, with Trash right below it.
+- **"Support the project"** (optional): a small button at the bottom of the Home sidebar, and in *Settings > About*, opens https://ko-fi.com/vyto in your browser. StickyPad never asks or pops anything up.
+- Not tried on a real Windows PC yet.
+
 ## 1.14.54
 - **Support StickyPad (optional).** *Settings > About* has a **Buy me a coffee** button that opens https://ko-fi.com/vyto in your browser. The GitHub page now shows a Sponsor button and a link too. Nothing is added to the app's screens or notes, and StickyPad never asks.
 - Not tried on a real Windows PC yet.
