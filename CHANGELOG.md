@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.14.56
+- **Smoother first-start tour.** Next and Back now slide the old step out and the new one in (the way you are going), and the card eases to its new size instead of jumping. Quick clicks land on the right step. With *Reduce motion* on, steps change at once.
+- **The note's scroll bar is closer to the edge.** It sat too far from the right side of the note (16 px); it is now 11 px in, still clear of the border Windows uses to resize a window. If it ever cannot be grabbed, tell me.
+- **Settings are easier for screen readers.** Every switch and slider now takes the name and description of its row (20 of them had no name).
+- **"All notes" is now called "Home" everywhere:** the window title, Settings texts, the tray menu, the "When StickyPad starts" option and the shortcut list.
+- **The grey helper text is a shade darker**, so it is easier to read (contrast 4.75 : 1, was 4.3 : 1).
+- Not tried on a real Windows PC yet.
+
 ## 1.14.55
 - **The first item in the Home sidebar is now called "Home"** (it was "Notes"), with a small house icon. It is the same page as before: your notes, with Trash right below it.
 - **"Support the project"** (optional): a small button at the bottom of the Home sidebar, and in *Settings > About*, opens https://ko-fi.com/vyto in your browser. StickyPad never asks or pops anything up.
