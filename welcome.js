@@ -108,12 +108,33 @@
     $('#back').hidden = at === 0; $('#skip').hidden = !!s.last;
     $('#next').textContent = s.last ? 'Start with a note' : 'Next';
     const dots = $('#dots'); dots.textContent = '';
-    steps.forEach((x, i) => { const d = document.createElement('button'); d.type = 'button'; d.className = i === at ? 'on' : ''; d.setAttribute('role', 'tab'); d.setAttribute('aria-selected', i === at); d.setAttribute('aria-label', 'Step ' + (i + 1) + ' of ' + steps.length); d.onclick = () => { at = i; draw(); }; dots.appendChild(d); });
-    (focusEl || $('#next')).focus();
+    steps.forEach((x, i) => { const d = document.createElement('button'); d.type = 'button'; d.className = i === at ? 'on' : ''; d.setAttribute('role', 'tab'); d.setAttribute('aria-selected', i === at); d.setAttribute('aria-label', 'Step ' + (i + 1) + ' of ' + steps.length); d.onclick = () => move(i); dots.appendChild(d); });
+    (focusEl || $('#next')).focus({ preventScroll: true });
   }
   const done = go => { if (saveT) { clearTimeout(saveT); saveT = null; try { window.api.prefs({ name }); } catch {} } window.api.welcomeClose(go ? { go } : {}); };
-  $('#next').onclick = () => { if (at >= STEPS().length - 1) done('note'); else { at++; draw(); } };
-  $('#back').onclick = () => { if (at > 0) { at--; draw(); } };
+  // Moving between steps: the old content slides out the way you are going, the card eases to its new size, the new content slides in.
+  // Quick clicks just change the target step (one swap happens, on the latest one). With Reduce motion on, it swaps at once.
+  const still = () => document.documentElement.classList.contains('a11y-motion') || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+  let swapT = null, sizeT = null, dir = 0;
+  function move(to) {
+    const from = at; at = Math.max(0, Math.min(STEPS().length - 1, to)); if (at === from && !swapT) return;
+    const card = $('#card');
+    if (still()) { draw(); return; }
+    if (swapT) { dir = at > from ? 1 : -1; return; }   // a swap is already on its way: it will show the latest step
+    dir = at > from ? 1 : -1; card.style.setProperty('--dx', (-26 * dir) + 'px'); card.classList.add('out');
+    swapT = setTimeout(() => {
+      swapT = null; const h0 = card.offsetHeight;
+      card.classList.remove('out'); card.style.setProperty('--dx', (26 * dir) + 'px'); card.style.setProperty('--dy', '0px');
+      draw();
+      const h1 = card.offsetHeight;
+      if (h0 !== h1) {   // ease from the old height to the new one
+        clearTimeout(sizeT); card.style.height = h0 + 'px'; card.classList.add('moving'); void card.offsetHeight; card.style.height = h1 + 'px';
+        sizeT = setTimeout(() => { card.style.height = ''; card.classList.remove('moving'); }, 380);
+      }
+    }, 150);
+  }
+  $('#next').onclick = () => { if (at >= STEPS().length - 1 && !swapT) done('note'); else move(at + 1); };
+  $('#back').onclick = () => { if (at > 0) move(at - 1); };
   $('#skip').onclick = () => done();
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') done();
