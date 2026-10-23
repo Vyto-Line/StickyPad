@@ -1,5 +1,5 @@
 'use strict';
-// The welcome tour: five short steps for a brand-new install. Everything is built with textContent (never innerHTML).
+// The welcome tour: a few short steps for a brand-new install. Everything is built with textContent (never innerHTML).
 (function () {
   const $ = s => document.querySelector(s);
   let keys = {}, name = '', at = 0, fresh = true, saveT = null, stopLook = null, look = { id: 'classic', mode: 'system' };
@@ -24,8 +24,9 @@
     { scene: 0, title: name ? 'Welcome, ' + name + '!' : 'Welcome to StickyPad', text: ['Colourful sticky notes that live on your desktop. **Everything stays on your PC.**', 'Press {g_new} anywhere in Windows to make a new note.'], name: true },
     { scene: -1, wide: true, title: 'Pick your look', text: ['The whole app changes as you click.'], look: true },
     { scene: -1, wide: true, title: 'Make it comfortable', text: ['Bigger text, stronger contrast, calmer screens. **Switch on anything that helps you:** it applies straight away.'], comfort: true },
+    { scene: 5, title: 'Tidy your desk', text: ['Drag a note to the **left or right edge** of the screen and it fills that half. Drag it to the **top** and it fills the whole screen. **Drag it away and it goes back.**', 'Notes can also **hide their buttons while you are not using them**. Both are **off** until you switch them on: **Settings › Notes**.'], button: { label: 'Open Notes settings…', go: 'settings', section: 'notes' } },
     { scene: 1, title: 'Find anything', text: ['{g_all} opens **Home** with all your notes, folders and the trash.', '{g_find} searches inside **every note** (capitals and accents do not matter).', 'Drag a .stickypad, .md or .txt file onto any StickyPad window to add it as a note.'] },
-    { scene: 3, title: 'An AI helper, if you want one', text: ['Ask questions about your notes or let the AI edit a note. It works with **free Ollama on your own PC** (nothing leaves it), or with Claude if you choose.', 'It stays **off** until you set it up.'], button: { label: 'Set up the AI…', go: 'settings', section: 'ai' } },
+    { scene: 3, title: 'An AI helper, if you want one', text: ['Ask questions about your notes, chat about one note, translate it (the language is detected for you) or let the AI edit it. It works with **free Ollama on your own PC** (nothing leaves it), or with Claude if you choose.', 'Your chats are kept in a list you can rename, pin or delete. The AI stays **off** until you set it up.'], button: { label: 'Set up the AI…', go: 'settings', section: 'ai' } },
     { scene: 4, title: 'Your notes are safe', text: ['A backup is made **automatically every day**. If something ever goes wrong: **Settings › Data & backup › Restore**.', '**Export** a note as a .stickypad file to move it to another PC, with its pictures and look.'], last: true }
   ];
   // the optional name: saved a moment after typing stops, and the title above follows it

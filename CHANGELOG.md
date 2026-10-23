@@ -10,6 +10,7 @@
 - **Checklists look right in the Finder (Ctrl+Alt+F) and on the Home cards:** round ticks instead of the ☑ and ☐ symbols.
 - **The Finder explains its "Actions" button.** It now says *Actions* or *Notes* so you can see what it switches to.
 - **Double-click selects just the word.** The space after the word is no longer selected with it.
+- **The first-start tour has a new step, "Tidy your desk"**, about snapping notes to the sides of the screen and hiding their buttons when idle (it explains them and opens *Settings > Notes*; it never switches anything on). The AI step now mentions chatting about a note, translating and the chat list. You can see the tour again any time from *Settings > About*.
 - Not tried on a real Windows PC yet.
 
 ## 1.14.56

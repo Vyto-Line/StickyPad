@@ -26,7 +26,7 @@ with sync_playwright() as p:
     pg.wait_for_timeout(700); ok(title(pg)=='Welcome to StickyPad','Back returns to the first step')
     # quick clicks end on the right step, once
     pg.click('#next'); pg.click('#next'); pg.click('#next'); pg.wait_for_timeout(900)
-    ok(title(pg)=='Find anything' and 'out' not in cls(pg),'three quick clicks land on the third step (%s)'%title(pg))
+    ok(title(pg)=='Tidy your desk' and 'out' not in cls(pg),'three quick clicks land on the fourth step (%s)'%title(pg))
     pg.click('#dots button:nth-child(1)'); pg.wait_for_timeout(700); ok(title(pg)=='Welcome to StickyPad','a dot jumps with the same motion')
     pg.focus('#next'); pg.keyboard.press('ArrowRight'); pg.wait_for_timeout(700); ok(title(pg)=='Pick your look','arrow keys too')
     ok(pg.evaluate("document.activeElement.tagName")!='BODY','the keyboard focus is kept on a control')
