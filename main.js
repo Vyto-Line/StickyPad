@@ -1461,7 +1461,7 @@ ipcMain.handle('chat:send', async (e, p) => {
     const lang = ai.chatLanguage(msgs), sys = chatSystem(p && p.noteId, lastUser ? lastUser.content : '', src) + '\n\n' + ai.chatLanguageRule(lang);
     if (lang && msgs.length && msgs[msgs.length - 1].role === 'user') msgs[msgs.length - 1] = { ...msgs[msgs.length - 1], content: msgs[msgs.length - 1].content + ai.chatLanguageTail(lang) };   // for the model only: the saved chat is not touched
     if (src.length) send({ type: 'sources', titles: src });
-    const full = await ai.chatStream(aiCfg(), sys, msgs, t => send({ type: 'chunk', text: t }), ac.signal);
+    const full = await ai.chatStream(aiCfg(), sys, msgs, t => send({ type: 'chunk', text: t }), ac.signal, undefined, { loopGuard: true });
     send({ type: 'done', text: full });
   } catch (err) {
     if (ac.signal.aborted) send({ type: 'done', stopped: true });

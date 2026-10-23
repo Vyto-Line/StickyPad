@@ -105,6 +105,7 @@ api.onChatEvent(m => {
   if (m.id !== curId) return;
   if (m.type === 'sources') { curSources = Array.isArray(m.titles) ? m.titles.slice(0, 8) : null; return; }
   if (m.type === 'chunk') { curText += m.text; paint(); return; }
+  if (m.type === 'done' && !m.stopped && typeof m.text === 'string' && m.text.trim() && m.text.length < curText.length) curText = m.text;   // the AI began repeating itself and was cut off: drop the repeat
   const r = curBubble; curBubble = null; curId = null; setBusy(false);
   if (m.type === 'error') {
     r.b.classList.add('error'); r.b.textContent = m.error; if (window.StickyAccess) StickyAccess.announce(m.error);

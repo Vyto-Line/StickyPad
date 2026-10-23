@@ -1,6 +1,7 @@
 # Changelog
 
 ## 1.15.0
+- **The AI chat no longer repeats itself.** A local model can get stuck and write the same list again and again. The chat now asks Ollama to discourage repeating, and if an answer still starts repeating a paragraph it already wrote, StickyPad stops it there and keeps only the first copy.
 - **"Save as note" from the AI chat is smarter.** The new note gets a short title about its topic (or the heading the AI wrote) instead of "From AI chat", and the answer is turned into a real note: checklists become tick boxes and a stray "Checklist:" label is dropped.
 - **Ask the chat for a checklist and you get one.** It now writes checklist items instead of plain bullets and no "Checklist:" heading.
 - **The chat no longer answers in Greek to an English message about a Greek topic.** The language check was unsure about some English sentences and then followed your older Greek message. An unclear message in Latin letters now never falls back to Greek.

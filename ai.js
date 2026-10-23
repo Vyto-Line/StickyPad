@@ -86,7 +86,28 @@ const MAX_TOTAL = 400000, CHUNK = 3500, PIECE = 1200, BATCH = 3000;   // long no
 
 // How long Ollama keeps the model in memory after a request (it uses gigabytes). '5m' by default; '0' unloads right after the answer.
 const keepOf = cfg => { const k = cfg && cfg.keepAlive; return k === '0' || k === 0 ? 0 : (k === '30m' || k === '5m') ? k : '5m'; };
-const ollamaOpts = (temperature, predict, chars = 0) => ({ temperature, num_ctx: ctxFor(chars, predict), ...(predict ? { num_predict: predict } : {}) });
+const ollamaOpts = (temperature, predict, chars = 0, chat = false) => ({ temperature, num_ctx: ctxFor(chars, predict), ...(predict ? { num_predict: predict } : {}), ...(chat ? { repeat_penalty: 1.1, repeat_last_n: 256 } : {}) });
+
+// A model that gets stuck writes the same paragraph again and again. Returns the text up to (not including) the first paragraph that repeats an
+// earlier one (30+ characters, and only once it is finished), or a line of 40+ characters that has now appeared three times; null = no loop.
+// a cut can leave the line that introduced the repeated list ("The government faces:") dangling at the end: drop it
+const dropHeader = t => { t = t.replace(/\s+$/, ''); const i = t.lastIndexOf('\n'), last = t.slice(i + 1).trim(); return /[:：]$/.test(last) && i >= 0 && last.length < 120 ? t.slice(0, i).replace(/\s+$/, '') : t; };
+function cutRepeat(text) {
+  const s = String(text || ''), re = /\n[ \t]*\n/g, seen = new Set(); let start = 0, m;
+  while ((m = re.exec(s))) {
+    const p = s.slice(start, m.index).trim();
+    if (p.length >= 30) { if (seen.has(p)) return dropHeader(s.slice(0, start)); seen.add(p); }
+    start = m.index + m[0].length;
+  }
+  const lines = s.split('\n'), count = new Map(); let pos = 0;
+  for (const raw of lines) {
+    const l = raw.trim(), at = pos; pos += raw.length + 1;
+    if (l.length < 40) continue;
+    const n = (count.get(l) || 0) + 1; count.set(l, n);
+    if (n >= 3) return s.slice(0, at).replace(/\s+$/, '');
+  }
+  return null;
+}
 
 // Splits text into pieces of at most `max` characters, on line breaks first and then sentence ends, so joining the pieces gives back the exact text.
 function splitPieces(str, max) {
@@ -307,7 +328,7 @@ async function chatOnce(cfg, system, messages, onChunk, signal, fetchImpl, opts,
       if (!/^https?:\/\//i.test(base)) throw fail('The Ollama address must start with http:// (for example http://localhost:11434).');
       if (!cfg.model) throw fail('Enter the name of an Ollama model first (for example llama3.2).');
       url = base + '/api/chat'; headers = { 'content-type': 'application/json' };
-      body = { model: cfg.model, stream: true, keep_alive: keepOf(cfg), ...thinkOff(cfg.model), options: ollamaOpts(opts.temperature == null ? 0.5 : opts.temperature, opts.predict, system.length + messages.reduce((a, m) => a + m.content.length, 0)), messages: [{ role: 'system', content: system }, ...messages] };
+      body = { model: cfg.model, stream: true, keep_alive: keepOf(cfg), ...thinkOff(cfg.model), options: ollamaOpts(opts.temperature == null ? 0.5 : opts.temperature, opts.predict, system.length + messages.reduce((a, m) => a + m.content.length, 0), !!opts.loopGuard), messages: [{ role: 'system', content: system }, ...messages] };
     } else if (cfg.provider === 'claude') {
       if (!cfg.key) throw fail('Add your Anthropic API key in the AI tab first.');
       url = 'https://api.anthropic.com/v1/messages';
@@ -330,7 +351,11 @@ async function chatOnce(cfg, system, messages, onChunk, signal, fetchImpl, opts,
 
     const reader = res.body.getReader(), dec = new TextDecoder();
     let buf = '', full = '';
-    const add = t => { if (t) { if (st.first == null) st.first = Date.now() - st.t0; st.chunks++; full += t; onChunk(t); } };
+    const add = t => {
+      if (!t || st.loop) return;
+      if (st.first == null) st.first = Date.now() - st.t0; st.chunks++; full += t; onChunk(t);
+      if (opts.loopGuard && /\n/.test(t)) { const cut = cutRepeat(full); if (cut != null && cut.trim()) { full = cut; st.loop = true; ctl.abort(); } }   // the model is repeating itself: stop here
+    };
     const line = raw => {
       raw = raw.trim(); if (!raw) return;
       if (cfg.provider === 'claude') { if (!raw.startsWith('data:')) return; raw = raw.slice(5).trim(); }
@@ -352,6 +377,7 @@ async function chatOnce(cfg, system, messages, onChunk, signal, fetchImpl, opts,
       }
       if (buf.trim()) line(buf);
     } catch (e) {
+      if (st.loop) { st.done = true; return full; }   // we stopped it ourselves
       if (signal && signal.aborted) throw e;
       if (timedOut) { st.timeout = true; throw fail('The AI took too long to answer.'); }
       if (e && e.friendly) throw e;
@@ -507,4 +533,4 @@ async function ping(cfg, fetchImpl = fetch) {
   return r.trim().slice(0, 40);
 }
 
-module.exports = { chatLanguage, chatLanguageRule, chatLanguageTail, setLogger, thinkOff, tagFilter, translationProblem, suggestTitle, cleanTitle, keepOf, translateTarget, translateSystem, splitPieces, isGreek, ctxFor, editStream, editSystem, EDIT_MODES, warmup, summarize, fixGrammar, toChecklist, chatStream, SYS_CHAT, ping, callModel, DEFAULT_CLAUDE_MODEL, };
+module.exports = { cutRepeat, chatLanguage, chatLanguageRule, chatLanguageTail, setLogger, thinkOff, tagFilter, translationProblem, suggestTitle, cleanTitle, keepOf, translateTarget, translateSystem, splitPieces, isGreek, ctxFor, editStream, editSystem, EDIT_MODES, warmup, summarize, fixGrammar, toChecklist, chatStream, SYS_CHAT, ping, callModel, DEFAULT_CLAUDE_MODEL, };
