@@ -27,6 +27,7 @@ const safeload = require('./safeload');
 const restore = require('./restore');
 const importers = require('./importers');
 const placement = require('./placement');
+const sidesnap = require('./sidesnap');
 const changelog = require('./changelog');
 
 // A second launch must stop immediately (otherwise it would open duplicate notes).
@@ -72,7 +73,7 @@ let file, saveTimer, allTimer, firstRun = false, DATA = null, dirty = false, las
 const dataDir = () => DATA || app.getPath('userData');
 const DEFAULT_SETTINGS = {
   hideTaskbar: true, snap: true, launch: 'notes', splash: true, name: '', lang: 'en', theme: 'classic',
-  snapDistance: 10, defaultSize: 16, trashDays: 30, shortcuts: true, keys: {}, chatHistory: true, autoBackup: true, lastBackup: 0, autoUpdate: true, whatsNew: true, seenVersion: '',
+  snapDistance: 10, snapSides: false, defaultSize: 16, trashDays: 30, shortcuts: true, keys: {}, chatHistory: true, autoBackup: true, lastBackup: 0, autoUpdate: true, whatsNew: true, seenVersion: '',
   print: { single: { style: 'box', layout: 'actual', size: 'normal', title: true, pictures: true }, many: { style: 'plain', layout: 'flow', size: 'normal', title: true, pictures: true } },   // Print options window: remembered choices
   ai: { provider: 'off', model: '', url: 'http://localhost:11434', keyEnc: '', keepAlive: '5m' },
   access: { size: 100, contrast: false, read: false, motion: false, focus: false, big: false, sr: false },   // Settings > Accessibility: everything is off until you switch it on
@@ -233,6 +234,25 @@ function pick(cur, cands) {
   for (const c of cands) { const k = Math.abs(c - cur); if (k < d) { d = k; best = c; } }
   return d <= S ? best : cur;
 }
+// Snap to a side of the screen (Settings > Notes, off by default): mouse against the left/right edge = that half, against the top = the whole work area.
+// The note's old size is remembered (only while StickyPad runs) and comes back when you drag the note away.
+const sideSnapped = new Map();   // noteId -> { prev: size before, at: where it was put }
+function sideSnap(w, id) {
+  const m = notes[id]; if (!m || m.rolled || w.isMinimized()) return false;
+  let cur, z; try { cur = screen.getCursorScreenPoint(); z = sidesnap.zone(cur, displayList()); } catch { return false; }
+  const s = sideSnapped.get(id);
+  if (z) {
+    if (!s) sideSnapped.set(id, { prev: w.getBounds(), at: z.bounds });
+    else s.at = z.bounds;
+    w.setBounds(z.bounds); return true;
+  }
+  if (s) {   // let go somewhere else: the note gets its old size back
+    sideSnapped.delete(id);
+    const wa = screen.getDisplayNearestPoint(cur).workArea;
+    w.setBounds(sidesnap.restoreAt(s.prev, s.at, cur, wa));
+  }
+  return false;
+}
 // Called once, after you let go of a note. Snaps to screen edges and to notes that are already close by.
 function snapPos(w, nb) {
   const wa = screen.getDisplayMatching(nb).workArea, NEAR = 40;
@@ -356,16 +376,18 @@ function openNote(n) {
     save();
   };
   w.on('move', () => keep()); w.on('resize', () => keep());
-  w.on('resized', () => keep(true));
+  w.on('resized', () => { const s = sideSnapped.get(n.id); if (s && !w.isDestroyed() && !sidesnap.same(w.getBounds(), s.at)) sideSnapped.delete(n.id); keep(true); });   // sized by hand: that size stays
   w.on('moved', () => {   // fires once when you release the note, so nothing tugs at it while you drag
     keep(true);
-    if (!settings.snap || w.isDestroyed()) return;
+    if (w.isDestroyed()) return;
+    if (settings.snapSides && sideSnap(w, n.id)) return;
+    if (!settings.snap) return;
     const nb = w.getBounds(), p = snapPos(w, nb);
     if (p.x !== nb.x || p.y !== nb.y) w.setPosition(p.x, p.y);
   });
   w.on('focus', focusguard.guard(w));
   const cid = w.webContents.id;
-  w.on('closed', () => { panelGrow.delete(n.id); if (!reopening.has(n.id)) seeThrough.delete(n.id); wins.delete(n.id); byContents.delete(cid); if (!reopening.has(n.id)) relock(notes[n.id]); pingAll(); });
+  w.on('closed', () => { sideSnapped.delete(n.id); panelGrow.delete(n.id); if (!reopening.has(n.id)) seeThrough.delete(n.id); wins.delete(n.id); byContents.delete(cid); if (!reopening.has(n.id)) relock(notes[n.id]); pingAll(); });
   return w;
 }
 
@@ -1625,7 +1647,7 @@ function memoryUse() {
 function allSettings() {
   return {
     version: app.getVersion(), packaged: app.isPackaged, startup: startupOn(), dataPath: dataDir(), dataCustom: dataDir() !== app.getPath('userData'),
-    hideTaskbar: !!settings.hideTaskbar, snap: !!settings.snap, snapDistance: settings.snapDistance, defaultSize: settings.defaultSize,
+    hideTaskbar: !!settings.hideTaskbar, snap: !!settings.snap, snapSides: !!settings.snapSides, snapDistance: settings.snapDistance, defaultSize: settings.defaultSize,
     trashDays: settings.trashDays, trashCount: trash.length, shortcuts: !!settings.shortcuts, suggestDates: settings.suggestDates !== false, predictWords: settings.predictWords !== false, keys: curKeys(), keysFailed: settings.shortcuts ? keysFailed : [], chatHistory: !!settings.chatHistory,
     autoBackup: !!settings.autoBackup, lastBackup: settings.lastBackup || 0, backupCount: backup.list(app.getPath('userData')).length,
     autoUpdate: settings.autoUpdate !== false, whatsNew: settings.whatsNew !== false, update: updater ? updater.get() : null,
@@ -1674,6 +1696,7 @@ ipcMain.handle('settings:set', (e, p) => {
   if (p) {
     if ('hideTaskbar' in p) setHide(p.hideTaskbar);
     if ('snap' in p) setSnap(p.snap);
+    if ('snapSides' in p) { settings.snapSides = !!p.snapSides; if (!settings.snapSides) sideSnapped.clear(); }
     if ('startup' in p) setStartup(p.startup);
     if (Number.isFinite(p.snapDistance)) settings.snapDistance = clampInt(p.snapDistance, 4, 40);
     if (Number.isFinite(p.defaultSize)) settings.defaultSize = clampInt(p.defaultSize, 10, 48);
