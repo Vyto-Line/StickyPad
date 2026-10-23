@@ -85,7 +85,7 @@ function drawAll() {
 function setBusy(b) {
   busy = b; sendBtn.textContent = b ? 'Stop' : 'Send'; sendBtn.classList.toggle('stop', b);
 }
-const persist = () => api.chatSave({ messages, noteId });
+const persist = async () => { await api.chatSave({ messages, noteId }); refreshList(); };
 
 /* ---------- talking to the model ---------- */
 function generate() {
@@ -139,7 +139,13 @@ input.addEventListener('input', autosize);
 
 /* ---------- header, context, new chat ---------- */
 $('#close').onclick = () => api.chatClose();
-$('#newChat').onclick = () => { if (busy) api.chatStop(curId); messages = []; persist(); drawAll(); input.focus(); };
+// Leaving a chat while it is answering: the answer is dropped (the question stays), and nothing leaks into the next chat.
+function leaveChat() { if (busy) { const id = curId; curId = null; curBubble = null; curText = ''; setBusy(false); api.chatStop(id); } }
+async function showChat(v) {
+  messages = v.messages || []; noteId = v.noteId || null; await loadNotes(noteId); drawAll(); refreshList(); input.focus();
+}
+const newChat = async () => { leaveChat(); await showChat(await api.chatNew()); };
+$('#newChat').onclick = newChat; $('#listNew').onclick = newChat;
 async function loadNotes(select) {
   const list = await api.chatNotes(), sel = $('#ctx');
   sel.innerHTML = ''; const none = document.createElement('option'); none.value = ''; none.textContent = 'No note'; sel.appendChild(none);
@@ -189,6 +195,80 @@ function setStatus(st) {
   if (q) persist();
   $('#chips').innerHTML = '';
   SUGGEST.forEach(t => { const c = document.createElement('button'); c.className = 'chip'; c.textContent = t; c.onclick = () => { input.value = t; autosize(); input.focus(); }; $('#chips').appendChild(c); });
-  drawAll(); input.focus();
+  drawAll(); input.focus(); refreshList();
 })();
 window.addEventListener('focus', async () => { setStatus(await api.chatLoad()); await loadNotes(); });
+
+
+/* ---------- the list of chats (left) ---------- */
+let listQ = '', openMenu = null, armedDel = 0;
+const listEl = $('#chatList');
+function closeMenu() { if (openMenu) { openMenu.remove(); openMenu = null; } listEl.querySelectorAll('.cmore[aria-expanded="true"]').forEach(b => b.setAttribute('aria-expanded', 'false')); }
+async function refreshList() {
+  const r = await api.chatList(listQ); if (!r) return;
+  $('#histNote').hidden = r.history !== false;
+  $('#delAll').hidden = !r.items.length;
+  listEl.textContent = ''; openMenu = null;
+  if (!r.items.length) { const p = document.createElement('p'); p.className = 'cnone'; p.textContent = listQ ? 'No chat matches.' : 'Your chats show up here.'; listEl.appendChild(p); return; }
+  r.items.forEach(c => listEl.appendChild(row(c)));
+}
+function row(c) {
+  const el = document.createElement('div'); el.className = 'crow' + (c.current ? ' cur' : ''); el.dataset.id = c.id;
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'citem'; b.title = c.title;
+  if (c.current) b.setAttribute('aria-current', 'true');
+  const t = document.createElement('span'); t.className = 't'; t.textContent = c.title; b.appendChild(t);
+  if (c.pinned) { const p = document.createElement('span'); p.className = 'pin'; p.textContent = '📌'; p.setAttribute('role', 'img'); p.setAttribute('aria-label', 'Pinned'); b.appendChild(p); }
+  b.onclick = async () => { if (c.current) return; leaveChat(); await showChat(await api.chatSelect(c.id)); };
+  const m = document.createElement('button'); m.type = 'button'; m.className = 'cmore'; m.textContent = '⋯'; m.setAttribute('aria-label', 'More for ' + c.title); m.setAttribute('aria-haspopup', 'menu'); m.setAttribute('aria-expanded', 'false');
+  m.onclick = e => { e.stopPropagation(); const was = openMenu && openMenu.parentNode === el; closeMenu(); if (!was) menu(el, m, c); };
+  el.append(b, m); return el;
+}
+function menu(el, anchor, c) {
+  const mn = document.createElement('div'); mn.className = 'cmenu'; mn.setAttribute('role', 'menu');
+  const add = (label, fn, cls) => { const x = document.createElement('button'); x.type = 'button'; x.setAttribute('role', 'menuitem'); x.textContent = label; if (cls) x.className = cls; x.onclick = e => { e.stopPropagation(); closeMenu(); fn(); }; mn.appendChild(x); };
+  add('Rename', () => rename(el, c));
+  add(c.pinned ? 'Unpin' : 'Pin to top', async () => { await api.chatPin(c.id, !c.pinned); refreshList(); });
+  add('Save as note', async () => { const ok = await api.chatToNote(c.id); if (window.StickyAccess) StickyAccess.announce(ok ? 'Saved as a note.' : 'Could not save.'); });
+  add('Delete chat', () => askDelete(el, c), 'danger');
+  el.appendChild(mn); openMenu = mn; anchor.setAttribute('aria-expanded', 'true');
+  mn.querySelector('button').focus();
+  mn.addEventListener('keydown', e => {
+    const bs = [...mn.querySelectorAll('button')], i = bs.indexOf(document.activeElement);
+    if (e.key === 'ArrowDown') { e.preventDefault(); bs[(i + 1) % bs.length].focus(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); bs[(i + bs.length - 1) % bs.length].focus(); }
+    else if (e.key === 'Escape') { e.preventDefault(); closeMenu(); anchor.focus(); }
+  });
+}
+function rename(el, c) {
+  el.textContent = ''; const inp = document.createElement('input'); inp.className = 'crename'; inp.value = c.title; inp.maxLength = 80; inp.setAttribute('aria-label', 'Chat name');
+  let done = false; const fin = async save => { if (done) return; done = true; if (save) await api.chatRename(c.id, inp.value); refreshList(); };
+  inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); fin(true); } else if (e.key === 'Escape') { e.preventDefault(); fin(false); } };
+  inp.onblur = () => fin(true); el.appendChild(inp); inp.focus(); inp.select();
+}
+// deleting asks first, right in the row (no pop-up window)
+function askDelete(el, c) {
+  el.textContent = ''; const a = document.createElement('div'); a.className = 'cask'; a.setAttribute('role', 'alertdialog'); a.setAttribute('aria-label', 'Delete this chat?');
+  const s = document.createElement('span'); s.textContent = 'Delete this chat?';
+  const yes = document.createElement('button'); yes.type = 'button'; yes.className = 'yes'; yes.textContent = 'Delete';
+  const no = document.createElement('button'); no.type = 'button'; no.textContent = 'Keep';
+  yes.onclick = async () => { const wasCur = c.current; if (wasCur) leaveChat(); const v = await api.chatDelete(c.id); if (wasCur) await showChat(v); else refreshList(); if (window.StickyAccess) StickyAccess.announce('Chat deleted.'); };
+  no.onclick = () => refreshList(); a.onkeydown = e => { if (e.key === 'Escape') { e.preventDefault(); refreshList(); } };
+  a.append(s, yes, no); el.appendChild(a); no.focus();
+}
+$('#delAll').onclick = async function () {
+  const b = this;
+  if (!b.classList.contains('armed')) { b.classList.add('armed'); b.textContent = 'Sure? This deletes every chat'; clearTimeout(armedDel); armedDel = setTimeout(() => { b.classList.remove('armed'); b.textContent = 'Delete all chats'; }, 4000); return; }
+  clearTimeout(armedDel); b.classList.remove('armed'); b.textContent = 'Delete all chats';
+  leaveChat(); await showChat(await api.chatDeleteAll());
+};
+let sTimer = 0;
+$('#chatSearch').addEventListener('input', e => { listQ = e.target.value; clearTimeout(sTimer); sTimer = setTimeout(refreshList, 120); });
+document.addEventListener('click', e => { if (openMenu && !e.target.closest('.cmenu')) closeMenu(); });
+// show or hide the list (remembered; starts hidden in a narrow window)
+(function () {
+  let want = null; try { want = localStorage.getItem('sp.chatList'); } catch (e) {}
+  const show = want === null ? innerWidth >= 860 : want === '1', b = $('#toggleChats');
+  const set = on => { document.body.classList.toggle('nochats', !on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); };
+  set(show);
+  b.onclick = () => { const on = document.body.classList.contains('nochats'); set(on); try { localStorage.setItem('sp.chatList', on ? '1' : '0'); } catch (e) {} };
+})();

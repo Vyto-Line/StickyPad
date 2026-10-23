@@ -1349,21 +1349,22 @@ ipcMain.handle('theme:applyAll', (e, id) => {
 
 /* ---------- AI chat sidebar ---------- */
 const chatFile = () => path.join(dataDir(), 'chat.json');
+const CS = require('./chatstore');
+const cleanChat = CS.cleanChat;
 function loadChat() {
   if (chatState) return chatState;
-  if (!settings.chatHistory) { chatState = { messages: [], noteId: null }; return chatState; }
-  try { chatState = JSON.parse(fs.readFileSync(chatFile(), 'utf8')); } catch { chatState = null; }
-  if (!chatState || !Array.isArray(chatState.messages)) chatState = { messages: [], noteId: null };
+  let raw = null;
+  if (settings.chatHistory) { try { raw = JSON.parse(fs.readFileSync(chatFile(), 'utf8')); } catch {} }   // with history off nothing is ever read from or written to disk
+  chatState = CS.load(raw);
   return chatState;
 }
-const saveChat = () => { if (!settings.chatHistory) return; try { fs.writeFileSync(chatFile(), JSON.stringify(chatState)); } catch {} };
-function clearChat() { chatState = { messages: [], noteId: null }; try { fs.unlinkSync(chatFile()); } catch {} }
-function cleanChat(messages, keep) {
-  const out = (Array.isArray(messages) ? messages : [])
-    .filter(m => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string' && m.content !== '')
-    .map(m => ({ role: m.role, content: m.content.slice(0, 8000) })).slice(-keep);
-  while (out.length && out[0].role !== 'user') out.shift();   // models expect the conversation to start with the user
-  return out;
+const saveChat = () => { if (!settings.chatHistory) return; try { fs.writeFileSync(chatFile(), JSON.stringify(CS.toFile(chatState))); } catch {} };
+function clearChat() { chatState = CS.load(null); try { fs.unlinkSync(chatFile()); } catch {} }
+// what the chat window needs to draw the chat you are in
+function chatView() {
+  const c = CS.cur(loadChat());
+  return { chatId: c.id, messages: c.messages, noteId: notes[c.noteId] && !notes[c.noteId].lock ? c.noteId : null, history: !!settings.chatHistory,
+           provider: settings.ai.provider, model: settings.ai.model || (settings.ai.provider === 'claude' ? ai.DEFAULT_CLAUDE_MODEL : '') };
 }
 // A long note goes in whole (up to ~40,000 characters); beyond that the start and the END are kept, never just the start.
 function chatContext(text) {
@@ -1394,12 +1395,20 @@ function openChat(noteId) {
 ipcMain.handle('chat:open', (e, noteId) => openChat(typeof noteId === 'string' ? noteId : undefined));
 ipcMain.handle('chat:close', () => { openHome('notes'); });
 ipcMain.handle('home:go', (e, section, arg) => { if (section === 'chat') return openChat(typeof arg === 'string' ? arg : undefined); openHome(String(section), typeof arg === 'string' ? arg : undefined); });
-ipcMain.handle('chat:load', () => {
-  const c = loadChat();
-  return { messages: cleanChat(c.messages, 100), noteId: notes[c.noteId] && !notes[c.noteId].lock ? c.noteId : null,
-           provider: settings.ai.provider, model: settings.ai.model || (settings.ai.provider === 'claude' ? ai.DEFAULT_CLAUDE_MODEL : '') };
+ipcMain.handle('chat:load', () => chatView());
+ipcMain.handle('chat:save', (e, p) => { CS.saveCurrent(loadChat(), p); saveChat(); });
+const chatId = x => typeof x === 'string' ? x : '';
+ipcMain.handle('chat:list', (e, q) => ({ items: CS.list(loadChat(), typeof q === 'string' ? q.slice(0, 100) : ''), history: !!settings.chatHistory }));
+ipcMain.handle('chat:select', (e, id) => { CS.select(loadChat(), chatId(id)); saveChat(); return chatView(); });
+ipcMain.handle('chat:new', () => { CS.startNew(loadChat()); saveChat(); return chatView(); });
+ipcMain.handle('chat:rename', (e, id, title) => { const ok = CS.rename(loadChat(), chatId(id), title); saveChat(); return ok; });
+ipcMain.handle('chat:pin', (e, id, on) => { const ok = CS.pin(loadChat(), chatId(id), !!on); saveChat(); return ok; });
+ipcMain.handle('chat:delete', (e, id) => { CS.remove(loadChat(), chatId(id)); saveChat(); return chatView(); });
+ipcMain.handle('chat:deleteAll', () => { clearChat(); return chatView(); });
+ipcMain.handle('chat:toNote', (e, id) => {
+  const S = loadChat(), c = S.chats.find(x => x.id === chatId(id)); if (!c || !c.messages.length) return false;
+  const t = CS.transcript(c).slice(0, 100000); makeNote(null, { title: c.title, blocks: [{ t: 'text', v: t }], text: t }); return true;
 });
-ipcMain.handle('chat:save', (e, p) => { const c = loadChat(); c.messages = cleanChat(p && p.messages, 100); c.noteId = p && typeof p.noteId === 'string' ? p.noteId : null; saveChat(); });
 ipcMain.handle('chat:notes', () => Object.values(notes).filter(n => !n.lock && String(n.text || '').trim())
   .sort((a, b) => (b.updated || 0) - (a.updated || 0)).map(n => ({ id: n.id, title: n.title || String(n.text).split('\n')[0].slice(0, 40) || 'Note' })));
 ipcMain.handle('chat:saveAsNote', (e, text) => {

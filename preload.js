@@ -21,7 +21,7 @@ contextBridge.exposeInMainWorld('api', {
   onApplied: cb => ipcRenderer.on('note:applied', () => cb()),
   onStyle: cb => ipcRenderer.on('note:style', (e, st) => cb(st)),
   home: call('home:go'), uiTheme: call('ui:theme'), onUiTheme: cb => ipcRenderer.on('ui:theme', (e, t) => cb(t)), openChat: call('chat:open'), chatClose: call('chat:close'), chatLoad: call('chat:load'), chatSave: call('chat:save'),
-  chatNotes: call('chat:notes'), chatSend: call('chat:send'), chatStop: call('chat:stop'), chatSaveAsNote: call('chat:saveAsNote'), chatApply: call('chat:applyToNote'),
+  chatNotes: call('chat:notes'), chatList: call('chat:list'), chatSelect: call('chat:select'), chatNew: call('chat:new'), chatRename: call('chat:rename'), chatPin: call('chat:pin'), chatDelete: call('chat:delete'), chatDeleteAll: call('chat:deleteAll'), chatToNote: call('chat:toNote'), chatSend: call('chat:send'), chatStop: call('chat:stop'), chatSaveAsNote: call('chat:saveAsNote'), chatApply: call('chat:applyToNote'),
   onChatEvent: cb => ipcRenderer.on('chat:event', (e, m) => cb(m)),
   onChatAttach: cb => ipcRenderer.on('chat:attach', (e, id) => cb(id)),
   aiEdit: call('ai:edit'), aiEditStop: call('ai:editStop'), onAiEvent: cb => ipcRenderer.on('ai:event', (e, m) => cb(m)),
