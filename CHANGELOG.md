@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.15.0
+- **AI in one place.** In a note's panel, the AI part now starts with a big **Chat about this note** button, then **Summarize** and **Translate…** side by side, and a **More AI actions** list with the rest (fix spelling, make it shorter, and so on).
+- **Translate menu.** **Translate…** opens a small menu. StickyPad works out the language of your text and shows it, for example *Greek (Auto-detected)*. Pick the language to translate into from 13 (English, Greek, Spanish, French, German, Italian, Portuguese, Dutch, Turkish, Russian, Arabic, Chinese, Japanese). You can search the list, the note's own language is greyed out, and the last language you used is remembered. Greek and English work best; small models on your PC are weaker with the others. If the AI answers in the wrong language, nothing is changed.
+- **Chat list next to the AI chat.** Every conversation is kept as its own chat, named after your first question. You can open an old chat, **rename** it, **pin** it to the top, **save it as a note**, **delete** it (it asks first), **search** inside all chats, or **delete all chats**. The **Chats** button hides the list. Your existing chat moves into the list by itself. With *Remember chat history* off, nothing is saved to disk, as before.
+- **Snap a note to the sides of the screen (new, off by default: Settings > Notes).** Let go of a note with the mouse pushed against the left or right edge to fill that half of the screen, or against the top edge to fill the whole screen. Corners do nothing. Drag the note away and it gets its old size back. It works on every screen you have, and the taskbar stays visible.
+- **"Ask the AI" is now called "AI chat"** in the Home sidebar.
+- **Checklists look right in the Finder (Ctrl+Alt+F) and on the Home cards:** round ticks instead of the ☑ and ☐ symbols.
+- **The Finder explains its "Actions" button.** It now says *Actions* or *Notes* so you can see what it switches to.
+- **Double-click selects just the word.** The space after the word is no longer selected with it.
+- Not tried on a real Windows PC yet.
+
 ## 1.14.56
 - **Smoother first-start tour.** Next and Back now slide the old step out and the new one in (the way you are going), and the card eases to its new size instead of jumping. Quick clicks land on the right step. With *Reduce motion* on, steps change at once.
 - **The note's scroll bar is closer to the edge.** It sat too far from the right side of the note; it now sits closer, while still being easy to grab.

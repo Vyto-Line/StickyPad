@@ -26,7 +26,7 @@ Each note is its own small window on your desktop. Everything is stored on your 
 - **Pictures**: paste or drop them straight into the text.
 - **Links**: web and e-mail addresses are underlined; **Ctrl+click** opens them, and a right-click offers *Open link* and *Copy link*. The note on the right shows links, a date suggestion and the update bar.
 - **Pin** a note on top of other windows, **roll it up** to just its title, or **close** it and reopen it from the tray.
-- **Folders** to group notes; **snap** to screen edges and to other notes; **tidy up** arranges the open notes in rows.
+- **Folders** to group notes; **snap** to screen edges and to other notes, and (optional, *Settings > Notes*) **snap to the sides of the screen**: let go of a note against the left or right edge for that half of the screen, against the top edge for the whole screen, and drag it away to get its old size back; **tidy up** arranges the open notes in rows.
 - **Trash** keeps deleted notes for 30 days, so nothing is lost by accident.
 
 The icons in the header, from the left: add a checklist item, pin, all notes, settings, roll up, close.
@@ -70,7 +70,7 @@ A **.stickypad** file also keeps the note's look and settings (colour, font, siz
 ### Home: notes, trash, AI chat and settings in one window
 <img align="right" width="300" src="docs/images/feature_all.png" alt="The Home window with folders, coloured cards and the Support the project button">
 
-Ctrl+Alt+Q, the tray icon, or the **house button** at the left of any note's title bar opens the **Home** window. A sidebar switches between **Notes** (every note as a card, with search, *Open all* per folder and *Tidy up*; **folder chips** show one folder at a time, and dropping a card on a chip moves the note there), **Trash**, **AI chat** (the chat) and **Settings**. It is always the same one window, so nothing gets lost behind others. Closed notes are greyed out; click one to open it.
+Ctrl+Alt+Q, the tray icon, or the **house button** at the left of any note's title bar opens the **Home** window. A sidebar switches between **Notes** (every note as a card, with search, *Open all* per folder and *Tidy up*; **folder chips** show one folder at a time, and dropping a card on a chip moves the note there), **Trash**, **AI chat** (the chat, with a **list of your chats** on its left: open, rename, pin, save as a note, delete, search) and **Settings**. It is always the same one window, so nothing gets lost behind others. Closed notes are greyed out; click one to open it.
 
 ### Search all notes
 Press **Ctrl+Alt+F** (or *Search notes…* in the tray menu) from anywhere: a small search window opens in the middle of your screen. Type a few letters and the notes that contain **all** your words appear at once, best match first, each with a short piece of its text and the matching words marked. **Up and Down** choose, **Enter** opens the note, **Esc** (or a click elsewhere) closes it. It reads the **whole text** of every note, ignores capitals and accents (so *καλημερα* finds *Καλημέρα*), and notes with a lock are found by their title only. The search box in the Home window uses the same search.
@@ -81,15 +81,15 @@ Give a note a password (4+ characters) and its text is stored **encrypted (AES-2
 ### AI helper (off by default)
 <img align="right" width="300" src="docs/images/feature_chat_all.png" alt="The AI chat answering a question from all notes, with a Looked at line">
 
-Open the sliders button (*This note*): the **AI** part is one list and a **Run** button (the model and connection options are folded under *Model and connection*, and open by themselves when something needs fixing):
+Open the sliders button (*This note*): the **AI** part starts with a big **Chat about this note** button, then **Summarize** and **Translate…** side by side, then a **More AI actions** list with a **Run** button (the model and connection options are folded under *Model and connection*, and open by themselves when something needs fixing):
 
-| In the list | What it does |
+| In the panel | What it does |
 |---|---|
-| **Summarize** | A short summary of the note, in the note's own language. |
+| **Summarize** (button) | A short summary of the note, in the note's own language. |
 | **Fix spelling and grammar** | Finds mistakes and shows each change, so you can **Apply** or **Cancel**. |
 | **Turn into a checklist** | Turns the note into a clean checklist. |
 | **Suggest a title** | A short title for the note. |
-| **Translate Greek ⇄ English** | **Greek → English**, anything else → Greek, right in the note. Works on the selected text, or the paragraph with the cursor. |
+| **Translate…** (button) | Opens a menu: StickyPad detects the language (*Greek (Auto-detected)*), you pick one of **13 languages** (searchable, the note's own language is greyed out, the last one is remembered) and the text is translated right in the note. Works on the selected text, or the paragraph with the cursor. Greek and English work best. |
 | **Polish / shorter / friendlier / fix it right in the note / continue writing** | The model rewrites the selected text **right in the note as it types** (Ctrl+Shift+E does it too). **Stop** cancels, **Undo** brings the original back. |
 
 Under *Look*, a **Transparency** bar makes the note see-through (0 to 70%), one setting per note. *Keep the text solid* fades only the background (it needs *Low memory mode* off in *Settings > General*).
@@ -169,7 +169,7 @@ Download **StickyPad-Setup-x.y.z.exe** from the [Releases](../../releases) page 
 1. Open a note, click the sliders button (*This note*), go to the **AI** part, set *Use* to **Ollama**
 2. If you see "Ollama is not installed", press **Download and install Ollama**
 3. Choose a model from the list (for Greek try *Gemma 4 E4B* on a PC with 16 GB of RAM, *Qwen3 8B*, or *Gemma 3 4B* on 8 GB) and wait for the download
-4. Select text (or put the cursor in a paragraph) and press **Edit live** (Ctrl+Shift+E) or **Translate**
+4. Select text (or put the cursor in a paragraph) and press **Edit live** (Ctrl+Shift+E) or **Translate…**
 
 ## Shortcuts
 | In a note | |
