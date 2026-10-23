@@ -1,6 +1,6 @@
 # StickyPad
 
-**Colourful sticky notes for Windows, with a local AI helper that understands Greek and English.**
+**Colourful sticky notes for Windows, with a local AI helper that works in English, Greek and more.**
 
 Each note is its own small window on your desktop. Everything is stored on your PC; nothing leaves it unless you choose an online AI provider.
 
@@ -8,7 +8,7 @@ Each note is its own small window on your desktop. Everything is stored on your 
 
 - **Light and simple**: one small window per note, a tray icon, and it can start with Windows.
 - **Private**: no account, no cloud. Lock a note with a password, or keep the AI on your own PC with [Ollama](https://ollama.com).
-- **Greek-friendly**: the AI has dedicated Greek rules (accents, spelling), and search ignores Greek accents.
+- **Multilingual**: the AI works in 13 languages (English and Greek work best with small models), with dedicated Greek rules, and search ignores accents.
 - **Tells you about updates** from this repository's Releases: you press **Download**, then **Restart to update** when it is ready.
 - **Easy on memory**: Low memory mode (on by default) and an AI model that only stays loaded while you use it. *Settings > About > Measure* shows what StickyPad uses.
 
