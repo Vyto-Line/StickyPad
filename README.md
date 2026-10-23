@@ -89,7 +89,7 @@ Open the sliders button (*This note*): **AI** is a drop-down row that starts wit
 | **Fix spelling and grammar** | Finds mistakes and shows each change, so you can **Apply** or **Cancel**. |
 | **Turn into a checklist** | Turns the note into a clean checklist. |
 | **Suggest a title** | A short title for the note. |
-| **Translate…** (button) | Opens a menu: StickyPad detects the language (*Greek (Auto-detected)*), you pick one of **13 languages** (searchable, the note's own language is greyed out, the last one is remembered) and the text is translated right in the note. Works on the selected text, or the paragraph with the cursor. Greek and English work best. |
+| **Translate…** (button) | Opens a menu: StickyPad detects the language (*Greek (Auto-detected)*), you pick one of **13 languages** (searchable, the note's own language is greyed out, the last one is remembered) and the text is translated right in the note. Works on the selected text, or on the whole note when nothing is selected. Greek and English work best. |
 | **Polish / shorter / friendlier / fix it right in the note / continue writing** | The model rewrites the selected text **right in the note as it types** (Ctrl+Shift+E does it too). **Stop** cancels, **Undo** brings the original back. |
 
 Under *Look*, a **Transparency** bar makes the note see-through (0 to 70%), one setting per note. *Keep the text solid* fades only the background (it needs *Low memory mode* off in *Settings > General*).
@@ -169,7 +169,7 @@ Download **StickyPad-Setup-x.y.z.exe** from the [Releases](../../releases) page 
 1. Open a note, click the sliders button (*This note*), go to the **AI** part, set *Use* to **Ollama**
 2. If you see "Ollama is not installed", press **Download and install Ollama**
 3. Choose a model from the list (for Greek try *Gemma 4 E4B* on a PC with 16 GB of RAM, *Qwen3 8B*, or *Gemma 3 4B* on 8 GB) and wait for the download
-4. Select text (or put the cursor in a paragraph) and press **Edit live** (Ctrl+Shift+E) or **Translate…**
+4. Select text (or select nothing to use the whole note) and press **Edit live** (Ctrl+Shift+E) or **Translate…**
 
 ## Shortcuts
 | In a note | |

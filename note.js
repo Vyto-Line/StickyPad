@@ -805,6 +805,7 @@ function textSegments() {   // every run of text and every checklist item, so fi
   }
   return out;
 }
+const selectedText = () => { const s = getSelection(); return s.rangeCount && !s.isCollapsed && ed.contains(s.anchorNode) ? s.toString().trim() : ''; };
 const noteAsText = () => serialize().map(b => b.t === 'text' ? b.v : b.t === 'check' ? (b.done ? '[x] ' : '[ ] ') + b.v : '').filter(Boolean).join('\n').trim();
 
 function showChecklist(items) {
@@ -858,7 +859,7 @@ async function runAI(task) {
   if (timer) saveNow();
   let segs = null, payload;
   if (task === 'summarize') {
-    payload = { text: noteAsText() };
+    payload = { text: selectedText() || noteAsText() };   // the selection if there is one, else the whole note
     if (!payload.text) { aiShow('Summary', 'There is nothing to summarise yet.', [['Close', aiClose, true]]); return; }
   } else if (task === 'title') {
     payload = { text: noteAsText() };
@@ -899,6 +900,11 @@ function editTarget(mode) {
     range = sel.getRangeAt(0).cloneRange();
     if (range.cloneContents().querySelector('img, .todo, input')) return { err: 'Select plain text only (no pictures or checklist items).' };
     text = range.toString(); inTodo = !!tx(range.startContainer);
+  } else if (mode !== 'continue') {
+    // nothing selected: the WHOLE note, one text run or checklist item at a time (pictures and structure stay as they are)
+    const nodes = [...ed.childNodes].map(c => c.nodeType === 3 ? c : (c.classList && c.classList.contains('todo') ? c.querySelector('.tx') : null)).filter(n => n && n.textContent.trim());
+    if (!nodes.length) return { err: 'There is no text to edit yet.' };
+    return { whole: true, nodes, text: nodes.map(n => n.textContent).join('\n') };
   } else {
     let node = null;
     if (inEd) {
@@ -924,15 +930,37 @@ async function liveEdit() {
   if (t.err) { aiShow('Edit live', t.err, [['Close', aiClose, true]]); return; }
   $('#panel').hidden = true; $('#cfg').setAttribute('aria-expanded', 'false');
   if (timer) saveNow(); commitNow();
+  if (t.whole) return editWhole(mode, t.nodes);
+  return editSegment(mode, t, 'Editing…');
+}
+// One piece of text, written live into the note. Resolves when the AI is finished (or failed, or was stopped).
+async function editSegment(mode, t, label) {
   const cont = mode === 'continue', orig = t.text;
   const lead = cont ? (orig && !/\s$/.test(orig) ? (t.inTodo ? ' ' : ' ') : '') : (orig.match(/^\s*/) || [''])[0], trail = cont ? '' : (orig.match(/\s*$/) || [''])[0];
   if (cont) t.range.collapse(false); else t.range.deleteContents();
   const out = document.createTextNode(cont ? lead : orig.match(/^\s*/)[0]); t.range.insertNode(out);
-  edit = { id: 'e' + Date.now(), node: out, acc: '', cont, lead, trail, inTodo: t.inTodo, pre: cur };
+  edit = { id: 'e' + Date.now() + Math.random().toString(36).slice(2, 5), node: out, acc: '', cont, lead, trail, inTodo: t.inTodo, pre: job ? job.pre : cur };
   ed.contentEditable = 'false'; mark();
-  editBarShow('run', 'Editing…');
-  const r = await api.aiEdit({ id: edit.id, mode, text: orig, to: mode === 'translate' ? trTo || undefined : undefined });
-  void r;
+  editBarShow('run', label);
+  await api.aiEdit({ id: edit.id, mode, text: orig, to: mode === 'translate' ? trTo || undefined : undefined });
+}
+// Nothing was selected: every text run and checklist item of the note, one after the other. Stop or an error puts the whole note back as it was; Undo undoes all of it at once.
+let job = null;
+async function editWhole(mode, nodes) {
+  job = { pre: cur, failed: false };
+  const total = nodes.length; let i = 0;
+  try {
+    for (const node of nodes) {
+      i++;
+      if (!node.isConnected || !node.textContent.trim()) continue;
+      const range = document.createRange(); range.selectNodeContents(node);
+      await editSegment(mode, { range, text: node.textContent, inTodo: node.nodeType === 1 }, total > 1 ? 'Editing ' + i + ' of ' + total + '…' : 'Editing…');
+      if (job.failed) return;
+    }
+    if (window.StickyAccess) StickyAccess.announce('The AI has finished editing the note.');
+    ed.focus(); mark(); queue(); commitNow(); saveNow();
+    editBarShow('done', 'Done');
+  } finally { job = null; }
 }
 function editPaint() {
   const e = edit; if (!e) return;
@@ -945,6 +973,7 @@ function editPaint() {
 }
 function editEnd() { ed.contentEditable = 'true'; edit = null; }
 function editRevert() {
+  if (job) job.failed = true;   // a stopped or failed piece ends the whole job
   const pre = edit && edit.pre; editEnd();
   restore(pre); editBarHide();
 }
@@ -955,7 +984,9 @@ function editDone(stopped) {
   s = s.replace(/\s+$/, ''); if (edit.inTodo) s = s.replace(/\s*[\r\n]+\s*/g, ' ');
   edit.node.nodeValue = edit.lead + s + edit.trail;
   if (window.StickyAccess) StickyAccess.announce('The AI has finished editing the note.');
-  editEnd(); ed.focus(); mark(); queue(); commitNow(); saveNow();
+  editEnd();
+  if (job) { mark(); queue(); return; }   // more pieces may follow: saved and committed once, when the last one is done
+  ed.focus(); mark(); queue(); commitNow(); saveNow();
   editBarShow('done', 'Done');
 }
 function editFail(msg) { if (window.StickyAccess) StickyAccess.announce(msg); editRevert(); aiShow('Something went wrong', msg, [['Close', aiClose, true]]); }
@@ -1019,7 +1050,7 @@ function updateAiButtons() {
   if (off) { $('#aiSetup').open = true; if (!trMenu.hidden) trClose(); }
   const prov = aiCfgState && aiCfgState.provider, label = off ? 'Off' : prov === 'claude' ? 'Claude' : 'Ollama' + (aiCfgState.model ? ' · ' + aiCfgState.model : '');
   $('#aiState').textContent = locked ? 'Locked' : off ? 'Off' : 'On'; $('#aiSetupState').textContent = label;
-  $('#aiHint').textContent = locked ? 'Unlock this note first.' : off ? 'Turn the AI on under Model and connection below.' : 'Works on the selected text, or the whole note.';
+  $('#aiHint').textContent = locked ? 'Unlock this note first.' : off ? 'Turn the AI on under Model and connection below.' : 'Works on the selected text, or on the whole note when nothing is selected.';
   if (!locked && !off) modelCheck();
 }
 // Tells you right away when the chosen Ollama model has not been downloaded, instead of failing on the first request.

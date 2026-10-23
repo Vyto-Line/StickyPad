@@ -94,9 +94,9 @@ with sync_playwright() as p:
     # checklist + picture protection
     pg=page('note.html',pre="window.__BLOCKS=[{t:'text',v:'intro tpyo'},{t:'check',v:'buy mlik',done:false},{t:'text',v:'tail txt'}];")
     pg.evaluate("__S.editOut='buy milk'")
-    pg.evaluate("""()=>{const tx=document.querySelector('.todo .tx');const r=document.createRange();r.setStart(tx.firstChild,2);r.collapse(true);const s=getSelection();s.removeAllRanges();s.addRange(r);}""")
+    pg.evaluate("""()=>{const tx=document.querySelector('.todo .tx');const r=document.createRange();r.selectNodeContents(tx);const s=getSelection();s.removeAllRanges();s.addRange(r);}""")
     pg.evaluate("document.querySelector('#aiEdit').click()"); pg.wait_for_timeout(400)
-    ok(pg.evaluate("__S.calls.find(c=>c[0]=='edit')[2]")=='buy mlik','caret in a checklist item edits that item')
+    ok(pg.evaluate("__S.calls.find(c=>c[0]=='edit')[2]")=='buy mlik','a selection inside a checklist item edits just that item')
     ok(pg.evaluate("[...document.querySelectorAll('.todo .tx')].map(x=>x.textContent)")==['buy milk'] and 'intro tpyo' in text(pg) and 'tail txt' in text(pg),'other blocks untouched')
     ok(not pg.errs,'no page errors (%s)'%pg.errs)
     # continue on empty
