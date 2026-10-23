@@ -125,3 +125,12 @@ footer{display:flex;align-items:center;gap:10px;padding:12px 22px;border-top:1px
 .opt input{width:18px;height:18px;accent-color:var(--accent);flex:none}
 .opt b{display:block;font-size:14px}.opt i{display:block;font-style:normal;font-size:12px;color:var(--mute)}
 .opt:focus-within{border-color:var(--accent)}
+
+/* 5: a note slides to the left edge and fills that half of the screen */
+.sc .tbar{fill:var(--line)}
+.sc .spv{fill:#ffffff40;stroke:var(--accent);stroke-width:1.6;stroke-dasharray:5 4;opacity:0;animation:spv 5s ease-in-out infinite}
+@keyframes spv{0%,34%{opacity:0}42%,62%{opacity:1}72%,100%{opacity:0}}
+.sc .spn{fill:#FFE27A;stroke:#0000002e;stroke-width:1;filter:drop-shadow(0 3px 4px #0000002e);animation:spn 5s cubic-bezier(.4,0,.2,1) infinite}
+@keyframes spn{0%,8%{x:170px;y:40px;width:50px;height:46px}34%{x:104px;y:48px;width:50px;height:46px}42%,62%{x:58px;y:50px;width:50px;height:46px}74%,92%{x:56px;y:14px;width:102px;height:100px}100%{x:170px;y:40px;width:50px;height:46px}}
+.sc .spl rect{fill:#0000004d;opacity:0;animation:spl 5s ease-in-out infinite}
+@keyframes spl{0%,70%{opacity:0}78%,92%{opacity:1}100%{opacity:0}}
