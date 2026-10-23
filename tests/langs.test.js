@@ -22,6 +22,15 @@ assert.strictEqual(A.translationProblem('Please call the doctor tomorrow', 'Por 
 assert.strictEqual(A.translationProblem('Please call the doctor tomorrow', '明天请给医生打电话', 'Chinese'), '');
 assert.strictEqual(A.translationProblem('Please call the doctor tomorrow', 'Please call', 'Japanese'), 'same language');
 assert.ok(/into Spanish/.test(A.translateSystem('Hello', 'Spanish')) && !/Greek/.test(A.translateSystem('Hello', 'Spanish')));
+// chat language: follow the user's latest message, not the notes
+const U = c => ({ role: 'user', content: c }), AS = c => ({ role: 'assistant', content: c });
+assert.strictEqual(A.chatLanguage([U('Καλημέρα, τι κάνεις σήμερα;'), AS('Καλά'), U('What did I write about the dentist and the team?')]).code, 'en', 'English after Greek');
+assert.strictEqual(A.chatLanguage([U('What did I write about the dentist and the team?'), AS('x'), U('Τι έγραψα για τον οδοντίατρο σήμερα;')]).code, 'el');
+assert.strictEqual(A.chatLanguage([U('Please plan the day for the team and for me'), AS('x'), U('ok')]).code, 'en', 'a vague last message uses the one before');
+assert.strictEqual(A.chatLanguage([U('ok')]), null); assert.strictEqual(A.chatLanguage([]), null);
+assert.ok(/writing in English\. Answer in English/.test(A.chatLanguageRule(L.byCode('en'))) && /Greek/.test(A.chatLanguageRule(L.byCode('el'))) && /latest message/.test(A.chatLanguageRule(null)));
+assert.ok(/Answer in English/.test(A.chatLanguageTail(L.byCode('en'))) && A.chatLanguageTail(null) === '');
+assert.ok(/LATEST message/.test(A.SYS_CHAT) && !/If the user writes in Greek, answer in natural, correct Greek\. You are/.test(A.SYS_CHAT));
 (async () => {
   const nd = txt => ({ ok: true, status: 200, body: { getReader() { let x = false; return { read: async () => x ? { done: true } : (x = true, { value: new TextEncoder().encode(JSON.stringify({ message: { content: txt } }) + '\n{"done":true}\n') }) }; } } });
   const cfg = { provider: 'ollama', model: 'm', url: 'http://x' };

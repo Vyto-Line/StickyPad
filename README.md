@@ -81,7 +81,7 @@ Give a note a password (4+ characters) and its text is stored **encrypted (AES-2
 ### AI helper (off by default)
 <img align="right" width="300" src="docs/images/feature_chat_all.png" alt="The AI chat answering a question from all notes, with a Looked at line">
 
-Open the sliders button (*This note*): the **AI** part starts with a big **Chat about this note** button, then **Summarize** and **Translate…** side by side, then a **More AI actions** list with a **Run** button (the model and connection options are folded under *Model and connection*, and open by themselves when something needs fixing):
+Open the sliders button (*This note*): **AI** is a drop-down row that starts with a big **Chat about this note** button, then **Summarize** and **Translate…** side by side, then a **More AI actions** list with a **Run** button (the model and connection options are in the **Model and connection** row below, and open by themselves when something needs fixing):
 
 | In the panel | What it does |
 |---|---|

@@ -25,8 +25,23 @@ const SYS_CHECKLIST =
   'Cover the WHOLE input, including its last lines.';
 
 const SYS_CHAT =
-  'If the user writes in Greek, answer in natural, correct Greek. You are the assistant inside StickyPad, a sticky-notes app. Be concise and friendly. Answer in the language the user writes in ' +
-  '(English or Greek). Use short paragraphs and simple lists. Do not use tables.';
+  'You are the assistant inside StickyPad, a sticky-notes app. Be concise and friendly. Use short paragraphs and simple lists. Do not use tables. ' +
+  'LANGUAGE: always answer in the language of the user\'s LATEST message, never in the language of the notes or of earlier messages. ' +
+  'If the user writes in Greek, answer in natural, correct modern Greek; if they write in English, answer in English. Only switch language when the user asks you to.';
+
+// The language the user is writing in now: the latest message that is clear enough, looking back at most 3 of their messages. null = not sure.
+function chatLanguage(messages) {
+  const us = (messages || []).filter(m => m && m.role === 'user' && typeof m.content === 'string').reverse().slice(0, 3);
+  for (const m of us) { const d = LG.detect(m.content); if (d) return d; }
+  return null;
+}
+// Small local models drift into the language of the notes or of the Greek rules. This goes at the END of the instructions (where it counts most)
+// and, for the model only, behind the user's last message.
+function chatLanguageRule(lang) {
+  if (!lang) return 'Answer in the language of the user\'s latest message, not the language of the notes.';
+  return 'The user is writing in ' + lang.name + '. Answer in ' + lang.name + ' now, even if the notes or earlier messages are in another language, unless the user asks for a different language.';
+}
+const chatLanguageTail = lang => lang ? '\n\n(Answer in ' + lang.name + ', unless I ask for another language.)' : '';
 
 // ---------- language help: Greek gets its own, much more specific instructions ----------
 const letters = t => (String(t).match(/[A-Za-z\u0370-\u03FF\u1F00-\u1FFF]/g) || []).length;
@@ -485,4 +500,4 @@ async function ping(cfg, fetchImpl = fetch) {
   return r.trim().slice(0, 40);
 }
 
-module.exports = { setLogger, thinkOff, tagFilter, translationProblem, suggestTitle, cleanTitle, keepOf, translateTarget, translateSystem, splitPieces, isGreek, ctxFor, editStream, editSystem, EDIT_MODES, warmup, summarize, fixGrammar, toChecklist, chatStream, SYS_CHAT, ping, callModel, DEFAULT_CLAUDE_MODEL, };
+module.exports = { chatLanguage, chatLanguageRule, chatLanguageTail, setLogger, thinkOff, tagFilter, translationProblem, suggestTitle, cleanTitle, keepOf, translateTarget, translateSystem, splitPieces, isGreek, ctxFor, editStream, editSystem, EDIT_MODES, warmup, summarize, fixGrammar, toChecklist, chatStream, SYS_CHAT, ping, callModel, DEFAULT_CLAUDE_MODEL, };

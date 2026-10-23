@@ -26,4 +26,14 @@ assert.deepStrictEqual(S.restoreAt(prev, snapped, { x: 0, y: 0 }, wa), { x: 0, y
 assert.deepStrictEqual(S.restoreAt(prev, snapped, { x: 959, y: 1039 }, wa).y, 640);
 assert.deepStrictEqual(S.restoreAt({ width: 5000, height: 5000 }, snapped, { x: 10, y: 10 }, wa), { x: 0, y: 0, width: 1920, height: 1040 });
 assert.ok(S.same({ x: 0, y: 0, width: 960, height: 1040 }, { x: 1, y: 0, width: 960, height: 1039 }) && !S.same(snapped, prev) && !S.same(null, snapped));
+// the note pushed past the edge counts too, even when the mouse is not exactly on the edge (a small note grabbed by the middle of its title)
+const W = (x, y, width = 300, height = 320) => ({ x, y, width, height });
+assert.strictEqual(S.zone({ x: 150, y: 500 }, one, W(-150, 400)).zone, 'left', 'note half off the left edge');
+assert.strictEqual(S.zone({ x: 1800, y: 500 }, one, W(1650, 400)).zone, 'right');
+assert.strictEqual(S.zone({ x: 600, y: 400 }, one, W(450, -40)).zone, 'top');
+assert.strictEqual(S.zone({ x: 150, y: 500 }, one, W(-10, 400)), null, 'only a little past the edge: nothing');
+assert.strictEqual(S.zone({ x: 150, y: 500 }, one, W(0, 400)), null, 'just touching the edge: nothing (the old edge snap handles that)');
+assert.strictEqual(S.zone({ x: 150, y: 20 }, one, W(-150, -30)), null, 'pushed into a corner: nothing');
+assert.strictEqual(S.zone({ x: 150, y: 500 }, two, W(1770, 400)), null, 'past the line between two screens is not the end of the desktop');
+assert.strictEqual(S.zone({ x: 1500, y: 500 }, one), S.zone({ x: 1500, y: 500 }, one, undefined), 'window bounds are optional');
 console.log('sidesnap ok');
