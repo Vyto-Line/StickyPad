@@ -18,15 +18,23 @@ function arm(btn, label, sure, action) {
 }
 
 /* ---------- note cards ---------- */
+// A checklist line reaches us as "☐ text" or "☑ text": it is drawn as the same round tick the note itself uses (text nodes only, never HTML).
+function ticked(el, text) {
+  String(text).split(/([☐☑])\s?/).forEach(x => {
+    if (x === '☐' || x === '☑') {
+      const c = document.createElement('span'); c.className = x === '☑' ? 'cb done' : 'cb'; c.setAttribute('role', 'img'); c.setAttribute('aria-label', x === '☑' ? 'done' : 'to do'); el.appendChild(c);
+    } else if (x) el.appendChild(document.createTextNode(x));
+  });
+}
 function card(n) {
   const lines = n.text.split('\n').map(l => l.trim()).filter(Boolean);
   const b = document.createElement('button'); b.className = 'card' + (n.open ? '' : ' closed'); b.draggable = true; b.dataset.id = n.id;
   b.style.background = n.color; b.style.color = isDark(n.color) ? '#f2f2f2' : '#1b1b1b';
   b.style.fontFamily = '"' + String(n.font).replace(/["\\]/g, '') + '", "Segoe UI", sans-serif';
   const t = document.createElement('span'); t.className = 't';
-  t.textContent = n.title || lines[0] || (n.locked ? 'Locked note' : n.images ? '📷 Picture note' : '(empty note)');
+  if (n.title) t.textContent = n.title; else if (lines[0]) ticked(t, lines[0]); else t.textContent = n.locked ? 'Locked note' : n.images ? '📷 Picture note' : '(empty note)';
   const s = document.createElement('span'); s.className = 's';
-  s.textContent = n.locked ? '' : (n.title ? lines : lines.slice(1)).join('\n');
+  ticked(s, n.locked ? '' : (n.title ? lines : lines.slice(1)).join('\n'));
   const badges = document.createElement('span'); badges.className = 'b';
   [n.locked ? '🔒 locked' : '', n.pinned ? '📌 pinned' : '', n.images ? '📷 ' + n.images : '', n.rolled ? 'rolled up' : '', n.open ? '' : 'closed'].filter(Boolean)
     .forEach(x => { const c = document.createElement('span'); c.className = 'chip'; c.textContent = x; badges.appendChild(c); });

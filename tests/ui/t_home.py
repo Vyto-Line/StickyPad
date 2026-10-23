@@ -16,7 +16,7 @@ with sync_playwright() as p:
         pg=page(f)
         ok(pg.is_visible('#homeNav'),f+': sidebar shown')
         names=pg.eval_on_selector_all('#homeNav .hitem','e=>e.map(x=>x.textContent.trim())')
-        ok(names[:4]==['Home','Trash','Ask the AI','Settings'],f+': items %s'%names)
+        ok(names[:4]==['Home','Trash','AI chat','Settings'],f+': items %s'%names)
         ok(pg.eval_on_selector('#homeNav .hitem.on','e=>e.dataset.go')==cur,f+': "%s" is highlighted'%cur)
         box=pg.eval_on_selector('.homeMain','e=>{const r=e.getBoundingClientRect();return [r.width,r.height]}')
         ok(box[1]>=670 and box[0]>=780,f+': page fills the rest of the window %s'%box)
@@ -28,7 +28,7 @@ with sync_playwright() as p:
             pg.click('[data-go=notes]'); pg.wait_for_timeout(120); ok(pg.is_visible('#notesBar'),'Notes switches back')
             ok(not any(c[0]=='home' for c in pg.evaluate('__S.calls')),'Notes/Trash need no window change')
             pg.click('[data-go=chat]'); pg.click('[data-go=settings]')
-            ok(['home','chat',None] in pg.evaluate('__S.calls') and ['home','settings',None] in pg.evaluate('__S.calls'),'Ask the AI and Settings ask the app to switch page')
+            ok(['home','chat',None] in pg.evaluate('__S.calls') and ['home','settings',None] in pg.evaluate('__S.calls'),'AI chat the AI and Settings ask the app to switch page')
         else:
             pg.click('[data-go=notes]'); ok(['home','notes',None] in pg.evaluate('__S.calls'),f+': Notes asks the app to switch page')
             pg.click('[data-go=%s]'%cur); ok(sum(1 for c in pg.evaluate('__S.calls') if c[0]=='home')==1,f+': clicking the page you are on does nothing')

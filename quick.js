@@ -57,7 +57,15 @@ async function run() {
   if (mine !== seq) return;   // a newer search was started meanwhile
   rows = res; sel = 0; draw();
 }
-q.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(run, 60); });
+// "Actions" / "Notes": the same switch as typing > at the start of the box
+const modeBtn = $('#mode');
+function showMode() {
+  const acts = q.value.trimStart().startsWith('>');
+  modeBtn.textContent = acts ? '‹ Notes' : '› Actions'; modeBtn.classList.toggle('on', acts);
+  modeBtn.setAttribute('aria-label', acts ? 'Back to searching notes' : 'Show actions'); q.placeholder = acts ? 'Type to find an action' : 'Search notes, or type > for actions';
+}
+modeBtn.addEventListener('click', () => { q.value = q.value.trimStart().startsWith('>') ? '' : '>'; showMode(); q.focus(); run(); });
+q.addEventListener('input', () => { showMode(); clearTimeout(timer); timer = setTimeout(run, 60); });
 q.addEventListener('keydown', e => {
   if (e.key === 'ArrowDown') { e.preventDefault(); move(sel + 1); }
   else if (e.key === 'ArrowUp') { e.preventDefault(); move(sel - 1); }
@@ -66,4 +74,4 @@ q.addEventListener('keydown', e => {
 });
 window.addEventListener('keydown', e => { if (e.key === 'Escape') api.searchClose(); });
 window.addEventListener('focus', () => q.focus());
-run(); q.focus();
+showMode(); run(); q.focus();

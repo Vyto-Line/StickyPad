@@ -8,7 +8,7 @@ with sync_playwright() as p:
     b=p.chromium.launch(); pg=b.new_page(viewport={'width':330,'height':420}); errs=[]; pg.on('pageerror',lambda e:errs.append(str(e))); pg.add_init_script(STUB)
     pg.goto('file://'+os.path.abspath(os.path.join(HERE,'..','..'))+'/note.html'); pg.wait_for_timeout(300)
     pg.click('#cfg'); pg.wait_for_timeout(50); pg.wait_for_timeout(300)
-    ok(pg.is_visible('#aiRun') and not pg.is_disabled('#aiRun') and pg.evaluate("[...document.querySelectorAll('#aiAction option')].some(o=>o.value=='translate')"),'Translate is in the AI list and Run is enabled')
+    ok(pg.is_visible('#aiRun') and not pg.is_disabled('#aiRun') and pg.is_visible('#aiTr') and not pg.is_disabled('#aiTr') and pg.inner_text('#aiTr').startswith('Translate'),'Translate has its own button and Run is enabled')
     ok(pg.evaluate("[...document.querySelectorAll('#editMode option')].some(o=>o.value=='translate')"),'dropdown has the translate option')
     # model installed (stub has llama3.2:latest, config says llama3.2) -> normal hint
     ok('not installed' not in pg.inner_text('#aiHint'),'no warning when the model is installed (%s)'%pg.inner_text('#aiHint'))

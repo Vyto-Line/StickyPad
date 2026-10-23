@@ -140,7 +140,8 @@ body.rolled #aibox{display:none}
 /* themes, AI button grid, checklist preview */
 .aibtns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .aibtns .btn{white-space:nowrap;padding:7px 6px}
-#aiChat{grid-column:1/-1}
+#aiChat.aibig{display:block;width:100%;margin:2px 0 8px;padding:9px 10px;font-weight:600}
+.ph+#aiChat+.aibtns{margin-bottom:8px}
 .themes{display:flex;gap:6px;overflow-x:auto;padding:1px 1px 6px}
 .themes::-webkit-scrollbar{height:6px}
 .theme{flex:none;width:84px;display:flex;flex-direction:column;align-items:flex-start;gap:5px;padding:6px 8px;border:1.5px solid var(--line);border-radius:10px;background:none;color:inherit;font:inherit;font-size:11.5px;font-weight:600;cursor:pointer;text-align:left}
@@ -239,7 +240,6 @@ body.hasRemind #cfg::after{content:"";position:absolute;width:6px;height:6px;mar
 #cfg{position:relative}
 
 /* links and date suggestion */
-.aibtns #aiTr{grid-column:1/-1}
 ::highlight(links){color:#0b62d6;text-decoration:underline}
 body.dark ::highlight(links){color:#7db3ff;text-decoration:underline}
 #ed.linkhover{cursor:pointer}

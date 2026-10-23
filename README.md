@@ -70,7 +70,7 @@ A **.stickypad** file also keeps the note's look and settings (colour, font, siz
 ### Home: notes, trash, AI chat and settings in one window
 <img align="right" width="300" src="docs/images/feature_all.png" alt="The Home window with folders, coloured cards and the Support the project button">
 
-Ctrl+Alt+Q, the tray icon, or the **house button** at the left of any note's title bar opens the **Home** window. A sidebar switches between **Notes** (every note as a card, with search, *Open all* per folder and *Tidy up*; **folder chips** show one folder at a time, and dropping a card on a chip moves the note there), **Trash**, **Ask the AI** (the chat) and **Settings**. It is always the same one window, so nothing gets lost behind others. Closed notes are greyed out; click one to open it.
+Ctrl+Alt+Q, the tray icon, or the **house button** at the left of any note's title bar opens the **Home** window. A sidebar switches between **Notes** (every note as a card, with search, *Open all* per folder and *Tidy up*; **folder chips** show one folder at a time, and dropping a card on a chip moves the note there), **Trash**, **AI chat** (the chat) and **Settings**. It is always the same one window, so nothing gets lost behind others. Closed notes are greyed out; click one to open it.
 
 ### Search all notes
 Press **Ctrl+Alt+F** (or *Search notes…* in the tray menu) from anywhere: a small search window opens in the middle of your screen. Type a few letters and the notes that contain **all** your words appear at once, best match first, each with a short piece of its text and the matching words marked. **Up and Down** choose, **Enter** opens the note, **Esc** (or a click elsewhere) closes it. It reads the **whole text** of every note, ignores capitals and accents (so *καλημερα* finds *Καλημέρα*), and notes with a lock are found by their title only. The search box in the Home window uses the same search.
@@ -94,7 +94,7 @@ Open the sliders button (*This note*): the **AI** part is one list and a **Run**
 
 Under *Look*, a **Transparency** bar makes the note see-through (0 to 70%), one setting per note. *Keep the text solid* fades only the background (it needs *Low memory mode* off in *Settings > General*).
 
-**Chat about this note** (bottom of the panel) opens the AI chat with the note, or **all your notes** (pick *★ All my notes*). With a note attached, **Apply to note** under an answer puts it into the note (replace it or add at the end; the old text stays in *Earlier versions*). In the chat, the **🧠 model chip** under the messages switches between your installed models without leaving the chat.
+**Chat about this note** (the big button at the top of the AI part of the panel) opens the AI chat with the note, or **all your notes** (pick *★ All my notes*). With a note attached, **Apply to note** under an answer puts it into the note (replace it or add at the end; the old text stays in *Earlier versions*). In the chat, the **🧠 model chip** under the messages switches between your installed models without leaving the chat.
 
 - Works with **Ollama on your PC (free, private)** or the **Claude API (online)**.
 - A built-in **model list** offers current models from 1.4 GB to 9 GB (**Gemma 4**, **Qwen3**, Gemma 3, Llama 3.2), each with a note on how good its Greek is, and downloads them with a progress bar. A model that does not work well for you can be removed again with **Delete model…** to free the disk space. If Ollama itself is missing, one button downloads and installs it.

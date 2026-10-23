@@ -80,16 +80,18 @@
   </details>
 
   <div class="ph"><span>AI</span></div>
+  <button id="aiChat" class="btn primary aibig" title="Open the AI chat with this note as context">Chat about this note</button>
+  <div class="aibtns"><button id="aiSum" class="btn" title="Short summary of the selected text, or the whole note">Summarize</button><button id="aiTr" class="btn" title="Translate the selected text, or the whole note">Translate…</button></div>
   <div class="line airun">
-    <select id="aiAction" class="field" aria-label="What should the AI do?">
-      <option value="summarize">Summarize</option><option value="grammar">Fix spelling and grammar (shows each change)</option><option value="checklist">Turn into a checklist</option><option value="title">Suggest a title</option>
-      <option value="translate">Translate Greek ⇄ English</option><option value="polish">Polish the writing</option><option value="shorten">Make it shorter</option><option value="friendly">Make it friendlier</option><option value="fix">Fix it right in the note</option><option value="continue">Continue writing</option>
+    <select id="aiAction" class="field" aria-label="More AI actions">
+      <option value="grammar">Fix spelling and grammar (shows each change)</option><option value="checklist">Turn into a checklist</option><option value="title">Suggest a title</option>
+      <option value="polish">Polish the writing</option><option value="shorten">Make it shorter</option><option value="friendly">Make it friendlier</option><option value="fix">Fix it right in the note</option><option value="continue">Continue writing</option>
     </select>
     <button id="aiRun" class="btn primary" title="Run on the selected text, or the whole note (Ctrl+Shift+E edits live)">Run</button>
   </div>
   <p id="aiHint" class="hint"></p>
   <div id="aiLegacy" hidden>
-    <button id="aiSum">Summarize</button><button id="aiFix">Fix grammar</button><button id="aiList">To checklist</button><button id="aiTitle">Title</button><button id="aiTr">Translate</button>
+    <button id="aiFix">Fix grammar</button><button id="aiList">To checklist</button><button id="aiTitle">Title</button>
     <select id="editMode" aria-label="How to edit"><option value="fix">Fix spelling and grammar</option><option value="polish">Polish the writing</option><option value="shorten">Make it shorter</option><option value="friendly">Make it friendlier</option><option value="translate">Translate Greek ⇄ English</option><option value="continue">Continue writing</option></select>
     <button id="aiEdit">Edit live</button>
   </div>
@@ -103,7 +105,7 @@
     <p id="aiMsg" class="hint"></p>
     <p class="hint">The text of the note you ask about is sent to the provider you pick. Ollama keeps it on this PC; the Claude API sends it to Anthropic.</p>
     </details>
-  <div class="pfoot"><button id="allSet" class="linkbtn" title="Settings for the whole app (Ctrl+,)">All settings…</button><button id="aiChat" class="linkbtn" title="Open the AI chat with this note as context">Chat about this note</button><button id="del" class="linkbtn danger" title="Move this note to the trash">Move to trash</button></div>
+  <div class="pfoot"><button id="allSet" class="linkbtn" title="Settings for the whole app (Ctrl+,)">All settings…</button><button id="del" class="linkbtn danger" title="Move this note to the trash">Move to trash</button></div>
 </section>
 
 <div id="findbar" hidden role="search">
@@ -143,6 +145,7 @@
 <div id="ac" role="listbox" aria-label="Word suggestions" hidden></div>
 <script src="note.js"></script>
 <script src="quiet.js"></script>
+<script src="wordsel.js"></script>
 <script src="updbar.js"></script>
 <script src="dropfiles.js"></script>
 <script src="cmdk.js"></script>
