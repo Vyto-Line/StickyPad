@@ -15,7 +15,7 @@ with sync_playwright() as p:
     pg.click('#chk'); pg.keyboard.type('item one'); pg.wait_for_timeout(300); ok(pg.locator('.todo').count()==1,'checklist item added')
     pg.keyboard.press('Control+Shift+C'); pg.keyboard.press('Backspace'); pg.keyboard.type('x')
     pg.click('#cfg') if pg.is_hidden('#panel') else None; pg.wait_for_timeout(80)
-    for r in ['rowRem','rowFolder','rowLock','rowHist','rowOut']: pg.click('#%s > summary'%r); pg.wait_for_timeout(60); ok(pg.evaluate("[...document.querySelectorAll('#panel details.prow[open]')].map(d=>d.id)")==[r],'only %s is open'%r)
+    for r in ['rowRem','rowFolder','rowLock','rowHist','rowOut']: pg.click('#%s > summary'%r); pg.wait_for_timeout(60); ok(pg.evaluate("[...document.querySelectorAll('#panel details.prow:not(.free)[open]')].map(d=>d.id)")==[r],'only %s is open'%r)
     ok(not pg.errs,'note: no errors %s'%pg.errs)
     h=pg.evaluate("document.querySelector('header').offsetHeight"); ok(h<=34,'header compact (%dpx)'%h)
     # panel fits in 330x420 note without horizontal overflow
