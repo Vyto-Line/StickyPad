@@ -1423,9 +1423,15 @@ ipcMain.handle('chat:toNote', (e, id) => {
 });
 ipcMain.handle('chat:notes', () => Object.values(notes).filter(n => !n.lock && String(n.text || '').trim())
   .sort((a, b) => (b.updated || 0) - (a.updated || 0)).map(n => ({ id: n.id, title: n.title || String(n.text).split('\n')[0].slice(0, 40) || 'Note' })));
-ipcMain.handle('chat:saveAsNote', (e, text) => {
+ipcMain.handle('chat:saveAsNote', async (e, text) => {
   const t = String(text || '').slice(0, 100000); if (!t.trim()) return false;
-  makeNote(null, { title: 'From AI chat', blocks: [{ t: 'text', v: t }], text: t }); return true;
+  const parsed = convert.fromChat(t), blocks = parsed.blocks.length ? parsed.blocks : [{ t: 'text', v: t }];
+  const plain = blocks.map(b => b.v || '').join('\n').trim();
+  // the title: a heading the AI wrote, else a short title from the AI, else the first words of the text
+  let title = parsed.title;
+  if (!title && aiCfg().provider !== 'off') { try { title = await Promise.race([ai.suggestTitle(aiCfg(), plain), new Promise((_, no) => setTimeout(() => no(new Error('slow')), 8000))]); } catch { title = ''; } }
+  if (!title) title = (plain.split('\n').find(l => l.trim()) || '').replace(/^[-*+•#>\s]+/, '').slice(0, 40).trim() || 'From AI chat';
+  makeNote(null, { title, blocks, text: textOf(blocks) }); return true;
 });
 // "Apply to note": puts an answer from the chat into the attached note. The old text is always kept in Earlier versions.
 ipcMain.handle('chat:applyToNote', (e, p) => {

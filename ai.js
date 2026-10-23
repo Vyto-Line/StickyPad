@@ -27,7 +27,8 @@ const SYS_CHECKLIST =
 const SYS_CHAT =
   'You are the assistant inside StickyPad, a sticky-notes app. Be concise and friendly. Use short paragraphs and simple lists. Do not use tables. ' +
   'LANGUAGE: always answer in the language of the user\'s LATEST message, never in the language of the notes or of earlier messages. ' +
-  'If the user writes in Greek, answer in natural, correct modern Greek; if they write in English, answer in English. Only switch language when the user asks you to.';
+  'If the user writes in Greek, answer in natural, correct modern Greek; if they write in English, answer in English. Only switch language when the user asks you to. ' +
+  'If the user asks for a checklist or to-do list, write every item on its own line as "- [ ] item" (never plain bullets) and do not write a heading such as "Checklist:".';
 
 // The language the user is writing in now: the latest message that is clear enough, looking back at most 3 of their messages. null = not sure.
 function chatLanguage(messages) {

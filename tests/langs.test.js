@@ -32,6 +32,7 @@ assert.strictEqual(A.chatLanguage([U('Καλημέρα, τι κάνεις σήμ
 assert.strictEqual(A.chatLanguage([U('ok')]), null); assert.strictEqual(A.chatLanguage([]), null);
 assert.ok(/writing in English\. Answer in English/.test(A.chatLanguageRule(L.byCode('en'))) && /Greek/.test(A.chatLanguageRule(L.byCode('el'))) && /latest message/.test(A.chatLanguageRule(null)));
 assert.ok(/Answer in English/.test(A.chatLanguageTail(L.byCode('en'))) && A.chatLanguageTail(null) === '');
+assert.ok(/- \[ \] item/.test(A.SYS_CHAT) && /Checklist:/.test(A.SYS_CHAT), 'the chat is told how to write a checklist');
 assert.ok(/LATEST message/.test(A.SYS_CHAT) && !/If the user writes in Greek, answer in natural, correct Greek\. You are/.test(A.SYS_CHAT));
 (async () => {
   const nd = txt => ({ ok: true, status: 200, body: { getReader() { let x = false; return { read: async () => x ? { done: true } : (x = true, { value: new TextEncoder().encode(JSON.stringify({ message: { content: txt } }) + '\n{"done":true}\n') }) }; } } });

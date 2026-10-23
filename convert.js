@@ -88,6 +88,22 @@ function fromMarkdown(text, fileName) {
   return { title, blocks, meta: fm.meta };
 }
 
+// An AI chat answer -> { title, blocks } for "Save as note". The model often writes a label line ("Checklist:") and plain bullets even when
+// a checklist was asked for: the label goes, and the bullets right under it become real checklist items.
+const LABEL = /^\s*(?:[*_#>\s]*)(?:check\s?list|to-?do(?:\s+list)?|task\s+list|λίστα(?:\s+(?:ελέγχου|εργασιών|υποχρεώσεων))?|ντο\s?ντου)\s*(?:[*_]*\s*)[:：]?\s*[*_]*\s*$/i;
+const BULLET = /^\s*(?:[-*+•])\s+(?!\[)(.+)$/;
+function fromChat(text) {
+  const out = []; let mark = false;
+  for (const ln of String(text || '').replace(/\r\n?/g, '\n').split('\n')) {
+    if (LABEL.test(ln)) { mark = true; continue; }
+    const b = mark && BULLET.exec(ln);
+    if (b) { out.push('- [ ] ' + b[1].trim()); continue; }
+    if (ln.trim() && !/^\s*(?:[-*+•]\s+\[[ xX]\]|[-*+•])\s/.test(ln)) mark = false;
+    out.push(ln);
+  }
+  return fromMarkdown(out.join('\n'), '');
+}
+
 // Names for a batch of files in one folder, never repeating (case-insensitive, as Windows is).
 function uniqueNames(titles, ext) {
   const used = new Set();
@@ -124,4 +140,4 @@ function decodeText(buf, greek) {
   catch { return new TextDecoder(greek ? 'windows-1253' : 'windows-1252').decode(b); }
 }
 
-module.exports = { IMPORT_EXT, decodeText, slug, toMarkdown, toText, fromMarkdown, uniqueNames, noteFileArgs, };
+module.exports = { IMPORT_EXT, decodeText, slug, toMarkdown, toText, fromMarkdown, fromChat, uniqueNames, noteFileArgs, };

@@ -72,3 +72,14 @@ console.log('convert ok');
 assert.deepStrictEqual(C.noteFileArgs(['C:\\App\\StickyPad.exe', '--updated', 'C:\\n\\Plan.stickypad', 'x.txt', 'D:\\A.STICKYPAD', '--x.stickypad']), ['C:\\n\\Plan.stickypad', 'D:\\A.STICKYPAD']);
 assert.deepStrictEqual(C.noteFileArgs(undefined), []);
 assert.strictEqual(C.fromMarkdown('hello', 'C:\\n\\Plan.stickypad').title, 'Plan');
+// AI chat answers saved as a note: the "Checklist:" label goes, bullets under it become ticks, a heading becomes the title
+{
+  const r = C.fromChat('Checklist:\n- milk\n- eggs\n\nSome text');
+  assert.deepStrictEqual(r.blocks.map(b => b.t + ':' + b.v), ['check:milk', 'check:eggs', 'text:\nSome text']);
+  assert.ok(!r.blocks.some(b => /Checklist/i.test(b.v)), 'no label left');
+  const g = C.fromChat('# Trip\n\n**Checklist:**\n• passport\n- [x] tickets');
+  assert.strictEqual(g.title, 'Trip'); assert.deepStrictEqual(g.blocks.map(b => b.t + b.done), ['checkfalse', 'checktrue']);
+  assert.deepStrictEqual(C.fromChat('Intro.\n\n- one\n- two').blocks, [{ t: 'text', v: 'Intro.\n\n- one\n- two' }], 'plain bullets stay plain when no checklist was asked for');
+  assert.strictEqual(C.fromChat('Λίστα:\n- γάλα').blocks[0].t, 'check');
+}
+console.log('fromChat ok');

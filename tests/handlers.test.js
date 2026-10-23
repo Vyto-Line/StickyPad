@@ -100,6 +100,8 @@ const H = require('./fake-electron');
   assert.strictEqual(await h['chat:rename']({}, plan.id, 'Morning'), true); assert.ok((await h['chat:list']({}, '')).items.some(c => c.title === 'Morning'));
   await h['chat:pin']({}, plan.id, true); assert.strictEqual((await h['chat:list']({}, '')).items[0].id, plan.id, 'pinned goes first');
   assert.strictEqual(await h['chat:toNote']({}, plan.id), true); assert.strictEqual(await h['chat:toNote']({}, 'nope'), false);
+  assert.strictEqual(await h['chat:saveAsNote']({}, '# Greek politics\n\nChecklist:\n- read\n- write'), true, 'Save as note works (AI is off here, so the heading is the title)');
+  assert.strictEqual(await h['chat:saveAsNote']({}, '   '), false);
   v = await h['chat:delete']({}, plan.id); assert.ok(!(await h['chat:list']({}, '')).items.some(c => c.id === plan.id) && v.chatId !== plan.id, 'deleting the open chat opens another');
   const cf = path.join(tmp, 'userData', 'chat.json'); const onDisk = () => fs.existsSync(cf) ? fs.readFileSync(cf, 'utf8') : '';
   if (fs.existsSync(cf)) assert.ok(onDisk().includes('Lisbon') && JSON.parse(onDisk()).version === 2, 'saved in the new format');

@@ -1,6 +1,8 @@
 # Changelog
 
 ## 1.15.0
+- **"Save as note" from the AI chat is smarter.** The new note gets a short title about its topic (or the heading the AI wrote) instead of "From AI chat", and the answer is turned into a real note: checklists become tick boxes and a stray "Checklist:" label is dropped.
+- **Ask the chat for a checklist and you get one.** It now writes checklist items instead of plain bullets and no "Checklist:" heading.
 - **The chat no longer answers in Greek to an English message about a Greek topic.** The language check was unsure about some English sentences and then followed your older Greek message. An unclear message in Latin letters now never falls back to Greek.
 - **The AI now works on the whole note when nothing is selected.** Translate, Polish, Shorten, Friendlier and Fix used to change only the paragraph under the cursor. Now, with nothing selected, they go through the whole note piece by piece ("Editing 2 of 5…"), checklist items stay checklist items, images are left alone, and **Undo** or **Stop** puts the whole note back at once. Select text and only that text is changed, as before. Summarize also uses just your selection when there is one.
 - **AI in one place.** In a note's panel, **AI** is now a drop-down row (open by default) that starts with a big **Chat about this note** button, then **Summarize** and **Translate…** side by side, and a **More AI actions** list with the rest (fix spelling, make it shorter, and so on). **Model and connection** is a drop-down inside it, at the bottom. With the AI off, every button in the group, including Chat about this note, is greyed out.
