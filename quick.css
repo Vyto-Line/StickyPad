@@ -24,3 +24,7 @@ kbd{font:inherit;font-size:10.5px;border:1px solid var(--line);border-bottom-wid
 *::-webkit-scrollbar{width:9px}*::-webkit-scrollbar-thumb{background:var(--line);border-radius:8px}
 
 .dot.cmd{width:16px;height:16px;margin-top:2px;background:var(--line,#ccc);color:var(--fg,#333);display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;line-height:1}
+/* checklist items in a result: round ticks like the ones in a note */
+.cb{display:inline-block;width:.85em;height:.85em;margin:0 .35em 0 .05em;border-radius:50%;border:1.5px solid currentColor;opacity:.65;vertical-align:-.1em;box-sizing:border-box;position:relative}
+.cb.done{background:var(--accent);border-color:var(--accent);opacity:1}
+.cb.done::after{content:"";position:absolute;left:28%;top:8%;width:26%;height:50%;border:solid #fff;border-width:0 1.5px 1.5px 0;transform:rotate(45deg)}
