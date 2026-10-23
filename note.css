@@ -326,3 +326,8 @@ html.a11y-motion.quiet header{transition:none}
 .tritem[aria-selected="true"]{outline:1.5px solid var(--accent)}
 .trinline .hint{margin:0;font-size:11px}
 #aiChat.aibig:disabled{background:var(--tint2);color:inherit;opacity:.55;filter:none;cursor:default}
+
+/* Model and connection sits inside the AI row */
+#aiSetup{margin-top:2px}
+#aiSetup>summary{min-height:30px;font-size:12.5px}
+#aiSetup>.pbody.inner{padding:6px 2px 6px}
