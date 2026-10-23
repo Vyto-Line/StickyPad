@@ -26,7 +26,7 @@ Each note is its own small window on your desktop. Everything is stored on your 
 - **Pictures**: paste or drop them straight into the text.
 - **Links**: web and e-mail addresses are underlined; **Ctrl+click** opens them, and a right-click offers *Open link* and *Copy link*. The note on the right shows links, a date suggestion and the update bar.
 - **Pin** a note on top of other windows, **roll it up** to just its title, or **close** it and reopen it from the tray.
-- **Folders** to group notes; **snap** to screen edges and to other notes, and (optional, *Settings > Notes*) **snap to the sides of the screen**: let go of a note against the left or right edge for that half of the screen, against the top edge for the whole screen, and drag it away to get its old size back; **tidy up** arranges the open notes in rows.
+- **Folders** to group notes; **snap** to screen edges and to other notes, and (optional, *Settings > Notes*) **snap to the sides of the screen** with Windows' own snapping, like the Home window: drag a note to the left or right edge for that half of the screen, to the top edge for the whole screen, and drag it away to get its old size back; **tidy up** arranges the open notes in rows.
 - **Trash** keeps deleted notes for 30 days, so nothing is lost by accident.
 
 The icons in the header, from the left: add a checklist item, pin, all notes, settings, roll up, close.
@@ -81,7 +81,7 @@ Give a note a password (4+ characters) and its text is stored **encrypted (AES-2
 ### AI helper (off by default)
 <img align="right" width="300" src="docs/images/feature_chat_all.png" alt="The AI chat answering a question from all notes, with a Looked at line">
 
-Open the sliders button (*This note*): **AI** is a drop-down row that starts with a big **Chat about this note** button, then **Summarize** and **Translate…** side by side, then a **More AI actions** list with a **Run** button (the model and connection options are in the **Model and connection** row below, and open by themselves when something needs fixing):
+Open the sliders button (*This note*): **AI** is a drop-down row that starts with a big **Chat about this note** button, then **Summarize** and **Translate…** side by side, then a **More AI actions** list with a **Run** button (the model and connection options are in the **Model and connection** drop-down at the bottom of the AI row, and open by themselves when something needs fixing):
 
 | In the panel | What it does |
 |---|---|

@@ -27,7 +27,6 @@ const safeload = require('./safeload');
 const restore = require('./restore');
 const importers = require('./importers');
 const placement = require('./placement');
-const sidesnap = require('./sidesnap');
 const changelog = require('./changelog');
 
 // A second launch must stop immediately (otherwise it would open duplicate notes).
@@ -234,24 +233,14 @@ function pick(cur, cands) {
   for (const c of cands) { const k = Math.abs(c - cur); if (k < d) { d = k; best = c; } }
   return d <= S ? best : cur;
 }
-// Snap to a side of the screen (Settings > Notes, off by default): mouse against the left/right edge = that half, against the top = the whole work area.
-// The note's old size is remembered (only while StickyPad runs) and comes back when you drag the note away.
-const sideSnapped = new Map();   // noteId -> { prev: size before, at: where it was put }
-function sideSnap(w, id) {
-  const m = notes[id]; if (!m || m.rolled || w.isMinimized()) return false;
-  let cur, z; try { cur = screen.getCursorScreenPoint(); z = sidesnap.zone(cur, displayList(), w.getBounds()); } catch { return false; }
-  const s = sideSnapped.get(id);
-  if (z) {
-    if (!s) sideSnapped.set(id, { prev: w.getBounds(), at: z.bounds });
-    else s.at = z.bounds;
-    w.setBounds(z.bounds); return true;
-  }
-  if (s) {   // let go somewhere else: the note gets its old size back
-    sideSnapped.delete(id);
-    const wa = screen.getDisplayNearestPoint(cur).workArea;
-    w.setBounds(sidesnap.restoreAt(s.prev, s.at, cur, wa));
-  }
-  return false;
+// Snap to the sides of the screen (Settings > Notes, off by default) is Windows' own snapping, the same one the Home window has:
+// notes are frameless and their "maximize" is switched off, which also switches Windows' snapping off. This turns it back on for a note when the setting is on.
+// (A rolled-up note has a fixed height and a see-through note cannot be snapped by Windows, so those two stay as they are.)
+const canSnap = id => !!settings.snapSides && !!notes[id] && !notes[id].rolled && !seeThrough.get(id);
+function snapAbility(id) {
+  const w = wins.get(id); if (!w || w.isDestroyed()) return;
+  const on = canSnap(id);
+  try { if (!on && w.isMaximized()) w.unmaximize(); w.setMaximizable(on); } catch {}
 }
 // Called once, after you let go of a note. Snaps to screen edges and to notes that are already close by.
 function snapPos(w, nb) {
@@ -350,7 +339,7 @@ function openNote(n) {
   }
   const make = bb => new BrowserWindow({
     ...bb, minWidth: MIN_W, minHeight: n.rolled ? ROLL_H : MIN_H, frame: false, show: false, icon: iconPath,
-    maximizable: false, fullscreenable: false, skipTaskbar: !!settings.hideTaskbar, backgroundColor: solid ? '#00000000' : (/^#[0-9a-f]{6}$/i.test(n.color) ? n.color : '#FFF2A8'), transparent: solid,
+    maximizable: !!settings.snapSides && !n.rolled && !solid, fullscreenable: false, skipTaskbar: !!settings.hideTaskbar, backgroundColor: solid ? '#00000000' : (/^#[0-9a-f]{6}$/i.test(n.color) ? n.color : '#FFF2A8'), transparent: solid,
     webPreferences: { preload, contextIsolation: true, nodeIntegration: false }
   });
   let w;
@@ -376,18 +365,17 @@ function openNote(n) {
     save();
   };
   w.on('move', () => keep()); w.on('resize', () => keep());
-  w.on('resized', () => { const s = sideSnapped.get(n.id); if (s && !w.isDestroyed() && !sidesnap.same(w.getBounds(), s.at)) sideSnapped.delete(n.id); keep(true); });   // sized by hand: that size stays
+  w.on('resized', () => keep(true));
   w.on('moved', () => {   // fires once when you release the note, so nothing tugs at it while you drag
     keep(true);
     if (w.isDestroyed()) return;
-    if (settings.snapSides && sideSnap(w, n.id)) return;
     if (!settings.snap) return;
     const nb = w.getBounds(), p = snapPos(w, nb);
     if (p.x !== nb.x || p.y !== nb.y) w.setPosition(p.x, p.y);
   });
   w.on('focus', focusguard.guard(w));
   const cid = w.webContents.id;
-  w.on('closed', () => { sideSnapped.delete(n.id); panelGrow.delete(n.id); if (!reopening.has(n.id)) seeThrough.delete(n.id); wins.delete(n.id); byContents.delete(cid); if (!reopening.has(n.id)) relock(notes[n.id]); pingAll(); });
+  w.on('closed', () => { panelGrow.delete(n.id); if (!reopening.has(n.id)) seeThrough.delete(n.id); wins.delete(n.id); byContents.delete(cid); if (!reopening.has(n.id)) relock(notes[n.id]); pingAll(); });
   return w;
 }
 
@@ -958,6 +946,7 @@ ipcMain.handle('note:pin', (e, v) => {
 
 ipcMain.handle('note:roll', (e, v) => {
   const n = notes[idOf(e)], w = winOf(e); if (!n || !w) return false;
+  if (v && w.isMaximized()) w.unmaximize();   // a rolled-up note cannot stay snapped to a full screen
   const b = w.getBounds(); n.rolled = !!v;
   if (n.rolled) {
     n.bounds = { ...n.bounds, x: b.x, y: b.y, width: b.width, height: b.height };
@@ -965,6 +954,7 @@ ipcMain.handle('note:roll', (e, v) => {
   } else {
     w.setMaximumSize(0, 0); w.setMinimumSize(MIN_W, MIN_H); w.setBounds({ ...b, height: Math.max(MIN_H, n.bounds.height || 320) });
   }
+  snapAbility(n.id);
   save(); return n.rolled;
 });
 
@@ -1697,7 +1687,7 @@ ipcMain.handle('settings:set', (e, p) => {
   if (p) {
     if ('hideTaskbar' in p) setHide(p.hideTaskbar);
     if ('snap' in p) setSnap(p.snap);
-    if ('snapSides' in p) { settings.snapSides = !!p.snapSides; if (!settings.snapSides) sideSnapped.clear(); }
+    if ('snapSides' in p) { settings.snapSides = !!p.snapSides; wins.forEach((w, id) => snapAbility(id)); }
     if ('startup' in p) setStartup(p.startup);
     if (Number.isFinite(p.snapDistance)) settings.snapDistance = clampInt(p.snapDistance, 4, 40);
     if (Number.isFinite(p.defaultSize)) settings.defaultSize = clampInt(p.defaultSize, 10, 48);

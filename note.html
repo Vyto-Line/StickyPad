@@ -98,15 +98,8 @@
       <button id="aiRun" class="btn primary" title="Run on the selected text, or the whole note (Ctrl+Shift+E edits live)">Run</button>
     </div>
     <p id="aiHint" class="hint"></p>
-    </div>
-  </details>
-  <div id="aiLegacy" hidden>
-    <button id="aiFix">Fix grammar</button><button id="aiList">To checklist</button><button id="aiTitle">Title</button>
-    <select id="editMode" aria-label="How to edit"><option value="fix">Fix spelling and grammar</option><option value="polish">Polish the writing</option><option value="shorten">Make it shorter</option><option value="friendly">Make it friendlier</option><option value="translate">Translate Greek ⇄ English</option><option value="continue">Continue writing</option></select>
-    <button id="aiEdit">Edit live</button>
-  </div>
   <details id="aiSetup" class="prow free"><summary><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10M14 4v6M6 14v6"/></svg><span class="k">Model and connection</span><span class="v" id="aiSetupState"></span></summary>
-    <div class="pbody wide">
+    <div class="pbody wide inner">
     <label class="row"><span>Use</span><select id="aiProv" class="field" aria-label="AI provider">
       <option value="off">Off</option><option value="ollama">Ollama (on this PC, free)</option><option value="claude">Claude API (online)</option></select></label>
     <div class="row top"><span>Model</span><div class="mcol"><select id="aiModelSel" class="field" aria-label="Model" hidden></select><input id="aiModel" class="field" autocomplete="off" spellcheck="false" aria-label="Model name"></div></div>
@@ -116,6 +109,13 @@
     <p id="aiMsg" class="hint"></p>
     <p class="hint">The text of the note you ask about is sent to the provider you pick. Ollama keeps it on this PC; the Claude API sends it to Anthropic.</p>
     </div></details>
+    </div>
+  </details>
+  <div id="aiLegacy" hidden>
+    <button id="aiFix">Fix grammar</button><button id="aiList">To checklist</button><button id="aiTitle">Title</button>
+    <select id="editMode" aria-label="How to edit"><option value="fix">Fix spelling and grammar</option><option value="polish">Polish the writing</option><option value="shorten">Make it shorter</option><option value="friendly">Make it friendlier</option><option value="translate">Translate Greek ⇄ English</option><option value="continue">Continue writing</option></select>
+    <button id="aiEdit">Edit live</button>
+  </div>
   <div class="pfoot"><button id="allSet" class="linkbtn" title="Settings for the whole app (Ctrl+,)">All settings…</button><button id="del" class="linkbtn danger" title="Move this note to the trash">Move to trash</button></div>
 </section>
 
