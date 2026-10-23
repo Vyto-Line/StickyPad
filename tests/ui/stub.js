@@ -5,6 +5,8 @@
     ai: { provider: 'ollama', model: 'llama3.2', url: 'http://localhost:11434', hasKey: false, defaultModel: 'claude-haiku-5-5' },
     ol: { running: true, installed: true, canInstall: true, local: true, models: [{ name: 'llama3.2:latest', size: 2e9 }], recommended: REC, pulling: [], installing: false },
     note: { id: 'n1', title: '', blocks: window.__BLOCKS || [{ t: 'text', v: 'helo wrold this is a tset' }], color: '#FFF2A8', font: 'Segoe UI', size: 15, locked: false, unlocked: false, pinned: false, group: null } };
+  const chatCur = () => { S.chats = S.chats || []; let c = S.chats.find(x => x.id === S.chatCur); if (!c) { c = { id: 'c' + (S.chats.length + 1), title: 'New chat', messages: [], updated: Date.now() }; S.chats.push(c); S.chatCur = c.id; } return c; };
+  const chatView = () => { const c = chatCur(); return { chatId: c.id, messages: c.messages, noteId: c.noteId || null, history: S.chatHistory !== false, provider: 'ollama', model: 'llama3.2', notes: [], ai: { provider: 'ollama' } }; };
   const emit = (k, m) => L[k].forEach(f => f(m));
   window.__applied = () => (L.applied || []).forEach(f => f());
   window.__emit = emit; window.__emitUpdate = m => L.update.forEach(f => f(m));
@@ -66,8 +68,8 @@
       S.ol.installed = true; S.ol.running = true; emit('ollama', { type: 'install', state: 'done' }); return { ok: true };
     },
     ollamaCancel: async w => { S.calls.push(['cancel', w]); },
-    aiEdit: async ({ id, mode, text }) => {
-      S.calls.push(['edit', mode, text]);
+    aiEdit: async ({ id, mode, text, to }) => {
+      S.calls.push(['edit', mode, text]); S.lastTo = to;
       if (S.editMode === 'error') { emit('ai', { id, type: 'error', error: 'Ollama is not running' }); return true; }
       const out = S.editOut || 'Hello world, this is a test.'; const parts = out.match(/\S+\s*/g);
       S.stop = false;
@@ -79,7 +81,16 @@
     update: async p => { S.calls.push(['update', p]); S.lastUpdate = p; },
     info: async () => ({ groups: [], theme: 'classic', snap: true, hideTaskbar: false, startup: false, packaged: true, trashCount: 0 }),
     allList: async () => S.all ? JSON.parse(JSON.stringify(S.all)) : ({ emoji: '☀️', greeting: 'Good morning', notes: [{ id: 'n1', title: 'Shopping', text: 'milk, eggs', color: '#FFF2A8', group: null, updated: Date.now(), open: true }], groups: [], trash: [], prefs: {} }),
-    chatLoad: async () => ({ messages: [], noteId: null, notes: [], ai: { provider: 'ollama' } }),
+    chatLoad: async () => chatView(),
+    chatSave: async p => { const c = chatCur(); c.messages = (p && p.messages) || []; c.noteId = (p && p.noteId) || null; if (!c.custom) { const u = c.messages.find(m => m.role === 'user'); c.title = u ? u.content.slice(0, 48) : 'New chat'; } c.updated = Date.now(); S.calls.push(['chatSave', c.messages.length]); },
+    chatList: async q => ({ history: S.chatHistory !== false, items: (S.chats || []).filter(c => c.messages.length && (!q || (c.title + ' ' + c.messages.map(m => m.content).join(' ')).toLowerCase().includes(String(q).toLowerCase()))).sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || b.updated - a.updated).map(c => ({ id: c.id, title: c.title, pinned: !!c.pinned, updated: c.updated, current: c.id === S.chatCur, count: c.messages.length })) }),
+    chatSelect: async id => { if ((S.chats || []).some(c => c.id === id)) S.chatCur = id; return chatView(); },
+    chatNew: async () => { const c = chatCur(); if (c.messages.length) { const n = { id: 'c' + (S.chats.length + 1), title: 'New chat', messages: [], updated: Date.now() }; S.chats.push(n); S.chatCur = n.id; } return chatView(); },
+    chatRename: async (id, t) => { const c = S.chats.find(x => x.id === id); if (!c) return false; if (String(t).trim()) { c.title = String(t).trim(); c.custom = true; } S.calls.push(['chatRename', id, t]); return true; },
+    chatPin: async (id, on) => { const c = S.chats.find(x => x.id === id); if (c) c.pinned = !!on; return !!c; },
+    chatDelete: async id => { S.chats = S.chats.filter(c => c.id !== id); if (S.chatCur === id) S.chatCur = null; S.calls.push(['chatDelete', id]); return chatView(); },
+    chatDeleteAll: async () => { S.chats = []; S.chatCur = null; S.calls.push(['chatDeleteAll']); return chatView(); },
+    chatToNote: async id => { S.calls.push(['chatToNote', id]); return true; },
     chatNotes: async () => [],
     aiRun: async () => ({ ok: true, text: 'ok' }),
     settingsGet: async () => { const base = { lowMemory: true, lowMemoryActive: true, aiKeep: '5m', version: '1.10.0', packaged: true, prefs: {}, quiet: { mode: 'off', delay: 10 }, theme: 'classic', trashCount: 0, backupCount: 0, dataPath: 'C:/x', snapDistance: 20, trashDays: 30, groups: [], shortcuts: true, defaultSize: 'm' }; const set = S.set || (S.set = { shortcuts: true, suggestDates: true, keysFailed: [], keysSaved: {} }); return { ...base, ...set, keys: window.StickyKeys ? window.StickyKeys.merge(set.keysSaved) : {} }; },

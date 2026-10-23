@@ -77,3 +77,36 @@ button.ctxchip:focus-visible{outline:2px solid var(--accent)}
 .ctxchip select{border:0;background:transparent;font-weight:600;font-size:12px;padding:3px 4px;max-width:260px;cursor:pointer;color:inherit}
 .ctxchip select:focus-visible{outline:2px solid var(--accent);border-radius:999px}
 .ctxchip select option{color:#222;background:#fff}
+
+/* ---- 1.15: list of chats ---- */
+#chats{flex:none;width:214px;display:flex;flex-direction:column;gap:6px;padding:10px 8px;background:var(--card);border-right:1px solid var(--line);min-height:0}
+#pane{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column}
+body.nochats #chats{display:none}
+.chead{display:flex;align-items:center;justify-content:space-between;padding:0 4px;font-size:12px;color:var(--mute);text-transform:uppercase;letter-spacing:.06em}
+.csearch{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:6px 9px;font-size:12.5px;color:var(--fg);outline:0}
+.csearch:focus{border-color:var(--accent)}
+.clist{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:2px}
+.crow{position:relative;display:flex;align-items:center;border-radius:9px}
+.crow:hover,.crow:focus-within{background:var(--hover)}
+.crow.cur{background:color-mix(in srgb,var(--accent) 16%,var(--card))}
+.citem{flex:1;min-width:0;display:flex;align-items:center;gap:6px;border:0;background:none;text-align:left;padding:7px 8px;cursor:pointer;border-radius:9px;font-size:13px}
+.citem .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.citem .pin{flex:none;font-size:11px;opacity:.7}
+.crow.cur .t{font-weight:600}
+.cmore{flex:none;width:26px;height:26px;margin-right:3px;border:0;border-radius:7px;background:none;color:var(--mute);cursor:pointer;opacity:0;font-size:15px;line-height:1}
+.crow:hover .cmore,.crow:focus-within .cmore,.cmore[aria-expanded="true"]{opacity:1}
+.cmore:hover{background:var(--line);color:var(--fg)}
+.cmenu{position:absolute;z-index:5;right:4px;top:100%;min-width:150px;padding:4px;background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.22);display:flex;flex-direction:column}
+.cmenu button{border:0;background:none;text-align:left;padding:6px 9px;border-radius:7px;font-size:12.5px;cursor:pointer}
+.cmenu button:hover,.cmenu button:focus-visible{background:var(--hover)}
+.cmenu .danger{color:var(--err)}
+.crename{flex:1;min-width:0;margin:2px 4px;padding:4px 7px;border:1px solid var(--accent);border-radius:7px;background:var(--bg);font-size:13px;color:var(--fg);outline:0}
+.cask{flex:1;display:flex;align-items:center;gap:4px;padding:4px 6px;font-size:12px}
+.cask span{flex:1}
+.cask button{border:0;border-radius:6px;padding:3px 8px;font-size:12px;cursor:pointer;background:var(--hover)}
+.cask .yes{background:var(--err);color:#fff}
+.cnone,.chint{margin:6px 6px;font-size:12px;color:var(--mute)}
+.cdelall{border:0;background:none;color:var(--mute);font-size:12px;text-align:left;padding:6px 8px;border-radius:8px;cursor:pointer}
+.cdelall:hover{background:var(--hover);color:var(--err)}
+.cdelall.armed{color:#fff;background:var(--err)}
+body{flex-direction:row}

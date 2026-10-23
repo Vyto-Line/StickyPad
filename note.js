@@ -903,7 +903,7 @@ function editTarget(mode) {
     let node = null;
     if (inEd) {
       const a = sel.anchorNode, t = tx(a);
-      if (t) node = t; else if (a.nodeType === 3 && a.parentNode === ed) node = a;
+      if (t) node = t; else if (a.nodeType === 3 && a.parentNode === ed && (a.nodeValue.trim() || mode === 'continue')) node = a;   // an empty text node (left behind by an earlier edit) is not a place to work
     }
     if (!node) {   // the cursor is somewhere without text: use the last block of text
       const runs = [...ed.childNodes].filter(c => (c.nodeType === 3 && c.nodeValue.trim()) || (c.classList && c.classList.contains('todo') && c.querySelector('.tx').textContent.trim()));
@@ -931,7 +931,7 @@ async function liveEdit() {
   edit = { id: 'e' + Date.now(), node: out, acc: '', cont, lead, trail, inTodo: t.inTodo, pre: cur };
   ed.contentEditable = 'false'; mark();
   editBarShow('run', 'Editing…');
-  const r = await api.aiEdit({ id: edit.id, mode, text: orig });
+  const r = await api.aiEdit({ id: edit.id, mode, text: orig, to: mode === 'translate' ? trTo || undefined : undefined });
   void r;
 }
 function editPaint() {
@@ -969,7 +969,49 @@ $('#editStop').onclick = () => { if (edit) api.aiEditStop(edit.id); };
 $('#editUndo').onclick = () => { undo(); editBarHide(); };
 $('#editKeep').onclick = () => { editBarHide(); ed.focus(); };
 $('#aiEdit').onclick = liveEdit;
-$('#aiTr').onclick = () => { $('#editMode').value = 'translate'; liveEdit(); };
+// Translate…: a small menu. The note's language is detected here and shown as "Greek (Auto-detected)"; that language is greyed out in the list.
+let trTo = null;
+const trMenu = $('#trmenu');
+function trClose() { trMenu.hidden = true; }
+function trRender(src) {
+  const q = $('#trSearch').value.trim().toLowerCase(), box = $('#trList'); box.textContent = '';
+  let last = ''; try { last = localStorage.getItem('sp.trTo') || ''; } catch (e) {}
+  const items = StickyLangs.LANGS.filter(l => !q || l.name.toLowerCase().includes(q) || l.native.toLowerCase().includes(q));
+  items.forEach(l => {
+    const b = document.createElement('button'), same = !!(src && src.code === l.code);
+    b.type = 'button'; b.className = 'tritem'; b.setAttribute('role', 'option'); b.dataset.code = l.code; b.disabled = same;
+    b.setAttribute('aria-selected', l.code === last && !same ? 'true' : 'false');
+    const n = document.createElement('span'); n.textContent = l.name; b.appendChild(n);
+    const s = document.createElement('span'); s.className = 'nat'; s.textContent = same ? 'same as the note' : l.native; b.appendChild(s);
+    b.onclick = () => { try { localStorage.setItem('sp.trTo', l.code); } catch (e) {} trGo(l.code); };
+    box.appendChild(b);
+  });
+  if (!items.length) { const p = document.createElement('p'); p.className = 'hint'; p.textContent = 'No language matches.'; box.appendChild(p); }
+}
+function trOpen() {
+  if (edit || aiBusy || bodyLocked()) return;
+  if (!aiCfgState || aiCfgState.provider === 'off') { liveEdit(); return; }   // shows the "turn the AI on" hint
+  const t = editTarget('translate');
+  if (t.err) { aiShow('Translate', t.err, [['Close', aiClose, true]]); return; }
+  const src = StickyLangs.detect(t.text);
+  $('#trFrom').textContent = src ? src.name + ' (Auto-detected)' : 'Auto-detected';
+  $('#trSearch').value = ''; trRender(src);
+  $('#panel').hidden = true; $('#cfg').setAttribute('aria-expanded', 'false');
+  trMenu.hidden = false; trMenu._src = src;
+  const pick = trMenu.querySelector('.tritem[aria-selected="true"]:not(:disabled)') || trMenu.querySelector('.tritem:not(:disabled)');
+  (pick || $('#trSearch')).focus();
+}
+function trGo(code) { trClose(); trTo = code; $('#editMode').value = 'translate'; liveEdit().finally(() => { trTo = null; }); }
+$('#aiTr').onclick = trOpen;
+$('#trClose').onclick = () => { trClose(); ed.focus(); };
+$('#trSearch').addEventListener('input', () => trRender(trMenu._src));
+trMenu.addEventListener('keydown', e => {
+  const items = [...trMenu.querySelectorAll('.tritem:not(:disabled)')], i = items.indexOf(document.activeElement);
+  if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); trClose(); ed.focus(); }
+  else if (e.key === 'ArrowDown') { e.preventDefault(); (items[i + 1] || items[0] || $('#trSearch')).focus(); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); if (i <= 0) $('#trSearch').focus(); else items[i - 1].focus(); }
+  else if (e.key === 'Enter' && document.activeElement === $('#trSearch') && items[0]) { e.preventDefault(); items[0].click(); }
+});
 ed.addEventListener('input', () => { if (!editBar.hidden && !edit) editBarHide(); });
 function updateAiButtons() {
   const off = !aiCfgState || aiCfgState.provider === 'off', locked = bodyLocked();

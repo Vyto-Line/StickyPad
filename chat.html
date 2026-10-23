@@ -9,9 +9,18 @@
 <script src="access.js"></script>
 </head>
 <body>
+<nav id="chats" aria-label="Your chats">
+  <div class="chead"><b>Chats</b><button id="listNew" class="ghost" title="Start a new chat">+ New</button></div>
+  <input id="chatSearch" type="search" class="csearch" placeholder="Search chats" aria-label="Search chats" autocomplete="off" spellcheck="false">
+  <div id="chatList" class="clist"></div>
+  <p id="histNote" class="chint" hidden>Chat history is off (Settings > AI), so chats are not kept after StickyPad closes.</p>
+  <button id="delAll" class="cdelall" type="button" hidden>Delete all chats</button>
+</nav>
+<div id="pane">
 <header>
   <div class="ttl"><span class="logo" aria-hidden="true">✨</span><div><h1>AI chat</h1><span id="status" class="status"></span></div></div>
   <div class="hbtns">
+    <button id="toggleChats" class="ghost" aria-pressed="true" title="Show or hide the list of chats">Chats</button>
     <button id="newChat" class="ghost" title="Start a new chat">New chat</button>
     <button id="close" class="iconbtn" aria-label="Close" title="Close"><svg class="i" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg></button>
   </div>
@@ -30,6 +39,7 @@
   <textarea id="input" rows="1" placeholder="Ask anything…" title="Enter sends, Shift+Enter adds a new line" aria-label="Message"></textarea>
   <button id="send" class="send">Send</button>
 </footer>
+</div>
 <script src="chat.js"></script>
 <script src="home.js"></script>
 <script src="dropfiles.js"></script>

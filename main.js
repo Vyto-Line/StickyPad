@@ -27,6 +27,7 @@ const safeload = require('./safeload');
 const restore = require('./restore');
 const importers = require('./importers');
 const placement = require('./placement');
+const sidesnap = require('./sidesnap');
 const changelog = require('./changelog');
 
 // A second launch must stop immediately (otherwise it would open duplicate notes).
@@ -72,7 +73,7 @@ let file, saveTimer, allTimer, firstRun = false, DATA = null, dirty = false, las
 const dataDir = () => DATA || app.getPath('userData');
 const DEFAULT_SETTINGS = {
   hideTaskbar: true, snap: true, launch: 'notes', splash: true, name: '', lang: 'en', theme: 'classic',
-  snapDistance: 10, defaultSize: 16, trashDays: 30, shortcuts: true, keys: {}, chatHistory: true, autoBackup: true, lastBackup: 0, autoUpdate: true, whatsNew: true, seenVersion: '',
+  snapDistance: 10, snapSides: false, defaultSize: 16, trashDays: 30, shortcuts: true, keys: {}, chatHistory: true, autoBackup: true, lastBackup: 0, autoUpdate: true, whatsNew: true, seenVersion: '',
   print: { single: { style: 'box', layout: 'actual', size: 'normal', title: true, pictures: true }, many: { style: 'plain', layout: 'flow', size: 'normal', title: true, pictures: true } },   // Print options window: remembered choices
   ai: { provider: 'off', model: '', url: 'http://localhost:11434', keyEnc: '', keepAlive: '5m' },
   access: { size: 100, contrast: false, read: false, motion: false, focus: false, big: false, sr: false },   // Settings > Accessibility: everything is off until you switch it on
@@ -233,6 +234,25 @@ function pick(cur, cands) {
   for (const c of cands) { const k = Math.abs(c - cur); if (k < d) { d = k; best = c; } }
   return d <= S ? best : cur;
 }
+// Snap to a side of the screen (Settings > Notes, off by default): mouse against the left/right edge = that half, against the top = the whole work area.
+// The note's old size is remembered (only while StickyPad runs) and comes back when you drag the note away.
+const sideSnapped = new Map();   // noteId -> { prev: size before, at: where it was put }
+function sideSnap(w, id) {
+  const m = notes[id]; if (!m || m.rolled || w.isMinimized()) return false;
+  let cur, z; try { cur = screen.getCursorScreenPoint(); z = sidesnap.zone(cur, displayList()); } catch { return false; }
+  const s = sideSnapped.get(id);
+  if (z) {
+    if (!s) sideSnapped.set(id, { prev: w.getBounds(), at: z.bounds });
+    else s.at = z.bounds;
+    w.setBounds(z.bounds); return true;
+  }
+  if (s) {   // let go somewhere else: the note gets its old size back
+    sideSnapped.delete(id);
+    const wa = screen.getDisplayNearestPoint(cur).workArea;
+    w.setBounds(sidesnap.restoreAt(s.prev, s.at, cur, wa));
+  }
+  return false;
+}
 // Called once, after you let go of a note. Snaps to screen edges and to notes that are already close by.
 function snapPos(w, nb) {
   const wa = screen.getDisplayMatching(nb).workArea, NEAR = 40;
@@ -356,16 +376,18 @@ function openNote(n) {
     save();
   };
   w.on('move', () => keep()); w.on('resize', () => keep());
-  w.on('resized', () => keep(true));
+  w.on('resized', () => { const s = sideSnapped.get(n.id); if (s && !w.isDestroyed() && !sidesnap.same(w.getBounds(), s.at)) sideSnapped.delete(n.id); keep(true); });   // sized by hand: that size stays
   w.on('moved', () => {   // fires once when you release the note, so nothing tugs at it while you drag
     keep(true);
-    if (!settings.snap || w.isDestroyed()) return;
+    if (w.isDestroyed()) return;
+    if (settings.snapSides && sideSnap(w, n.id)) return;
+    if (!settings.snap) return;
     const nb = w.getBounds(), p = snapPos(w, nb);
     if (p.x !== nb.x || p.y !== nb.y) w.setPosition(p.x, p.y);
   });
   w.on('focus', focusguard.guard(w));
   const cid = w.webContents.id;
-  w.on('closed', () => { panelGrow.delete(n.id); if (!reopening.has(n.id)) seeThrough.delete(n.id); wins.delete(n.id); byContents.delete(cid); if (!reopening.has(n.id)) relock(notes[n.id]); pingAll(); });
+  w.on('closed', () => { sideSnapped.delete(n.id); panelGrow.delete(n.id); if (!reopening.has(n.id)) seeThrough.delete(n.id); wins.delete(n.id); byContents.delete(cid); if (!reopening.has(n.id)) relock(notes[n.id]); pingAll(); });
   return w;
 }
 
@@ -1235,7 +1257,7 @@ ipcMain.handle('ai:edit', async (e, p) => {
   const send = m => { if (!sender.isDestroyed()) sender.send('ai:event', { id, ...m }); };
   const ac = new AbortController(); editJobs.set(id, ac);
   try {
-    const full = await ai.editStream(aiCfg(), String((p && p.mode) || 'fix'), String((p && p.text) || ''), t => send({ type: 'chunk', text: t }), ac.signal);
+    const full = await ai.editStream(aiCfg(), String((p && p.mode) || 'fix'), String((p && p.text) || ''), t => send({ type: 'chunk', text: t }), ac.signal, undefined, { to: p && p.to ? String(p.to) : undefined });
     send({ type: 'done', text: full });
   } catch (err) {
     if (ac.signal.aborted) send({ type: 'done', stopped: true });
@@ -1349,21 +1371,22 @@ ipcMain.handle('theme:applyAll', (e, id) => {
 
 /* ---------- AI chat sidebar ---------- */
 const chatFile = () => path.join(dataDir(), 'chat.json');
+const CS = require('./chatstore');
+const cleanChat = CS.cleanChat;
 function loadChat() {
   if (chatState) return chatState;
-  if (!settings.chatHistory) { chatState = { messages: [], noteId: null }; return chatState; }
-  try { chatState = JSON.parse(fs.readFileSync(chatFile(), 'utf8')); } catch { chatState = null; }
-  if (!chatState || !Array.isArray(chatState.messages)) chatState = { messages: [], noteId: null };
+  let raw = null;
+  if (settings.chatHistory) { try { raw = JSON.parse(fs.readFileSync(chatFile(), 'utf8')); } catch {} }   // with history off nothing is ever read from or written to disk
+  chatState = CS.load(raw);
   return chatState;
 }
-const saveChat = () => { if (!settings.chatHistory) return; try { fs.writeFileSync(chatFile(), JSON.stringify(chatState)); } catch {} };
-function clearChat() { chatState = { messages: [], noteId: null }; try { fs.unlinkSync(chatFile()); } catch {} }
-function cleanChat(messages, keep) {
-  const out = (Array.isArray(messages) ? messages : [])
-    .filter(m => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string' && m.content !== '')
-    .map(m => ({ role: m.role, content: m.content.slice(0, 8000) })).slice(-keep);
-  while (out.length && out[0].role !== 'user') out.shift();   // models expect the conversation to start with the user
-  return out;
+const saveChat = () => { if (!settings.chatHistory) return; try { fs.writeFileSync(chatFile(), JSON.stringify(CS.toFile(chatState))); } catch {} };
+function clearChat() { chatState = CS.load(null); try { fs.unlinkSync(chatFile()); } catch {} }
+// what the chat window needs to draw the chat you are in
+function chatView() {
+  const c = CS.cur(loadChat());
+  return { chatId: c.id, messages: c.messages, noteId: notes[c.noteId] && !notes[c.noteId].lock ? c.noteId : null, history: !!settings.chatHistory,
+           provider: settings.ai.provider, model: settings.ai.model || (settings.ai.provider === 'claude' ? ai.DEFAULT_CLAUDE_MODEL : '') };
 }
 // A long note goes in whole (up to ~40,000 characters); beyond that the start and the END are kept, never just the start.
 function chatContext(text) {
@@ -1394,12 +1417,20 @@ function openChat(noteId) {
 ipcMain.handle('chat:open', (e, noteId) => openChat(typeof noteId === 'string' ? noteId : undefined));
 ipcMain.handle('chat:close', () => { openHome('notes'); });
 ipcMain.handle('home:go', (e, section, arg) => { if (section === 'chat') return openChat(typeof arg === 'string' ? arg : undefined); openHome(String(section), typeof arg === 'string' ? arg : undefined); });
-ipcMain.handle('chat:load', () => {
-  const c = loadChat();
-  return { messages: cleanChat(c.messages, 100), noteId: notes[c.noteId] && !notes[c.noteId].lock ? c.noteId : null,
-           provider: settings.ai.provider, model: settings.ai.model || (settings.ai.provider === 'claude' ? ai.DEFAULT_CLAUDE_MODEL : '') };
+ipcMain.handle('chat:load', () => chatView());
+ipcMain.handle('chat:save', (e, p) => { CS.saveCurrent(loadChat(), p); saveChat(); });
+const chatId = x => typeof x === 'string' ? x : '';
+ipcMain.handle('chat:list', (e, q) => ({ items: CS.list(loadChat(), typeof q === 'string' ? q.slice(0, 100) : ''), history: !!settings.chatHistory }));
+ipcMain.handle('chat:select', (e, id) => { CS.select(loadChat(), chatId(id)); saveChat(); return chatView(); });
+ipcMain.handle('chat:new', () => { CS.startNew(loadChat()); saveChat(); return chatView(); });
+ipcMain.handle('chat:rename', (e, id, title) => { const ok = CS.rename(loadChat(), chatId(id), title); saveChat(); return ok; });
+ipcMain.handle('chat:pin', (e, id, on) => { const ok = CS.pin(loadChat(), chatId(id), !!on); saveChat(); return ok; });
+ipcMain.handle('chat:delete', (e, id) => { CS.remove(loadChat(), chatId(id)); saveChat(); return chatView(); });
+ipcMain.handle('chat:deleteAll', () => { clearChat(); return chatView(); });
+ipcMain.handle('chat:toNote', (e, id) => {
+  const S = loadChat(), c = S.chats.find(x => x.id === chatId(id)); if (!c || !c.messages.length) return false;
+  const t = CS.transcript(c).slice(0, 100000); makeNote(null, { title: c.title, blocks: [{ t: 'text', v: t }], text: t }); return true;
 });
-ipcMain.handle('chat:save', (e, p) => { const c = loadChat(); c.messages = cleanChat(p && p.messages, 100); c.noteId = p && typeof p.noteId === 'string' ? p.noteId : null; saveChat(); });
 ipcMain.handle('chat:notes', () => Object.values(notes).filter(n => !n.lock && String(n.text || '').trim())
   .sort((a, b) => (b.updated || 0) - (a.updated || 0)).map(n => ({ id: n.id, title: n.title || String(n.text).split('\n')[0].slice(0, 40) || 'Note' })));
 ipcMain.handle('chat:saveAsNote', (e, text) => {
@@ -1616,7 +1647,7 @@ function memoryUse() {
 function allSettings() {
   return {
     version: app.getVersion(), packaged: app.isPackaged, startup: startupOn(), dataPath: dataDir(), dataCustom: dataDir() !== app.getPath('userData'),
-    hideTaskbar: !!settings.hideTaskbar, snap: !!settings.snap, snapDistance: settings.snapDistance, defaultSize: settings.defaultSize,
+    hideTaskbar: !!settings.hideTaskbar, snap: !!settings.snap, snapSides: !!settings.snapSides, snapDistance: settings.snapDistance, defaultSize: settings.defaultSize,
     trashDays: settings.trashDays, trashCount: trash.length, shortcuts: !!settings.shortcuts, suggestDates: settings.suggestDates !== false, predictWords: settings.predictWords !== false, keys: curKeys(), keysFailed: settings.shortcuts ? keysFailed : [], chatHistory: !!settings.chatHistory,
     autoBackup: !!settings.autoBackup, lastBackup: settings.lastBackup || 0, backupCount: backup.list(app.getPath('userData')).length,
     autoUpdate: settings.autoUpdate !== false, whatsNew: settings.whatsNew !== false, update: updater ? updater.get() : null,
@@ -1665,6 +1696,7 @@ ipcMain.handle('settings:set', (e, p) => {
   if (p) {
     if ('hideTaskbar' in p) setHide(p.hideTaskbar);
     if ('snap' in p) setSnap(p.snap);
+    if ('snapSides' in p) { settings.snapSides = !!p.snapSides; if (!settings.snapSides) sideSnapped.clear(); }
     if ('startup' in p) setStartup(p.startup);
     if (Number.isFinite(p.snapDistance)) settings.snapDistance = clampInt(p.snapDistance, 4, 40);
     if (Number.isFinite(p.defaultSize)) settings.defaultSize = clampInt(p.defaultSize, 10, 48);

@@ -88,6 +88,28 @@ const H = require('./fake-electron');
   await h['chat:save']({}, { messages: Array.from({ length: 150 }, (_, i) => ({ role: 'user', content: 'm' + i })) });
   assert.ok((await h['chat:load']()).messages.length <= 100, 'history is capped at 100 messages');
   assert.strictEqual((await h['chat:load']()).noteId, null);
+  // ---- many chats: list, switch, rename, pin, delete ----
+  const U = x => ({ role: 'user', content: x }), AI = x => ({ role: 'assistant', content: x });
+  await h['chat:new']({}); await h['chat:save']({}, { messages: [U('Plan my day'), AI('ok')] });
+  await h['chat:new']({}); await h['chat:save']({}, { messages: [U('Trip ideas'), AI('Lisbon')] });
+  let lst = (await h['chat:list']({}, '')).items; assert.deepStrictEqual(lst.slice(0, 2).map(c => c.title), ['Trip ideas', 'Plan my day'], JSON.stringify(lst));
+  assert.ok(lst.length >= 3 && lst[0].current, 'new chats keep the old ones; the newest is open');
+  const plan = lst.find(c => c.title === 'Plan my day');
+  let v = await h['chat:select']({}, plan.id); assert.strictEqual(v.messages[0].content, 'Plan my day'); assert.strictEqual(v.chatId, plan.id);
+  assert.deepStrictEqual((await h['chat:list']({}, 'lisbon')).items.map(c => c.title), ['Trip ideas'], 'search looks inside chats');
+  assert.strictEqual(await h['chat:rename']({}, plan.id, 'Morning'), true); assert.ok((await h['chat:list']({}, '')).items.some(c => c.title === 'Morning'));
+  await h['chat:pin']({}, plan.id, true); assert.strictEqual((await h['chat:list']({}, '')).items[0].id, plan.id, 'pinned goes first');
+  assert.strictEqual(await h['chat:toNote']({}, plan.id), true); assert.strictEqual(await h['chat:toNote']({}, 'nope'), false);
+  v = await h['chat:delete']({}, plan.id); assert.ok(!(await h['chat:list']({}, '')).items.some(c => c.id === plan.id) && v.chatId !== plan.id, 'deleting the open chat opens another');
+  const cf = path.join(tmp, 'userData', 'chat.json'); const onDisk = () => fs.existsSync(cf) ? fs.readFileSync(cf, 'utf8') : '';
+  if (fs.existsSync(cf)) assert.ok(onDisk().includes('Lisbon') && JSON.parse(onDisk()).version === 2, 'saved in the new format');
+  // delete all really removes every message, in memory and on disk
+  v = await h['chat:deleteAll']({}); assert.deepStrictEqual(v.messages, []); assert.strictEqual((await h['chat:list']({}, '')).items.length, 0); assert.ok(!onDisk().includes('Lisbon'), 'nothing left on disk');
+  // history off: chats work but nothing is written; turning it off wipes what was there
+  await h['chat:save']({}, { messages: [U('keep me'), AI('x')] }); assert.ok(onDisk().includes('keep me'));
+  await h['settings:set']({}, { chatHistory: false }); assert.ok(!onDisk().includes('keep me'), 'switching history off deletes the file');
+  await h['chat:new']({}); await h['chat:save']({}, { messages: [U('secret chat'), AI('x')] }); assert.ok(!onDisk().includes('secret chat'), 'history off: nothing written'); assert.strictEqual((await h['chat:list']({}, '')).history, false);
+  await h['settings:set']({}, { chatHistory: true }); await h['chat:deleteAll']({});
   const cn = await h['chat:notes'](); assert.ok(Array.isArray(cn) && cn.some(x => x.id === a.id), 'chat can pick notes with text');
 
   // ---- accessibility settings: all off by default, saved and broadcast ----

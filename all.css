@@ -115,3 +115,8 @@ h1{font-size:15px}
 .chk{display:flex;align-items:center;gap:6px;font-size:12.5px;white-space:nowrap}
 #printBar .muted{flex:1}
 #printBar{flex-wrap:wrap}#printBar .field{width:auto;max-width:170px}
+
+/* checklist lines on a card: round ticks like the ones in a note */
+.cb{display:inline-block;width:.85em;height:.85em;margin:0 .35em 0 .05em;border-radius:50%;border:1.5px solid currentColor;opacity:.65;vertical-align:-.1em;box-sizing:border-box;position:relative}
+.cb.done{background:var(--accent);border-color:var(--accent);opacity:1}
+.cb.done::after{content:"";position:absolute;left:28%;top:8%;width:26%;height:50%;border:solid #fff;border-width:0 1.5px 1.5px 0;transform:rotate(45deg)}

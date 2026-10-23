@@ -43,7 +43,7 @@ def panel(pg, tab, w=660, h=470):
     pg.set_viewport_size({'width': w, 'height': h}); pg.wait_for_timeout(150)
     pg.click('#cfg'); pg.wait_for_timeout(200)
     if tab == 'note': pg.click('#rowRem > summary')
-    if tab == 'ai': pg.evaluate("document.querySelector('#aiAction').scrollIntoView({block:'end'})")
+    if tab == 'ai': pg.evaluate("document.querySelector('#aiChat').scrollIntoView({block:'start'})")
     pg.wait_for_timeout(400)
 
 def shot_panel(pg, name):
@@ -64,18 +64,19 @@ with sync_playwright() as p:
     pg.click('#rowHist > summary'); pg.wait_for_timeout(400); shot_panel(pg, 'feature_history'); pg.close()
     # AI tab
     pg = page(b, 'greek'); goto(pg, 'note.html'); panel(pg, 'ai'); shot_panel(pg, 'feature_ai'); pg.close()
+    pg = page(b, 'greek'); goto(pg, 'note.html'); pg.set_viewport_size({'width': 360, 'height': 520}); pg.click('#cfg'); pg.wait_for_timeout(300); pg.click('#aiTr'); pg.wait_for_timeout(400); shot(pg, 'feature_translate'); pg.close()
     # style tab with themes
     pg = page(b, 'ideas'); goto(pg, 'note.html'); panel(pg, 'style'); shot_panel(pg, 'feature_style'); pg.close()
     # links underlined + the date bar + the update message
     NOTES['links'] = dict(title='Weekend', color='#CDEFFF', font='Segoe UI', size=15,
       blocks=[T('Tickets: https://www.aegeanair.com/booking\nHotel contact: reservations@seaview.gr\nDentist tomorrow at 5pm\nCall Nick'), ])
     pg = page(b, 'links'); goto(pg, 'note.html'); pg.wait_for_timeout(1000); shot(pg, 'feature_links'); pg.close()
-    pg = page(b, 'links', extra="window.__S.updateNow={state:'ready',version:'1.14.56'}"); goto(pg, 'note.html'); pg.wait_for_timeout(1000); shot(pg, 'feature_update'); pg.close()
+    pg = page(b, 'links', extra="window.__S.updateNow={state:'ready',version:'1.15.0'}"); goto(pg, 'note.html'); pg.wait_for_timeout(1000); shot(pg, 'feature_update'); pg.close()
     # shortcuts you can change
     pg = page(b, None, 1030, 700); goto(pg, 'settings.html'); pg.click('[data-cat=shortcuts]'); pg.wait_for_timeout(300)
     pg.click('[data-key=g_clip]'); pg.keyboard.press('Control+Alt+Shift+V'); pg.wait_for_timeout(300); shot(pg, 'feature_shortcuts'); pg.close()
     # chat across all notes
-    chatj = "window.api.chatLoad=async()=>({messages:[{role:'user',content:'What did I write about the dentist?'},{role:'assistant',content:'In your note **Weekend** you wrote: *Dentist tomorrow at 5pm*. Nothing else mentions it.'}],noteId:'*',provider:'ollama',model:'gemma3:4b'});window.api.chatNotes=async()=>[{id:'n1',title:'Weekend'},{id:'n2',title:'Groceries'}];"
+    chatj = "window.api.chatLoad=async()=>({messages:[{role:'user',content:'What did I write about the dentist?'},{role:'assistant',content:'In your note **Weekend** you wrote: *Dentist tomorrow at 5pm*. Nothing else mentions it.'}],noteId:'*',provider:'ollama',model:'gemma3:4b'});window.api.chatNotes=async()=>[{id:'n1',title:'Weekend'},{id:'n2',title:'Groceries'}];window.__S.chats=[{id:'c1',title:'What did I write about the dentist?',messages:[{role:'user',content:'What did I write about the dentist?'},{role:'assistant',content:'x'}],updated:5e3},{id:'c2',title:'Plan my day',pinned:true,messages:[{role:'user',content:'Plan my day'},{role:'assistant',content:'x'}],updated:4e3},{id:'c3',title:'Trip ideas for Crete',messages:[{role:'user',content:'Trip ideas for Crete'},{role:'assistant',content:'x'}],updated:3e3},{id:'c4',title:'How does a VPN work?',messages:[{role:'user',content:'How does a VPN work?'},{role:'assistant',content:'x'}],updated:2e3}];window.__S.chatCur='c1';"
     pg = page(b, None, 900, 600, extra=chatj); goto(pg, 'chat.html'); pg.wait_for_timeout(300)
     pg.evaluate("(()=>{const s=document.createElement('div');s.className='src';s.textContent='Looked at: Weekend · Groceries';const m=document.querySelectorAll('.msg');m[m.length-1].appendChild(s)})()"); shot(pg, 'feature_chat_all'); pg.close()
     # all notes

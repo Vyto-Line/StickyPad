@@ -1,0 +1,11 @@
+'use strict';
+const assert = require('assert');
+const { trimEnd } = require('../wordsel');
+assert.strictEqual(trimEnd('hello world again', 6, 12), 11, 'the space after "world " is taken off');
+assert.strictEqual(trimEnd('hello world again', 6, 11), 11, 'nothing to trim');
+assert.strictEqual(trimEnd('hello world   again', 6, 14), 11, 'several spaces and tabs');
+assert.strictEqual(trimEnd('hello world  x', 6, 13), 11, 'non-breaking spaces too');
+assert.strictEqual(trimEnd('a    b', 1, 5), 5, 'a selection that is only spaces is left alone');
+assert.strictEqual(trimEnd('hello world', 0, 5), 5);
+assert.strictEqual(trimEnd('', 0, 0), 0);
+console.log('wordsel ok');
