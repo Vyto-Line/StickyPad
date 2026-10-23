@@ -79,9 +79,10 @@ function removeAll(S) { S.chats = []; S.current = null; cur(S); }
 // the list on the left: pinned first, then newest first; q searches titles and the chat text
 function list(S, q) {
   const needle = String(q || '').trim().toLowerCase();
+  const at = new Map(S.chats.map((c, i) => [c.id, i]));   // chats saved in the same millisecond: the later one counts as newer
   return S.chats.filter(c => c.messages.length)
     .filter(c => !needle || c.title.toLowerCase().includes(needle) || c.messages.some(m => m.content.toLowerCase().includes(needle)))
-    .sort((a, b) => (b.pinned - a.pinned) || (b.updated - a.updated))
+    .sort((a, b) => (b.pinned - a.pinned) || (b.updated - a.updated) || (at.get(b.id) - at.get(a.id)))
     .map(c => ({ id: c.id, title: c.title, pinned: c.pinned, updated: c.updated, current: c.id === S.current, count: c.messages.length }));
 }
 function transcript(c) { return (c ? c.messages : []).map(m => (m.role === 'user' ? 'You: ' : 'AI: ') + m.content).join('\n\n'); }

@@ -40,3 +40,5 @@ assert.ok(S.chats.length <= C.MAX_CHATS); assert.ok(C.list(S).some(c => c.title 
 assert.strictEqual(C.cleanChat([A('x'), U('y')]).length, 1); assert.strictEqual(C.cleanChat(Array.from({ length: 150 }, (_, i) => U('m' + i))).length, 100);
 assert.ok(/^You: hi\n\nAI: yo$/.test(C.transcript({ messages: [U('hi'), A('yo')] })));
 console.log('chatstore ok');
+{ const T = C.load(null); C.saveCurrent(T, { messages: [U('first')] }, 500); C.startNew(T); C.saveCurrent(T, { messages: [U('second')] }, 500);
+  assert.deepStrictEqual(C.list(T).map(c => c.title), ['second', 'first'], 'same millisecond: the later chat is on top'); }
