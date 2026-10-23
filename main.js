@@ -239,7 +239,7 @@ function pick(cur, cands) {
 const sideSnapped = new Map();   // noteId -> { prev: size before, at: where it was put }
 function sideSnap(w, id) {
   const m = notes[id]; if (!m || m.rolled || w.isMinimized()) return false;
-  let cur, z; try { cur = screen.getCursorScreenPoint(); z = sidesnap.zone(cur, displayList()); } catch { return false; }
+  let cur, z; try { cur = screen.getCursorScreenPoint(); z = sidesnap.zone(cur, displayList(), w.getBounds()); } catch { return false; }
   const s = sideSnapped.get(id);
   if (z) {
     if (!s) sideSnapped.set(id, { prev: w.getBounds(), at: z.bounds });
@@ -1462,7 +1462,8 @@ ipcMain.handle('chat:send', async (e, p) => {
   const ac = new AbortController(); chatJobs.set(id, ac);
   try {
     const msgs = cleanChat(p && p.messages, 20), lastUser = [...msgs].reverse().find(m => m.role === 'user'), src = [];
-    const sys = chatSystem(p && p.noteId, lastUser ? lastUser.content : '', src);
+    const lang = ai.chatLanguage(msgs), sys = chatSystem(p && p.noteId, lastUser ? lastUser.content : '', src) + '\n\n' + ai.chatLanguageRule(lang);
+    if (lang && msgs.length && msgs[msgs.length - 1].role === 'user') msgs[msgs.length - 1] = { ...msgs[msgs.length - 1], content: msgs[msgs.length - 1].content + ai.chatLanguageTail(lang) };   // for the model only: the saved chat is not touched
     if (src.length) send({ type: 'sources', titles: src });
     const full = await ai.chatStream(aiCfg(), sys, msgs, t => send({ type: 'chunk', text: t }), ac.signal);
     send({ type: 'done', text: full });

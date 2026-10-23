@@ -4,16 +4,19 @@
 // Pure functions (tested in Node). displays: [{ id, bounds, workArea }] like Electron's; cursor: { x, y }.
 const EDGE = 6;       // how close to the screen edge the mouse has to be (pixels)
 const CORNER = 80;    // corners are left alone, so a note dropped in a corner just stays where it is
+const PUSH = 24;      // or the note itself is pushed this far past the screen edge (you do not have to get the mouse exactly onto the edge)
 const inside = (p, b) => p.x >= b.x && p.x < b.x + b.width && p.y >= b.y && p.y < b.y + b.height;
 // -> { zone: 'left' | 'right' | 'top', bounds } or null
-function zone(cursor, displays) {
+function zone(cursor, displays, win) {
   if (!cursor || !Array.isArray(displays)) return null;
   const d = displays.find(x => inside(cursor, x.bounds)); if (!d) return null;
   const b = d.bounds, wa = d.workArea;
   const other = p => displays.some(x => x !== d && inside(p, x.bounds));   // an edge that touches another screen is not the end of the desktop
-  const nearL = cursor.x <= b.x + EDGE && !other({ x: b.x - 1, y: cursor.y });
-  const nearR = cursor.x >= b.x + b.width - 1 - EDGE && !other({ x: b.x + b.width, y: cursor.y });
-  const nearT = cursor.y <= b.y + EDGE && !other({ x: cursor.x, y: b.y - 1 });
+  const pushL = !!win && win.x <= b.x - PUSH, pushR = !!win && win.x + win.width >= b.x + b.width + PUSH, pushT = !!win && win.y <= b.y - PUSH;
+  if (pushT && (pushL || pushR)) return null;   // pushed into a corner
+  const nearL = (cursor.x <= b.x + EDGE || pushL) && !other({ x: b.x - 1, y: cursor.y });
+  const nearR = (cursor.x >= b.x + b.width - 1 - EDGE || pushR) && !other({ x: b.x + b.width, y: cursor.y });
+  const nearT = (cursor.y <= b.y + EDGE || pushT) && !other({ x: cursor.x, y: b.y - 1 });
   const nearCornerY = cursor.y < b.y + CORNER || cursor.y > b.y + b.height - CORNER, nearCornerX = cursor.x < b.x + CORNER || cursor.x > b.x + b.width - CORNER;
   const half = Math.floor(wa.width / 2);
   if (nearT && !nearCornerX) return { zone: 'top', bounds: { x: wa.x, y: wa.y, width: wa.width, height: wa.height } };

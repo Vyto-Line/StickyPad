@@ -972,7 +972,7 @@ $('#aiEdit').onclick = liveEdit;
 // Translate…: a small menu. The note's language is detected here and shown as "Greek (Auto-detected)"; that language is greyed out in the list.
 let trTo = null;
 const trMenu = $('#trmenu');
-function trClose() { trMenu.hidden = true; }
+function trClose() { trMenu.hidden = true; $('#aiTr').setAttribute('aria-expanded', 'false'); }
 function trRender(src) {
   const q = $('#trSearch').value.trim().toLowerCase(), box = $('#trList'); box.textContent = '';
   let last = ''; try { last = localStorage.getItem('sp.trTo') || ''; } catch (e) {}
@@ -990,24 +990,24 @@ function trRender(src) {
 }
 function trOpen() {
   if (edit || aiBusy || bodyLocked()) return;
+  if (!trMenu.hidden) { trClose(); return; }   // the button opens and closes the list
   if (!aiCfgState || aiCfgState.provider === 'off') { liveEdit(); return; }   // shows the "turn the AI on" hint
   const t = editTarget('translate');
   if (t.err) { aiShow('Translate', t.err, [['Close', aiClose, true]]); return; }
   const src = StickyLangs.detect(t.text);
   $('#trFrom').textContent = src ? src.name + ' (Auto-detected)' : 'Auto-detected';
   $('#trSearch').value = ''; trRender(src);
-  $('#panel').hidden = true; $('#cfg').setAttribute('aria-expanded', 'false');
-  trMenu.hidden = false; trMenu._src = src;
+  trMenu.hidden = false; trMenu._src = src; $('#aiTr').setAttribute('aria-expanded', 'true'); trMenu.scrollIntoView({ block: 'nearest' });
   const pick = trMenu.querySelector('.tritem[aria-selected="true"]:not(:disabled)') || trMenu.querySelector('.tritem:not(:disabled)');
   (pick || $('#trSearch')).focus();
 }
 function trGo(code) { trClose(); trTo = code; $('#editMode').value = 'translate'; liveEdit().finally(() => { trTo = null; }); }
 $('#aiTr').onclick = trOpen;
-$('#trClose').onclick = () => { trClose(); ed.focus(); };
+$('#trClose').onclick = () => { trClose(); $('#aiTr').focus(); };
 $('#trSearch').addEventListener('input', () => trRender(trMenu._src));
 trMenu.addEventListener('keydown', e => {
   const items = [...trMenu.querySelectorAll('.tritem:not(:disabled)')], i = items.indexOf(document.activeElement);
-  if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); trClose(); ed.focus(); }
+  if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); trClose(); $('#aiTr').focus(); }
   else if (e.key === 'ArrowDown') { e.preventDefault(); (items[i + 1] || items[0] || $('#trSearch')).focus(); }
   else if (e.key === 'ArrowUp') { e.preventDefault(); if (i <= 0) $('#trSearch').focus(); else items[i - 1].focus(); }
   else if (e.key === 'Enter' && document.activeElement === $('#trSearch') && items[0]) { e.preventDefault(); items[0].click(); }
@@ -1015,8 +1015,10 @@ trMenu.addEventListener('keydown', e => {
 ed.addEventListener('input', () => { if (!editBar.hidden && !edit) editBarHide(); });
 function updateAiButtons() {
   const off = !aiCfgState || aiCfgState.provider === 'off', locked = bodyLocked();
-  $('#aiTitle').disabled = $('#aiSum').disabled = $('#aiFix').disabled = $('#aiList').disabled = $('#aiEdit').disabled = $('#aiTr').disabled = off || locked; $('#aiChat').disabled = locked; $('#aiRun').disabled = $('#aiAction').disabled = off || locked;
-  if (off) $('#aiSetup').open = true;
+  $('#aiTitle').disabled = $('#aiSum').disabled = $('#aiFix').disabled = $('#aiList').disabled = $('#aiEdit').disabled = $('#aiTr').disabled = off || locked; $('#aiChat').disabled = off || locked; $('#aiRun').disabled = $('#aiAction').disabled = off || locked;
+  if (off) { $('#aiSetup').open = true; if (!trMenu.hidden) trClose(); }
+  const prov = aiCfgState && aiCfgState.provider, label = off ? 'Off' : prov === 'claude' ? 'Claude' : 'Ollama' + (aiCfgState.model ? ' · ' + aiCfgState.model : '');
+  $('#aiState').textContent = locked ? 'Locked' : off ? 'Off' : 'On'; $('#aiSetupState').textContent = label;
   $('#aiHint').textContent = locked ? 'Unlock this note first.' : off ? 'Turn the AI on under Model and connection below.' : 'Works on the selected text, or the whole note.';
   if (!locked && !off) modelCheck();
 }
@@ -1098,6 +1100,7 @@ function warmModel() {   // opening the AI tab means you are about to use it: lo
 // The panel is one list (Look, This note, AI). showTab only brings a part into view; the AI part is always ready.
 function showTab(t) {
   aiLoad();
+  if (t === 'ai') $('#rowAI').open = true;
   const target = t === 'ai' ? $('#aiAction') : t === 'note' ? $('#rowRem') : null;
   if (target) target.scrollIntoView({ block: 'nearest' });
 }
@@ -1112,9 +1115,9 @@ try { const last = localStorage.getItem('sp.aiAction'); if (last && $('#aiAction
 $('#aiAction').addEventListener('change', () => { try { localStorage.setItem('sp.aiAction', $('#aiAction').value); } catch (e) {} });
 ['pointerenter', 'focus'].forEach(ev => { $('#aiAction').addEventListener(ev, warmModel); $('#aiRun').addEventListener(ev, warmModel); });   // load the local model only when you are about to use it
 // only one row of "This note" open at a time; opening Earlier versions loads them
-document.querySelectorAll('#panel details.prow').forEach(d => d.addEventListener('toggle', () => {
+document.querySelectorAll('#panel details.prow:not(.free)').forEach(d => d.addEventListener('toggle', () => {
   if (!d.open) return;
-  document.querySelectorAll('#panel details.prow').forEach(o => { if (o !== d) o.open = false; });
+  document.querySelectorAll('#panel details.prow:not(.free)').forEach(o => { if (o !== d) o.open = false; });
   if (d.id === 'rowHist' && $('#histBox').hidden) histOpen();
 }));
 $('#close').onclick = () => { if (timer) saveNow(); api.close(); };

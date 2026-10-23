@@ -64,7 +64,7 @@ with sync_playwright() as p:
     pg.click('#rowHist > summary'); pg.wait_for_timeout(400); shot_panel(pg, 'feature_history'); pg.close()
     # AI tab
     pg = page(b, 'greek'); goto(pg, 'note.html'); panel(pg, 'ai'); shot_panel(pg, 'feature_ai'); pg.close()
-    pg = page(b, 'greek'); goto(pg, 'note.html'); pg.set_viewport_size({'width': 360, 'height': 520}); pg.click('#cfg'); pg.wait_for_timeout(300); pg.click('#aiTr'); pg.wait_for_timeout(400); shot(pg, 'feature_translate'); pg.close()
+    pg = page(b, 'greek'); goto(pg, 'note.html'); pg.set_viewport_size({'width': 360, 'height': 520}); pg.click('#cfg'); pg.wait_for_timeout(300); pg.click('#aiTr'); pg.evaluate("document.querySelector('#rowAI').scrollIntoView({block:'start'})"); pg.wait_for_timeout(400); shot(pg, 'feature_translate'); pg.close()
     # style tab with themes
     pg = page(b, 'ideas'); goto(pg, 'note.html'); panel(pg, 'style'); shot_panel(pg, 'feature_style'); pg.close()
     # links underlined + the date bar + the update message
