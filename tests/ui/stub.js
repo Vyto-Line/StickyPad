@@ -66,8 +66,8 @@
       S.ol.installed = true; S.ol.running = true; emit('ollama', { type: 'install', state: 'done' }); return { ok: true };
     },
     ollamaCancel: async w => { S.calls.push(['cancel', w]); },
-    aiEdit: async ({ id, mode, text }) => {
-      S.calls.push(['edit', mode, text]);
+    aiEdit: async ({ id, mode, text, to }) => {
+      S.calls.push(['edit', mode, text]); S.lastTo = to;
       if (S.editMode === 'error') { emit('ai', { id, type: 'error', error: 'Ollama is not running' }); return true; }
       const out = S.editOut || 'Hello world, this is a test.'; const parts = out.match(/\S+\s*/g);
       S.stop = false;

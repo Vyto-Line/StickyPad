@@ -118,6 +118,13 @@
 
 <div id="editbar" hidden role="status"><span class="spin"></span><b id="editMsg">Editing…</b><span class="grow"></span><button id="editStop" class="btn">Stop</button><button id="editUndo" class="btn" hidden>Undo</button><button id="editKeep" class="btn primary" hidden>Keep</button></div>
 
+<div id="trmenu" hidden role="dialog" aria-label="Translate">
+  <div class="trhead"><b>Translate</b><button id="trClose" class="iconbtn" aria-label="Close">✕</button></div>
+  <div class="trfrom"><span class="k">From</span><span id="trFrom" class="v"></span><span class="tag">AUTO</span></div>
+  <label class="trto"><span class="k">To</span><input id="trSearch" class="field" autocomplete="off" spellcheck="false" placeholder="Search languages" aria-label="Search languages"></label>
+  <div id="trList" class="trlist" role="listbox" aria-label="Translate into"></div>
+  <p class="hint">Greek ⇄ English works best. Small models on your PC are weaker with the other languages.</p>
+</div>
 <div id="aibox" hidden role="dialog" aria-label="AI result">
   <div class="aihead"><b id="aiTitle"></b></div>
   <div id="aiBody" class="aibody"></div>
@@ -145,6 +152,7 @@
 <div id="ac" role="listbox" aria-label="Word suggestions" hidden></div>
 <script src="note.js"></script>
 <script src="quiet.js"></script>
+<script src="langs.js"></script>
 <script src="wordsel.js"></script>
 <script src="updbar.js"></script>
 <script src="dropfiles.js"></script>

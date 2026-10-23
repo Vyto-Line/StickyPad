@@ -1235,7 +1235,7 @@ ipcMain.handle('ai:edit', async (e, p) => {
   const send = m => { if (!sender.isDestroyed()) sender.send('ai:event', { id, ...m }); };
   const ac = new AbortController(); editJobs.set(id, ac);
   try {
-    const full = await ai.editStream(aiCfg(), String((p && p.mode) || 'fix'), String((p && p.text) || ''), t => send({ type: 'chunk', text: t }), ac.signal);
+    const full = await ai.editStream(aiCfg(), String((p && p.mode) || 'fix'), String((p && p.text) || ''), t => send({ type: 'chunk', text: t }), ac.signal, undefined, { to: p && p.to ? String(p.to) : undefined });
     send({ type: 'done', text: full });
   } catch (err) {
     if (ac.signal.aborted) send({ type: 'done', stopped: true });
