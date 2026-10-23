@@ -29,6 +29,8 @@
 
 6. **Text formatting: Bold, Italic, Underline, Strikethrough, Highlight, Clear** (idea from Alex 2026-10-22, mockup made; proposed for its own release, 1.16.0, not 1.15.0). Plan: keep the plain text in `v` exactly as today (search, AI, print, export, history, word counts and old versions keep working) and add an optional list of marks to text and checklist blocks, e.g. `m: [[start, end, "b"], ...]`. A small toolbar appears over selected text (flips below when there is no room above); Ctrl+B / Ctrl+I / Ctrl+U shortcuts; Clear formatting. Things to handle: pasting (keep plain text, or keep bold and italic only), Find highlights, the huge-note drawing shortcut, AI edits (formatting in changed parts is dropped), print and Markdown export (**bold**), locked notes, history, .stickypad import and export, and tests for the new format. Lists and headings later, only if asked. This changes the notes format, so it needs a backup-safe migration test first (older versions must still open the note as plain text).
 
+## Rule (Alex, 2026-10-23): 1.15.x releases are for small things and fixes; bigger features go to 1.16 and later.
+
 ## Planned for 1.15.1 (Alex, 2026-10-23; planning only, nothing built)
 1. **AI and note interaction polish.** Alex will send his list of what felt rough; then a plan (and a mockup first where the look changes).
 2. **Make the snapping switch easier to find** (Settings > Notes, "Snap to sides"; off by default). Idea only so far: decide where it should be reachable from (for example a hint where snapping would help, or a quick link) and send a small mockup before building.
@@ -41,6 +43,9 @@ Not yet: updating the GitHub build helpers (Node 20 warning); Alex said "not yet
 ## Planned for 1.16.0 (Alex, 2026-10-23; planning only, nothing built)
 1. **Text formatting** (Bold, Italic and so on): see item 6 under 1.15.0 above.
 2. **New note colour palettes** (Alex agreed to all of these): clearer separation between the six colours in each theme (Paper, Forest, Midnight and Mono are too alike); a clear default set (yellow, pink, blue, green, orange, purple, white, graphite); a computed contrast check so text is readable on every colour in light and dark; a colour-blind friendly set (differs in lightness as well as hue); colour names on hover; and **custom palettes**: people save their own six colours with a colour picker (the biggest part: the slot system in themes.js and theme switching must handle it). Rules: every option off by default, existing notes keep their colours, a small mockup from the real screens before building anything.
+3. **Finish Select mode in Home** (mockup sent 2026-10-23, waiting for Alex's changes): Export… and Colour ▾ for chosen notes; a "More ▾" menu with Open, Close, Pin, Unpin; a Select button in the Trash tab with Restore and Delete forever (asks first); dragging the chosen notes together ("3 notes") onto a folder or Trash. Locked notes can be moved or exported but not recoloured or deleted. Hidden until Select is pressed.
+4. **Sort by in Home** (Alex agreed 2026-10-23; no mockup yet): Last edited (today's order and the default), A to Z, Z to A, Colour (palette order), Open first. Pinned first. Remembered; applies inside each folder; Select all follows the order shown; only changes the list in Home, never the note windows. No "date created" because notes have no creation date (only if Alex wants it, for new notes only).
+
 
 ## Next
 1. Finish Select mode in Home: Export, Colour, Open/Close/Pin, Trash-tab Restore/Delete forever, drag a chosen group onto a folder or Trash.
