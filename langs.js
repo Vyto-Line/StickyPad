@@ -20,7 +20,7 @@
   const count = (t, re) => (String(t).match(re) || []).length;
   const NONSPACE = t => (String(t).match(/[^\s\d\p{P}\p{S}]/gu) || []).length;
   const STOP = {
-    en: 'the and is are was to of in it you that for with this have not be on at as but they we my your will can from do what',
+    en: 'the and is are was to of in it you that for with this have not be on at as but they we my your will can from do what a an about make me i or if so how please give write tell show list its our their has had were been would should could which who when where there than then them into out up',
     es: 'el la los las de que y en un una es por con para no se su al lo como más pero esto está son muy también hay',
     fr: 'le la les des et est un une que pour dans qui pas ne sur au avec ce se vous nous mais sont être très aussi',
     de: 'der die das und ist nicht ein eine zu mit für auf den dem von ich sie wir aber auch sind wird noch sehr',
@@ -56,6 +56,12 @@
     const re = SCRIPTS[code]; if (!re) return 1;
     const all = NONSPACE(text); return all ? Math.min(1, count(text, re) / all) : 0;
   }
-  const api = { LANGS, byCode, detect, scriptShare };
+  // true when a Latin-script text clearly looks like another language than English (accents or that language's common words beat English)
+  function latinOther(text) {
+    const t = String(text || '').toLowerCase(), words = t.match(/[a-zà-ÿğışİœ]+/g) || [], sc = {};
+    Object.keys(SETS).forEach(k => { let s = 0; for (const w of words) if (SETS[k].has(w)) s++; s += Math.min(3, count(t, HINTS[k] || /$^/g) * 0.5); sc[k] = s; });
+    return Object.keys(sc).some(k => k !== 'en' && sc[k] > sc.en);
+  }
+  const api = { LANGS, byCode, detect, scriptShare, latinOther };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else window.StickyLangs = api;
 })();

@@ -32,7 +32,13 @@ const SYS_CHAT =
 // The language the user is writing in now: the latest message that is clear enough, looking back at most 3 of their messages. null = not sure.
 function chatLanguage(messages) {
   const us = (messages || []).filter(m => m && m.role === 'user' && typeof m.content === 'string').reverse().slice(0, 3);
-  for (const m of us) { const d = LG.detect(m.content); if (d) return d; }
+  if (!us.length) return null;
+  const d0 = LG.detect(us[0].content); if (d0) return d0;
+  // The latest message is not clear. If it is written in Latin letters it is NOT Greek, so an older Greek message must not decide: guess English
+  // (the most likely) or, if it has no words at all, stay unsure. Only a message with no letters of its own (a number, an emoji) looks back.
+  const mine = us[0].content, lat = (mine.match(/[A-Za-z\u00C0-\u024F]/g) || []).length, other = (mine.match(/[\u0370-\u03FF\u1F00-\u1FFF\u0400-\u04FF\u0600-\u06FF\u3040-\u9FFF]/g) || []).length;
+  if (lat >= 3 && !other) { const ws = mine.toLowerCase().match(/[a-z]+/g) || []; return ws.length >= 3 && !LG.latinOther(mine) ? LG.byCode('en') : null; }
+  for (const m of us.slice(1)) { const d = LG.detect(m.content); if (d) return d; }
   return null;
 }
 // Small local models drift into the language of the notes or of the Greek rules. This goes at the END of the instructions (where it counts most)

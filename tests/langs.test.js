@@ -27,6 +27,8 @@ const U = c => ({ role: 'user', content: c }), AS = c => ({ role: 'assistant', c
 assert.strictEqual(A.chatLanguage([U('Καλημέρα, τι κάνεις σήμερα;'), AS('Καλά'), U('What did I write about the dentist and the team?')]).code, 'en', 'English after Greek');
 assert.strictEqual(A.chatLanguage([U('What did I write about the dentist and the team?'), AS('x'), U('Τι έγραψα για τον οδοντίατρο σήμερα;')]).code, 'el');
 assert.strictEqual(A.chatLanguage([U('Please plan the day for the team and for me'), AS('x'), U('ok')]).code, 'en', 'a vague last message uses the one before');
+assert.strictEqual(A.chatLanguage([U('Καλημέρα, τι κάνεις σήμερα;'), AS('x'), U('Make a note with a few paragraphs and a checklist about the greek goverment')]).code, 'en', 'a Greek topic in an English sentence stays English');
+assert.strictEqual(A.chatLanguage([U('Καλημέρα, τι κάνεις σήμερα;'), AS('x'), U('hola, como estas')]), null, 'unsure Latin text never falls back to Greek');
 assert.strictEqual(A.chatLanguage([U('ok')]), null); assert.strictEqual(A.chatLanguage([]), null);
 assert.ok(/writing in English\. Answer in English/.test(A.chatLanguageRule(L.byCode('en'))) && /Greek/.test(A.chatLanguageRule(L.byCode('el'))) && /latest message/.test(A.chatLanguageRule(null)));
 assert.ok(/Answer in English/.test(A.chatLanguageTail(L.byCode('en'))) && A.chatLanguageTail(null) === '');
