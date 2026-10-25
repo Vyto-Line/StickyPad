@@ -32,10 +32,10 @@
 ## Rule (Alex, 2026-10-23): 1.15.x releases are for small things and fixes; bigger features go to 1.16 and later.
 
 ## Planned for 1.15.1 (Alex, 2026-10-23; planning only, nothing built)
-1. **AI and note interaction polish.** Alex will send his list of what felt rough; then a plan (and a mockup first where the look changes).
+1. **AI and note interaction polish.** Built 2026-10-25 (Alex approved the two mockup ideas): the finish bar says how many parts changed; the AI row shows whether the Ollama model is ready or loads when used. Alex may send more.
 2. **Make the snapping switch easier to find** (Settings > Notes, "Snap to sides"; off by default). Idea only so far: decide where it should be reachable from (for example a hint where snapping would help, or a quick link) and send a small mockup before building.
-3. **Printer error reason (optional small improvement):** when printing fails, say why (no printer, printer offline, cancelled) instead of a general message. Diagnose first: see what Electron reports on failure.
-4. **Measure the main process memory** (163 MB at rest in 1.15) before changing anything.
+3. ~~Printer error reason~~ (dropped by Alex 2026-10-25: the Windows print window already shows it). Was: **Printer error reason (optional small improvement):** when printing fails, say why (no printer, printer offline, cancelled) instead of a general message. Diagnose first: see what Electron reports on failure.
+4. ~~Measure the main process memory~~ (dropped by Alex 2026-10-25: a normal user never looks at it, so it would be clutter). Was: **Measure the main process memory** (163 MB at rest in 1.15) before changing anything.
 5. **Performance log trimming:** when the log passes its size limit, cut at a whole line (never in the middle of one) and keep the header (version, Windows, RAM). Check that the AI log trims the same way. Small test for both.
 6. Anything found while testing 1.15.0 that is not a release blocker.
 Not yet: updating the GitHub build helpers (Node 20 warning); Alex said "not yet".

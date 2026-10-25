@@ -33,6 +33,8 @@ const stream = chunks => ({ ok: true, status: 200, body: { getReader() { let i =
   await assert.rejects(O.runInstaller('x', () => { const e = new EventEmitter(); setImmediate(() => e.emit('exit', 5)); return e; }), /code 5/);
   assert(O.findOllama({ LOCALAPPDATA: 'C:\\L' }, () => false) === null); assert(O.findOllama({ LOCALAPPDATA: 'C:\\L' }, p => /ollama app/.test(p)));
   assert(O.startOllama({ LOCALAPPDATA: 'C:\\L' }, sp, () => true) === true); assert(O.startOllama({}, sp, () => false) === false);
+  assert.deepStrictEqual(await O.loaded('http://x', async () => ({ ok: true, json: async () => ({ models: [{ name: 'qwen3:14b' }] }) })), ['qwen3:14b'], 'which models are loaded in memory right now');
+  assert.strictEqual(await O.loaded('http://x', async () => { throw new Error('no'); }), null, 'unknown when Ollama cannot be reached');
   let k = 0; assert(await O.waitUntilRunning('u', 5, 1, async () => ({ running: ++k >= 3 }))); assert(!(await O.waitUntilRunning('u', 2, 1, async () => ({ running: false }))));
   console.log('ollama.js: all tests passed');
 })().catch(e => { console.error('FAIL', e); process.exit(1); });

@@ -1,6 +1,8 @@
 # Changelog
 
 ## 1.15.1
+- **The AI says when it is done, and how much it changed.** After the AI edits a whole note, the bar now says for example "Done: 4 parts changed" (or "Done: nothing needed changing") with **Undo**, instead of just "Done".
+- **The AI row shows whether the model is ready.** With Ollama, a small line under the AI heading says for example "Qwen3 14B · ready" (green dot), or "Qwen3 14B · loads when you use it" (empty circle) so you know the first answer may take a moment while the model loads.
 - **The snapping switch is easier to find.** In *Settings > Notes* the snapping rows now sit together under a "Snapping" heading, and "Snap to the sides of the screen (half and full screen)" is marked *off by default* so it is not mistaken for the older "Snap to edges and other notes" row. You can also type `>snap` in the Finder (Ctrl+Alt+F) to turn it on or off (it says whether it is on right now). The first time you let go of a note at the left, right or top edge of the screen while it is off, the note shows a small bar, "Snap to half screen?", with **Settings** and **No thanks**. It appears once and never turns anything on by itself.
 
 ## 1.15.0

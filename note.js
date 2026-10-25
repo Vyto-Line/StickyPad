@@ -951,18 +951,20 @@ async function editSegment(mode, t, label) {
 let job = null;
 async function editWhole(mode, nodes) {
   job = { pre: cur, failed: false };
-  const total = nodes.length; let i = 0;
+  const total = nodes.length; let i = 0, changed = 0;
   try {
     for (const node of nodes) {
       i++;
       if (!node.isConnected || !node.textContent.trim()) continue;
+      const before = ed.textContent;
       const range = document.createRange(); range.selectNodeContents(node);
       await editSegment(mode, { range, text: node.textContent, inTodo: node.nodeType === 1 }, total > 1 ? 'Editing ' + i + ' of ' + total + '…' : 'Editing…');
       if (job.failed) return;
+      if (ed.textContent !== before) changed++;
     }
     if (window.StickyAccess) StickyAccess.announce('The AI has finished editing the note.');
     ed.focus(); mark(); queue(); commitNow(); saveNow();
-    editBarShow('done', 'Done');
+    editBarShow('done', changed === 0 ? 'Done: nothing needed changing' : total < 2 ? 'Done' : 'Done: ' + (changed === total ? changed : changed + ' of ' + total) + (changed === 1 ? ' part' : ' parts') + ' changed');
   } finally { job = null; }
 }
 function editPaint() {
@@ -1058,6 +1060,17 @@ function updateAiButtons() {
 }
 // Tells you right away when the chosen Ollama model has not been downloaded, instead of failing on the first request.
 let modelCheckBusy = false;
+// "Qwen3 14B · ready" / "loads when you use it": tells you whether the first answer will be quick. (qwen3:14b -> Qwen3 14B)
+const niceModel = n => String(n || '').replace(/:latest$/, '').replace(/^[a-z]/, c => c.toUpperCase()).replace(/:/g, ' ').replace(/(\d+(?:\.\d+)?)b\b/gi, '$1B');
+function aiLoadShow(st, lo) {
+  const el = $('#aiLoad'), c = aiCfgState; if (!el) return;
+  if (!c || c.provider !== 'ollama' || !c.model || !st || !st.running) { el.hidden = true; return; }
+  const ready = Array.isArray(lo) && lo.some(n => n === c.model || n === c.model + ':latest');
+  el.className = 'aiload' + (ready ? '' : ' wait'); el.textContent = '';
+  const dot = document.createElement('i'); dot.setAttribute('aria-hidden', 'true');
+  el.append(dot, document.createTextNode(niceModel(c.model) + ' · ' + (ready ? 'ready' : 'loads when you use it')));
+  el.hidden = false;
+}
 async function modelCheck() {
   const c = aiCfgState; if (modelCheckBusy || !c || c.provider !== 'ollama' || !c.model) return;
   modelCheckBusy = true;
@@ -1065,6 +1078,8 @@ async function modelCheck() {
     const st = await api.ollamaStatus(c.url);
     if (!aiCfgState || aiCfgState.provider !== 'ollama' || bodyLocked()) return;
     const has = n => st && st.models && st.models.some(m => m.name === n || m.name === n + ':latest');
+    const lo = st && st.running ? await api.ollamaLoaded(c.url) : null;
+    if (aiCfgState && aiCfgState.provider === 'ollama' && !bodyLocked()) aiLoadShow(st, lo);
     if (st && !st.running) { $('#aiHint').textContent = 'Ollama is not running. Press Start under Model and connection below.'; $('#aiSetup').open = true; }
     else if (st && st.running && !has(aiCfgState.model)) { $('#aiHint').textContent = 'The model "' + aiCfgState.model + '" is not installed yet. Pick it under Model and connection below and press Download.'; $('#aiSetup').open = true; }
   } catch (e) {} finally { modelCheckBusy = false; }

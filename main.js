@@ -1285,6 +1285,7 @@ ipcMain.handle('ollama:status', async (e, url) => {
     models: st.models, recommended: ollama.RECOMMENDED,
     pulling: [...olJobs.keys()].filter(k => k.startsWith('pull:')).map(k => k.slice(5)), installing: olJobs.has('install') };
 });
+ipcMain.handle('ollama:loaded', async (e, url) => ollama.loaded(olUrl(url)));
 ipcMain.handle('ollama:start', async (e, url) => {
   const u = olUrl(url);
   if ((await ollama.status(u)).running) return { ok: true };

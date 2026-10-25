@@ -333,3 +333,8 @@ html.a11y-motion.quiet header{transition:none}
 #aiSetup{margin-top:2px}
 #aiSetup>summary{min-height:30px;font-size:12.5px}
 #aiSetup>.pbody.inner{padding:6px 2px 6px}
+
+.aiload{display:flex;align-items:center;gap:6px;margin:0 0 6px;font-size:12px;color:var(--mute,#575a62)}
+.aiload[hidden]{display:none}
+.aiload i{width:8px;height:8px;border-radius:50%;flex:none;background:#2fa84f}
+.aiload.wait i{background:transparent;border:1.5px solid currentColor;box-sizing:border-box}

@@ -45,6 +45,7 @@
     aiGet: async () => ({ ...S.ai }),
     aiSet: async p => { S.calls.push(['aiSet', p]); Object.assign(S.ai, p.provider ? { provider: p.provider } : {}, p.model != null ? { model: p.model } : {}, p.url ? { url: p.url } : {}); return true; },
     ollamaStatus: async () => JSON.parse(JSON.stringify(S.ol)),
+    ollamaLoaded: async () => (S.loaded === undefined ? [] : S.loaded),
     ollamaStart: async () => { S.calls.push(['start']); await new Promise(r => setTimeout(r, 50)); S.ol.running = true; return { ok: true }; },
     ollamaPull: async (name) => {
       S.calls.push(['pull', name]);
