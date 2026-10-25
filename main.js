@@ -72,7 +72,7 @@ let file, saveTimer, allTimer, firstRun = false, DATA = null, dirty = false, las
 const dataDir = () => DATA || app.getPath('userData');
 const DEFAULT_SETTINGS = {
   hideTaskbar: true, snap: true, launch: 'notes', splash: true, name: '', lang: 'en', theme: 'classic',
-  snapDistance: 10, snapSides: false, defaultSize: 16, trashDays: 30, shortcuts: true, keys: {}, chatHistory: true, autoBackup: true, lastBackup: 0, autoUpdate: true, whatsNew: true, seenVersion: '',
+  snapDistance: 10, snapSides: false, snapHintSeen: false, defaultSize: 16, trashDays: 30, shortcuts: true, keys: {}, chatHistory: true, autoBackup: true, lastBackup: 0, autoUpdate: true, whatsNew: true, seenVersion: '',
   print: { single: { style: 'box', layout: 'actual', size: 'normal', title: true, pictures: true }, many: { style: 'plain', layout: 'flow', size: 'normal', title: true, pictures: true } },   // Print options window: remembered choices
   ai: { provider: 'off', model: '', url: 'http://localhost:11434', keyEnc: '', keepAlive: '5m' },
   access: { size: 100, contrast: false, read: false, motion: false, focus: false, big: false, sr: false },   // Settings > Accessibility: everything is off until you switch it on
@@ -236,6 +236,20 @@ function pick(cur, cands) {
 // Snap to the sides of the screen (Settings > Notes, off by default) is Windows' own snapping, the same one the Home window has:
 // notes are frameless and their "maximize" is switched off, which also switches Windows' snapping off. This turns it back on for a note when the setting is on.
 // (A rolled-up note has a fixed height and a see-through note cannot be snapped by Windows, so those two stay as they are.)
+// Once, ever: when a note is let go at the left, right or top edge of the screen while "Snap to the sides" is off, the note offers to show where the setting is.
+// It never turns anything on by itself.
+function nearSideEdge(b, wa, tol = 14) { return b.x <= wa.x + tol || b.x + b.width >= wa.x + wa.width - tol || b.y <= wa.y + tol; }
+function maybeSnapHint(id, w) {
+  try {
+    if (settings.snapSides || settings.snapHintSeen || !notes[id] || notes[id].rolled || seeThrough.get(id) || w.isDestroyed()) return;
+    const b = w.getBounds(), wa = screen.getDisplayNearestPoint({ x: b.x + Math.round(b.width / 2), y: b.y + Math.round(b.height / 2) }).workArea;
+    if (!nearSideEdge(b, wa)) return;
+    settings.snapHintSeen = true; save();
+    w.webContents.send('note:snaphint');
+  } catch {}
+}
+ipcMain.handle('snaphint:answer', (e, open) => { settings.snapHintSeen = true; save(); if (open) openSettings('notes'); return true; });
+function setSnapSides(on) { settings.snapSides = !!on; wins.forEach((w, id) => snapAbility(id)); save(); }
 const canSnap = id => !!settings.snapSides && !!notes[id] && !notes[id].rolled && !seeThrough.get(id);
 function snapAbility(id) {
   const w = wins.get(id); if (!w || w.isDestroyed()) return;
@@ -369,9 +383,11 @@ function openNote(n) {
   w.on('moved', () => {   // fires once when you release the note, so nothing tugs at it while you drag
     keep(true);
     if (w.isDestroyed()) return;
-    if (!settings.snap) return;
-    const nb = w.getBounds(), p = snapPos(w, nb);
-    if (p.x !== nb.x || p.y !== nb.y) w.setPosition(p.x, p.y);
+    if (settings.snap) {
+      const nb = w.getBounds(), p = snapPos(w, nb);
+      if (p.x !== nb.x || p.y !== nb.y) w.setPosition(p.x, p.y);
+    }
+    maybeSnapHint(n.id, w);
   });
   w.on('focus', focusguard.guard(w));
   const cid = w.webContents.id;
@@ -1068,7 +1084,7 @@ const titleOf = n => n.title || String(n.text || '').trim().split('\n')[0].slice
 ipcMain.handle('search:query', (e, q) => {
   q = String(q == null ? '' : q).slice(0, 200);
   const byId = id => notes[id];
-  const cmds = commands.match(q).map(c => ({ cmd: c.id, title: [{ t: c.label, h: false }], snippet: [{ t: c.hint, h: false }] }));
+  const cmds = commands.match(q).map(c => ({ cmd: c.id, title: [{ t: c.label, h: false }], snippet: [{ t: c.hint + (c.id === 'snap-sides-toggle' ? '. Now: ' + (settings.snapSides ? 'on' : 'off') : ''), h: false }] }));
   if (q.trim().startsWith('>')) return cmds;
   return cmds.concat(search.search(searchIx, allNotes(), q, { max: 40 }).map(r => {
     const n = byId(r.id); if (!n) return null;
@@ -1102,6 +1118,7 @@ function runCommand(id) {
     case 'welcome': openWelcome(); break;
     case 'settings-general': case 'settings-appearance': case 'settings-notes': case 'settings-shortcuts': case 'settings-access': case 'settings-folders': case 'settings-about': openSettings(id.slice(9)); break;
     case 'access-contrast': case 'access-big': case 'access-motion': case 'access-focus': case 'access-read': case 'access-sr': { const k = id.slice(7); setAccess({ [k]: !accessOf()[k] }); break; }
+    case 'snap-sides-toggle': setSnapSides(!settings.snapSides); try { new Notification({ title: 'StickyPad', body: 'Snapping notes to the sides of the screen is now ' + (settings.snapSides ? 'on.' : 'off.') }).show(); } catch {} break;
     case 'quiet-toggle': setQuiet({ mode: quietOf().mode === 'off' ? 'away' : 'off' }); break;
     case 'access-bigger': case 'access-smaller': {
       const i = ACCESS_SIZES.indexOf(accessOf().size); setAccess({ size: ACCESS_SIZES[Math.max(0, Math.min(ACCESS_SIZES.length - 1, i + (id === 'access-bigger' ? 1 : -1)))] }); break;
@@ -1693,7 +1710,7 @@ ipcMain.handle('settings:set', (e, p) => {
   if (p) {
     if ('hideTaskbar' in p) setHide(p.hideTaskbar);
     if ('snap' in p) setSnap(p.snap);
-    if ('snapSides' in p) { settings.snapSides = !!p.snapSides; wins.forEach((w, id) => snapAbility(id)); }
+    if ('snapSides' in p) setSnapSides(p.snapSides);
     if ('startup' in p) setStartup(p.startup);
     if (Number.isFinite(p.snapDistance)) settings.snapDistance = clampInt(p.snapDistance, 4, 40);
     if (Number.isFinite(p.defaultSize)) settings.defaultSize = clampInt(p.defaultSize, 10, 48);

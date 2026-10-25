@@ -636,6 +636,9 @@ function dateCheck() {
   $('#dateTxt').title = 'Set a reminder for ' + label;
   bar.hidden = false;
 }
+api.onSnapHint(() => { $('#snapbar').hidden = false; });
+$('#snapOpen').onclick = () => { $('#snapbar').hidden = true; api.snapHintAnswer(true); };
+$('#snapNo').onclick = () => { $('#snapbar').hidden = true; api.snapHintAnswer(false); };
 $('#dateSet').onclick = async () => { if (!dateFound) return; const f = dateFound; $('#datebar').hidden = true; await remindSet(f.at); };
 $('#dateNo').onclick = () => { if (dateFound) dateDismissed.add(dateFound.text + '|' + dateFound.at); $('#datebar').hidden = true; dateFound = null; };
 var lookTimer = 0;

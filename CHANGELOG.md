@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.15.1
+- **The snapping switch is easier to find.** In *Settings > Notes* the snapping rows now sit together under a "Snapping" heading, and "Snap to the sides of the screen (half and full screen)" is marked *off by default* so it is not mistaken for the older "Snap to edges and other notes" row. You can also type `>snap` in the Finder (Ctrl+Alt+F) to turn it on or off (it says whether it is on right now). The first time you let go of a note at the left, right or top edge of the screen while it is off, the note shows a small bar, "Snap to half screen?", with **Settings** and **No thanks**. It appears once and never turns anything on by itself.
+
 ## 1.15.0
 - **Snap a note to the sides of the screen (new, off by default: Settings > Notes).** Notes now snap the way the Home window does, with Windows' own snapping: drag a note to the left or right edge and it fills that half of the screen (Windows shows a preview first), drag it to the top edge and it fills the whole screen. Drag it away and it gets its old size back. Double-clicking a note's title bar also fills the screen, and again to go back. Rolled-up notes and see-through (transparent) notes cannot snap. The taskbar stays visible.
 - **The first-start tour has a new step, "Tidy your desk"**, about snapping notes to the sides of the screen and hiding their buttons when idle (it explains them and opens *Settings > Notes*; it never switches anything on). The AI step now mentions chatting about a note, translating and the chat list. You can see the tour again any time from *Settings > About*.

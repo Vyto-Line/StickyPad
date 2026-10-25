@@ -144,3 +144,7 @@ html.a11y-big .apbar{height:46px}html.a11y-big .api{width:34px;height:36px;font-
 html.a11y-hc .api{border:1.5px solid #000;opacity:1}
 html.a11y-read .aprev{font-family:Verdana,Tahoma,"Segoe UI",sans-serif;letter-spacing:.04em;word-spacing:.12em;line-height:1.85}
 html.a11y-hc .aprev{border:2px solid #000;color:#000;box-shadow:none}
+
+.grp{margin:14px 0 6px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mute,#6b6f78)}
+.grp:first-of-type{margin-top:2px}
+.tag{display:inline-block;margin-left:8px;padding:1px 7px;border-radius:8px;font-style:normal;font-size:11px;font-weight:600;background:var(--tint,#e6ecff);color:var(--accent,#2f54d6)}

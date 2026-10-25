@@ -179,7 +179,7 @@ body.rolled #aibox{display:none}
   body.dock:has(#panel:not([hidden])) > #aibox{grid-column:1;grid-row:4}
   body.dock:has(#panel:not([hidden])) > #lockscreen{grid-column:1;grid-row:5}
   body.dock:has(#panel:not([hidden])) > #ed{grid-column:1;grid-row:6;min-height:0}
-  body.dock:has(#panel:not([hidden])) > #datebar{grid-column:1;grid-row:7}
+  body.dock:has(#panel:not([hidden])) > #datebar,body.dock:has(#panel:not([hidden])) > #snapbar{grid-column:1;grid-row:7}
   body.dock:has(#panel:not([hidden])) > #panel{grid-column:2;grid-row:2/8;max-height:none;border-bottom:0;border-left:1px solid var(--line)}
 }
 
@@ -242,11 +242,13 @@ body.hasRemind #cfg::after{content:"";position:absolute;width:6px;height:6px;mar
 ::highlight(links){color:#0b62d6;text-decoration:underline}
 body.dark ::highlight(links){color:#7db3ff;text-decoration:underline}
 #ed.linkhover{cursor:pointer}
-#datebar{flex:none;display:flex;align-items:center;gap:6px;padding:5px 8px;background:var(--tint);border-top:1px solid var(--line);font-size:12.5px}
-#datebar[hidden]{display:none}
+#datebar,#snapbar{flex:none;display:flex;align-items:center;gap:6px;padding:5px 8px;background:var(--tint);border-top:1px solid var(--line);font-size:12.5px}
+#datebar[hidden],#snapbar[hidden]{display:none}
 #datebar #dateTxt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #datebar .btn{flex:none;padding:3px 8px;font-size:11.5px}
-body.rolled #datebar{display:none}
+#snapbar>span:nth-of-type(2){flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#snapbar .btn{flex:none;padding:3px 8px;font-size:11.5px}
+body.rolled #datebar,body.rolled #snapbar{display:none}
 
 /* find in note */
 #findbar{flex:none;display:flex;align-items:center;gap:3px;padding:4px 6px;background:var(--tint);border-bottom:1px solid var(--line)}

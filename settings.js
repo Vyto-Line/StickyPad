@@ -282,6 +282,7 @@ function showCat(id) {
 $$('#nav button').forEach(b => { b.onclick = () => { $('#sq').value = ''; filter(''); showCat(b.dataset.cat); }; });
 function filter(q) {
   q = q.trim().toLowerCase();
+  $$('.grp').forEach(g => { g.hidden = !!q; });   // the small headings only make sense when nothing is being searched for
   if (!q) { $$('.row,.frow').forEach(r => { r.hidden = false; }); const on = ($('#nav button.on') || {}).dataset; showCat(on ? on.cat : 'general'); return; }
   let any = false;
   $$('.cat').forEach(c => {
