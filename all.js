@@ -147,7 +147,7 @@ function draw() {
   // until its answer arrives, the cards are filtered by what they show.
   const match = n => !q || (hits && hitsFor === raw ? hits.has(n.id) : (n.title + ' ' + n.text).toLowerCase().includes(q));
   const shown = data.notes.filter(match).length;
-  $('#count').textContent = total ? (q ? shown + ' of ' + total + ' notes' : total + (total === 1 ? ' note' : ' notes')) + ' · right-click for more' : 'No notes yet';
+  $('#count').textContent = total ? (q ? shown + ' of ' + total + ' notes' : total + (total === 1 ? ' note' : ' notes')) : 'No notes yet';
   if (folder !== '*' && folder !== '-' && !data.groups.some(g => g.id === folder)) folder = '*';   // that folder was deleted
   drawChips(match);
   const box = $('#sections'); box.innerHTML = '';
