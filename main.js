@@ -104,7 +104,7 @@ function sanitizeBlocks(arr) {
     if (!b) continue;
     if (b.t === 'text' && typeof b.v === 'string' && b.v !== '') out.push({ t: 'text', v: b.v.slice(0, MAX_TEXT) });
     else if (b.t === 'check' && typeof b.v === 'string' && b.v.trim() !== '') out.push({ t: 'check', v: b.v.slice(0, 20000), done: !!b.done });   // empty items are dropped
-    else if (b.t === 'img' && typeof b.id === 'string' && IMG_ID.test(b.id)) out.push({ t: 'img', id: b.id });
+    else if (b.t === 'img' && typeof b.id === 'string' && IMG_ID.test(b.id)) { const w = Math.round(Number(b.w)); out.push(w >= 10 && w < 100 ? { t: 'img', id: b.id, w } : { t: 'img', id: b.id }); }   // w = how wide the picture is shown, in % of the note (no w = full width, as before)
   }
   return out;
 }
@@ -662,7 +662,7 @@ const canEditBody = n => !n.lock || sessions.has(n.id);
 ipcMain.handle('note:get', e => {
   const n = notes[idOf(e)]; if (!n) return null;
   const { lock, ...rest } = n;
-  const bs = canEditBody(n) ? blocksOf(n).map(b => b.t === 'img' ? { t: 'img', id: b.id, src: readImg(b.id) } : b).filter(b => b.t !== 'img' || b.src) : [];
+  const bs = canEditBody(n) ? blocksOf(n).map(b => b.t === 'img' ? { t: 'img', id: b.id, w: b.w, src: readImg(b.id) } : b).filter(b => b.t !== 'img' || b.src) : [];
   return { ...rest, solidOk: GPU_OK, blocks: bs, locked: !!lock, unlocked: sessions.has(n.id), imgBase: imgBase(), keys: curKeys(), suggestDates: settings.suggestDates !== false, predict: settings.predictWords !== false };
 });
 
@@ -794,7 +794,7 @@ function importFiles(files) {
       if (fs.statSync(f).size > MAX_IMPORT) { failed++; return; }
       const c = convert.fromMarkdown(convert.decodeText(fs.readFileSync(f), settings.lang === 'el'), f);
       let pics = 0;   // pictures written into the file by Export become picture files again (at most 100 per note)
-      const blocks = sanitizeBlocks(c.blocks.map(b => b.t !== 'img' ? b : (pics++ < 100 && b.data ? { t: 'img', id: saveImgData(b.data) } : null)));
+      const blocks = sanitizeBlocks(c.blocks.map(b => b.t !== 'img' ? b : (pics++ < 100 && b.data ? { t: 'img', id: saveImgData(b.data), w: b.w } : null)));
       const k = (Object.keys(notes).length + i) % 8;
       const { size_wh: wh, ...props } = metaToNote(c.meta);   // a .stickypad file also brings the note's colour, font, folder...
       const n = newNote({ ...props, title: c.title, blocks, text: textOf(blocks), bounds: cleanBounds({ x: 80 + k * 28, y: 80 + k * 28, width: wh && wh.width || 300, height: wh && wh.height || 320 }) });

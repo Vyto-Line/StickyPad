@@ -75,8 +75,9 @@ function apply() {
 const set = p => { Object.assign(note, p); apply(); api.update(p); };
 
 /* ---------- editor: text + pictures ---------- */
-function makeImg(id, src) {
+function makeImg(id, src, w) {
   const im = document.createElement('img');
+  if (w >= 10 && w < 100) { im.dataset.w = String(w); im.style.width = w + '%'; }
   srcCache.set(id, src);
   im.src = src; im.dataset.id = id; im.alt = 'Picture'; im.contentEditable = 'false'; im.draggable = false;
   return im;
@@ -153,7 +154,7 @@ function render(blocks) {
   ed.textContent = '';
   ed.spellcheck = !blocks.some(b => b.t === 'text' && b.v.length > 200000);   // checking the spelling of millions of letters makes a huge note crawl
   blocks.forEach(b => {
-    if (b.t === 'img') { const src = b.src || srcCache.get(b.id); if (src) ed.appendChild(makeImg(b.id, src)); }
+    if (b.t === 'img') { const src = b.src || srcCache.get(b.id); if (src) ed.appendChild(makeImg(b.id, src, b.w)); }
     else if (b.t === 'check') ed.appendChild(makeTodo(b.v, b.done));
     else if (b.v.length > BIG_TEXT) bigText(b.v);
     else ed.appendChild(document.createTextNode(b.v));
@@ -195,7 +196,7 @@ function serializeNow() {
     for (const c of node.childNodes) {
       if (c.nodeType === 3) add(c.nodeValue);
       else if (c.nodeName === 'BR') add('\n');
-      else if (c.nodeName === 'IMG') { flush(); if (c.dataset.id) blocks.push({ t: 'img', id: c.dataset.id }); }
+      else if (c.nodeName === 'IMG') { flush(); if (c.dataset.id) blocks.push(c.dataset.w ? { t: 'img', id: c.dataset.id, w: +c.dataset.w } : { t: 'img', id: c.dataset.id }); }
       else if (c.classList && c.classList.contains('todo')) {
         flush(); const tx = c.querySelector('.tx'), box = c.querySelector('input');
         if (tx) blocks.push({ t: 'check', v: tx.textContent, done: !!(box && box.checked) });
@@ -272,7 +273,41 @@ function addTodo() {
   if (cur) cur.after(t); else { r.deleteContents(); r.insertNode(t); }
   focusTodo(t); mark(); queue(); commitNow();
 }
-const clearSel = () => ed.querySelectorAll('img.sel').forEach(i => i.classList.remove('sel'));
+const clearSel = () => { ed.querySelectorAll('img.sel').forEach(i => i.classList.remove('sel')); picTools(); };
+/* ---------- resizing a picture: a round handle on its corner and a small size bar ---------- */
+const PIC_SIZES = [25, 50, 75, 100];
+let picDrag = null;
+function picWidth(im, w) {   // w in % of the note's text width; 100 (or more) = full width, as before
+  if (w >= 100) { delete im.dataset.w; im.style.width = ''; } else { w = Math.max(10, Math.round(w)); im.dataset.w = String(w); im.style.width = w + '%'; }
+  if (picDrag) picPlace(); else picTools();
+}
+function picPlace() {   // while dragging the handle stays (it holds the mouse); it only follows the corner
+  const im = picDrag.im, r = im.getBoundingClientRect(), h = $('#picTools .pichandle'), bar = $('#picTools .picbar');
+  if (h) { h.style.left = (r.right - 9) + 'px'; h.style.top = (r.bottom - 9) + 'px'; }
+  if (bar) { bar.style.left = Math.max(4, r.left) + 'px'; bar.style.top = Math.max(4, r.top - 40) + 'px'; }
+}
+function picSaved() { mark(); queue(); commitNow(); }
+function picTools() {
+  const old = $('#picTools'); if (old) old.remove();
+  const im = ed.querySelector('img.sel'); if (!im || bodyLocked()) return;
+  const r = im.getBoundingClientRect(), box = document.createElement('div'); box.id = 'picTools';
+  const cur = +im.dataset.w || 100;
+  const bar = document.createElement('div'); bar.className = 'picbar'; bar.setAttribute('role', 'group'); bar.setAttribute('aria-label', 'Picture size');
+  bar.style.left = Math.max(4, r.left) + 'px'; bar.style.top = Math.max(4, r.top - 40) + 'px';
+  PIC_SIZES.forEach(n => { const b = document.createElement('button'); b.type = 'button'; b.textContent = n === 100 ? 'Full' : n + '%'; b.setAttribute('aria-pressed', cur === n); b.onmousedown = e => e.preventDefault(); b.onclick = () => { picWidth(im, n); picSaved(); }; bar.appendChild(b); });
+  const h = document.createElement('div'); h.className = 'pichandle'; h.title = 'Drag to resize'; h.style.left = (r.right - 9) + 'px'; h.style.top = (r.bottom - 9) + 'px';
+  h.onpointerdown = e => { e.preventDefault(); h.setPointerCapture(e.pointerId); picDrag = { im, id: e.pointerId }; };
+  h.onpointermove = e => {
+    if (!picDrag) return;
+    const left = im.getBoundingClientRect().left, cs = getComputedStyle(ed), full = ed.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    const w = (e.clientX - left) / full * 100; picWidth(im, w >= 96 ? 100 : w);
+  };
+  h.onpointerup = h.onpointercancel = () => { if (picDrag) { picDrag = null; picSaved(); picTools(); } };
+  box.append(bar, h); document.body.appendChild(box);
+}
+ed.addEventListener('scroll', () => picTools(), { passive: true });
+window.addEventListener('resize', () => picTools());
+ed.addEventListener('dblclick', e => { if (e.target.tagName === 'IMG' && !bodyLocked() && e.target.dataset.w) { picWidth(e.target, 100); picSaved(); } });
 
 // the settings popover closes as soon as you go back to typing
 ed.addEventListener('focus', () => { const p = $('#panel'); if (!p.hidden && !document.body.classList.contains('dock')) {   // when the panel sits beside the text it stays open
@@ -361,7 +396,7 @@ ed.addEventListener('mousedown', e => { if (e.target.closest && e.target.closest
 ed.addEventListener('click', e => {
   const x = e.target.closest && e.target.closest('.todo .x');
   if (x) { removeTodo(x.closest('.todo')); return; }
-  clearSel(); if (e.target.tagName === 'IMG') e.target.classList.add('sel');
+  clearSel(); if (e.target.tagName === 'IMG') { e.target.classList.add('sel'); picTools(); }
 });
 // What to paste as text: cells copied from Excel come with a trailing line break that would add an empty line.
 function pasteText(cd) {

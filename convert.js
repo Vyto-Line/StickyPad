@@ -18,7 +18,7 @@ function body(blocks, md, image) {
       const next = blocks[i + 1];
       out.push(next && next.t !== 'text' ? b.v.replace(/\n$/, '') : b.v);
     } else if (b.t === 'check') out.push(lineOf(b, md));
-    else if (b.t === 'img' && md && image) { const u = image(b.id); if (u) out.push('', '![](' + u + ')', ''); }
+    else if (b.t === 'img' && md && image) { const u = image(b.id); if (u) out.push('', '![' + (b.w >= 10 && b.w < 100 ? 'w=' + Math.round(b.w) : '') + '](' + u + ')', ''); }
   });
   return out.join('\n').replace(/\n{3,}/g, '\n\n').trim();
 }
@@ -76,7 +76,7 @@ function fromMarkdown(text, fileName) {
     const wasImg = afterImg; afterImg = false;
     // a picture written as ![](data:image/png;base64,...) (what Export writes) -> a picture block; main saves the file
     const im = IMG_LINE.exec(ln);
-    if (im) { if (buf.length && !buf[buf.length - 1].trim()) buf.pop(); flush(); blocks.push({ t: 'img', data: im[1] }); afterImg = true; continue; }
+    if (im) { if (buf.length && !buf[buf.length - 1].trim()) buf.pop(); flush(); const wm = /^\s*!\[w=(\d{2})\]/.exec(ln); blocks.push(wm ? { t: 'img', data: im[1], w: +wm[1] } : { t: 'img', data: im[1] }); afterImg = true; continue; }
     if (wasImg && !ln.trim()) continue;   // the blank line Export puts after a picture
     const m = /^\s*[-*+]\s+\[([ xX])\]\s+(.*)$/.exec(ln) || /^\s*\[([ xX])\]\s+(.*)$/.exec(ln);
     if (m && m[2].trim()) { flush(); blocks.push({ t: 'check', v: m[2].trim(), done: m[1] !== ' ' }); }
