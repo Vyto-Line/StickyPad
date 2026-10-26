@@ -197,12 +197,15 @@ const H = require('./fake-electron');
   // ---- pictures travel inside exported notes ----
   const PNGB = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64');
   const pic = await mk('With picture', 'caption'); const pid = await h['img:save'](pic.ee, 'data:image/png;base64,' + PNGB.toString('base64')); assert.ok(pid, 'picture saved');
-  await h['note:update'](pic.ee, { blocks: [{ t: 'text', v: 'caption\n' }, { t: 'img', id: pid }, { t: 'text', v: 'end' }] });
+  await h['note:update'](pic.ee, { blocks: [{ t: 'text', v: 'caption\n' }, { t: 'img', id: pid, w: 40 }, { t: 'text', v: 'end' }] });
+  assert.strictEqual((await h['note:get'](pic.ee)).blocks.find(b => b.t === 'img').w, 40, 'the picture size is kept');
+  await h['note:update'](pic.ee, { blocks: [{ t: 'img', id: pid, w: 3 }, { t: 'img', id: pid, w: 100 }, { t: 'img', id: pid, w: 'x' }] }); assert.ok((await h['note:get'](pic.ee)).blocks.every(b => b.w === undefined), 'silly sizes (too small, full, not a number) are dropped');
+  await h['note:update'](pic.ee, { blocks: [{ t: 'text', v: 'caption\n' }, { t: 'img', id: pid, w: 40 }, { t: 'text', v: 'end' }] });
   electron.__save = path.join(tmp, 'pic.stickypad'); const px = await h['note:export'](pic.ee); assert.ok(px.ok && px.pics === 1 && px.picsLeftOut === 0, JSON.stringify(px));
-  const pfile = fs.readFileSync(electron.__save, 'utf8'); assert.ok(pfile.includes('![](data:image/png;base64,' + PNGB.toString('base64') + ')'), 'the picture is inside the file'); assert.ok(pfile.startsWith('---\nstickypad: 1\n') && pfile.includes('\n# With picture\n'));
+  const pfile = fs.readFileSync(electron.__save, 'utf8'); assert.ok(pfile.includes('![w=40](data:image/png;base64,' + PNGB.toString('base64') + ')'), 'the picture is inside the file'); assert.ok(pfile.startsWith('---\nstickypad: 1\n') && pfile.includes('\n# With picture\n'));
   electron.__save = path.join(tmp, 'pic.txt'); const pt = await h['note:export'](pic.ee); assert.ok(pt.ok && pt.picsLeftOut === 1 && !fs.readFileSync(electron.__save, 'utf8').includes('data:image'), 'plain text says the picture was left out');
   const wBefore = wins.length; electron.__open = [path.join(tmp, 'pic.stickypad')]; const pim = await h['settings:action']({}, 'importNotes'); assert.ok(pim.ok && pim.count === 1, JSON.stringify(pim));
-  const nw = wins[wins.length - 1], nn2 = await h['note:get'](H.ev(nw)); const pimg = nn2.blocks.find(b => b.t === 'img'); assert.ok(pimg && pimg.src, 'the imported note has a picture');
+  const nw = wins[wins.length - 1], nn2 = await h['note:get'](H.ev(nw)); const pimg = nn2.blocks.find(b => b.t === 'img'); assert.ok(pimg && pimg.src, 'the imported note has a picture'); assert.strictEqual(pimg.w, 40, 'the picture size travels in the exported file');
   const newId = decodeURIComponent(pimg.src.split('/').pop()); assert.ok(newId !== pid && fs.readFileSync(path.join(tmp, 'userData', 'images', newId)).equals(PNGB), 'a new picture file with the same bytes: ' + newId);
   assert.deepStrictEqual(nn2.blocks.map(b => b.t), ['text', 'img', 'text'], 'same layout');
   fs.writeFileSync(path.join(tmp, 'evil.stickypad'), '# Evil\n![x](data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=)\n![y](data:image/png;base64,@@@)\ntext\n'); electron.__open = [path.join(tmp, 'evil.stickypad')]; await h['settings:action']({}, 'importNotes');

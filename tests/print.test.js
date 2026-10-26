@@ -1,4 +1,5 @@
 const assert = require('assert'), P = require('../print');
+assert.ok(P.buildHtml('t', [{ t: 'img', id: 'abc123.png', w: 40 }, { t: 'img', id: 'abc123.png' }], 'file:///d/', 'Segoe UI').includes('style="width:40%"'), 'printing follows the picture size');
 const h = P.buildHtml('Plan <b>', [{ t: 'text', v: 'line 1\nline 2\n' }, { t: 'check', v: 'milk & eggs', done: true }, { t: 'check', v: 'bread', done: false }, { t: 'img', id: 'abc123.png' }, { t: 'img', id: '../evil.png' }, { t: 'text', v: '<script>x</script>' }], 'file:///data/images/', 'Segoe UI');
 assert.ok(h.includes('<h1>Plan &lt;b&gt;</h1>'), 'title escaped');
 assert.ok(h.includes('line 1\nline 2') && !h.includes('<script>'), 'text escaped, kept as written');
