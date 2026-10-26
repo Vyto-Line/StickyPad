@@ -396,11 +396,16 @@ function plainFrom(frag) {
   })(frag);
   return endNl ? out.replace(/\n$/, '') : out;
 }
+// What we put on the clipboard as "HTML": the plain text with every line break as <br>, and no styles. The browser's own copy writes the lines as
+// "\n" inside a pre-wrap span, which Teams, Word, mail and chat apps read as ONE line ("Alpha Bank 22 TX 18 RX"); it also carries the note's colour and font along.
+const escHtml = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const htmlFromPlain = t => '<div>' + escHtml(t).replace(/\r?\n/g, '<br>') + '</div>';
 function copyCut(e) {
   const sel = getSelection(); if (!sel.rangeCount || sel.isCollapsed || !ed.contains(sel.anchorNode)) return;
-  const r = sel.getRangeAt(0);
-  if (![...ed.querySelectorAll('.todo')].some(t => r.intersectsNode(t))) return;   // no checklist in the selection: the normal copy
-  e.preventDefault(); e.clipboardData.setData('text/plain', plainFrom(r.cloneContents()));
+  const r = sel.getRangeAt(0), frag = r.cloneContents();
+  if (frag.querySelector && frag.querySelector('img')) return;   // pictures in the selection: the normal copy
+  const text = plainFrom(frag);
+  e.preventDefault(); e.clipboardData.setData('text/plain', text); e.clipboardData.setData('text/html', htmlFromPlain(text));
   if (e.type === 'cut') document.execCommand('delete');
 }
 ed.addEventListener('copy', copyCut); ed.addEventListener('cut', copyCut);

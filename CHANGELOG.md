@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.15.2
+- **Fix: copied lines ran together in Teams and other apps.** Text copied from a note with several lines (for example "Alpha Bank", "22 TX", "18 RX" on three lines) pasted as one line ("Alpha Bank 22 TX 18 RX") into Teams, and could do the same in Word, mail and chat apps. The copy now gives those apps real line breaks, and it no longer drags the note's colour and font along. Pasting into Notepad or another note was already fine.
+
 ## 1.15.1
 - **The AI says when it is done, and how much it changed.** After the AI edits a whole note, the bar now says for example "Done: 4 parts changed" (or "Done: nothing needed changing") with **Undo**, instead of just "Done".
 - **The AI row shows whether the model is ready.** With Ollama, a small line under the AI heading says for example "Qwen3 14B · ready" (green dot), or "Qwen3 14B · loads when you use it" (empty circle) so you know the first answer may take a moment while the model loads.
