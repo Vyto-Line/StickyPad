@@ -85,6 +85,7 @@
       "icon.png",
       "tray.png",
       "datadir.js",
+      "logfile.js",
       "ollama.js",
       "ollamaui.js",
       "CHANGELOG.md",

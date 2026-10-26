@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, screen, globalShor
 const NT = nativeTheme || { shouldUseDarkColors: false, themeSource: 'system', on() {} };   // light/dark of Windows (and of our own windows)
 const ai = require('./ai');
 const ollama = require('./ollama');
+const logfile = require('./logfile');
 const datadir = require('./datadir');
 const updaterLib = require('./updater');
 const backup = require('./backup');
@@ -1505,22 +1506,14 @@ function initUpdater() {
 const updateLogFile = () => path.join(app.getPath('userData'), 'update.log');
 function updateLog(line) {
   try {
-    const f = updateLogFile(); let old = '';
-    try { old = fs.readFileSync(f, 'utf8'); } catch {}
-    if (old.length > 150000) old = old.slice(-100000);
-    const head = old ? '' : `StickyPad ${app.getVersion()} on ${process.platform} ${process.arch}\n`;
-    fs.writeFileSync(f, old + head + new Date().toISOString() + '  v' + app.getVersion() + '  ' + line + '\n');
+    logfile.append(updateLogFile(), `StickyPad ${app.getVersion()} on ${process.platform} ${process.arch}\n`, new Date().toISOString() + '  v' + app.getVersion() + '  ' + line);
   } catch {}
 }
 // What the AI did and what went wrong (Settings > AI > Open AI log). Prompts and answers are never written here, only sizes and timings.
 const aiLogFile = () => path.join(app.getPath('userData'), 'ai.log');
 function aiLog(line) {
   try {
-    const f = aiLogFile(); let old = '';
-    try { old = fs.readFileSync(f, 'utf8'); } catch {}
-    if (old.length > 150000) old = old.slice(-100000);
-    const head = old ? '' : `StickyPad AI log. Only sizes and timings are saved here, never your notes or the answers.\nStickyPad ${app.getVersion()} on ${process.platform} ${process.arch}\n`;
-    fs.writeFileSync(f, old + head + new Date().toISOString() + '  v' + app.getVersion() + '  ' + line + '\n');
+    logfile.append(aiLogFile(), `StickyPad AI log. Only sizes and timings are saved here, never your notes or the answers.\nStickyPad ${app.getVersion()} on ${process.platform} ${process.arch}\n`, new Date().toISOString() + '  v' + app.getVersion() + '  ' + line);
   } catch {}
 }
 ai.setLogger(aiLog);
@@ -1528,11 +1521,7 @@ ai.setLogger(aiLog);
 const perfLogFile = () => path.join(app.getPath('userData'), 'perf.log');
 function perfLog(line) {
   try {
-    const f = perfLogFile(); let old = '';
-    try { old = fs.readFileSync(f, 'utf8'); } catch {}
-    if (old.length > 150000) old = old.slice(-100000);
-    const head = old ? '' : `StickyPad performance log. Only slow moments are listed here (a window that took over 0.5 s to appear, a freeze of the app over 0.3 s, a save over 60 ms).\nStickyPad ${app.getVersion()} on ${process.platform} ${process.arch}, ${Math.round(require('os').totalmem() / 1073741824)} GB RAM\n`;
-    fs.writeFileSync(f, old + head + new Date().toISOString() + '  v' + app.getVersion() + '  ' + line + '\n');
+    logfile.append(perfLogFile(), `StickyPad performance log. Only slow moments are listed here (a window that took over 0.5 s to appear, a freeze of the app over 0.3 s, a save over 60 ms).\nStickyPad ${app.getVersion()} on ${process.platform} ${process.arch}, ${Math.round(require('os').totalmem() / 1073741824)} GB RAM\n`, new Date().toISOString() + '  v' + app.getVersion() + '  ' + line);
   } catch {}
 }
 const slowWindow = (what, t0) => { const ms = Date.now() - t0; if (ms > 500) perfLog('SLOW WINDOW  ' + what + ' took ' + ms + ' ms to appear  (notes ' + Object.keys(notes).length + ', file ' + (lastBytes / 1e6).toFixed(1) + ' MB, open windows ' + BrowserWindow.getAllWindows().length + ')'); };
