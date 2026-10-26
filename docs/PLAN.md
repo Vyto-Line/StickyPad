@@ -46,6 +46,8 @@ Not yet: updating the GitHub build helpers (Node 20 warning); Alex said "not yet
 3. **Finish Select mode in Home** (mockup sent 2026-10-23, waiting for Alex's changes): Export… and Colour ▾ for chosen notes; a "More ▾" menu with Open, Close, Pin, Unpin; a Select button in the Trash tab with Restore and Delete forever (asks first); dragging the chosen notes together ("3 notes") onto a folder or Trash. Locked notes can be moved or exported but not recoloured or deleted. Hidden until Select is pressed.
 4. **Sort by in Home** (Alex agreed 2026-10-23; no mockup yet): Last edited (today's order and the default), A to Z, Z to A, Colour (palette order), Open first. Pinned first. Remembered; applies inside each folder; Select all follows the order shown; only changes the list in Home, never the note windows. No "date created" because notes have no creation date (only if Alex wants it, for new notes only).
 
+5. **App language (translate StickyPad's own interface)** (Alex agreed 2026-10-26; mockup sent, nothing built). Greek first, English stays the default (or "Same as Windows"). The Settings row "Greeting language" becomes "Language" and covers the whole app (greeting too). All visible text moves into language files; Greek wording is a draft that Alex reviews; more languages and right-to-left later. Needs a test that every English string has a Greek one. Off by default: nobody sees a change unless they pick a language.
+
 
 ## Next
 1. Finish Select mode in Home: Export, Colour, Open/Close/Pin, Trash-tab Restore/Delete forever, drag a chosen group onto a folder or Trash.
