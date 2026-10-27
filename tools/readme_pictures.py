@@ -207,9 +207,11 @@ with sync_playwright() as p:
 
     # ---- animation: choosing a theme changes the whole app ----
     pg = sp('settings.html', 1030, 640, scale=1); pg.click('[data-cat=appearance]'); pg.wait_for_timeout(500)
-    ids = pg.evaluate("[...document.querySelectorAll('.th')].map(b=>b.dataset.id)"); fr = [grab(pg) for _ in range(4)]
-    for want in [i for i in ('purple', 'ocean', 'sunset', 'midnight', 'forest') if i in ids]:
-        pg.click('.th[data-id=%s]' % want); pg.wait_for_timeout(350); fr += [grab(pg) for _ in range(5)]
+    fr = [grab(pg) for _ in range(4)]
+    for want, dark in (('purple', False), ('ocean', False), ('sunset', False), ('midnight', True), ('forest', True), ('neon', True), ('classic', False)):
+        # the real app repaints every window with the theme's colours; in this stand-in page we do the same through the same function
+        pg.evaluate("([id,dark])=>{const T=window.StickyThemes;window.StickyUiTheme.paint({id,dark,vars:T.vars(id,dark)});document.querySelectorAll('.theme').forEach(b=>{const on=b.title.toLowerCase().startsWith(id);b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)})}", [want, dark])
+        pg.wait_for_timeout(300); fr += [grab(pg) for _ in range(5)]
     pg.close(); gif(fr, 'demo_themes', ms=140, hold=(1000,), width=720)
     b.close()
 print(sorted(f for f in os.listdir(OUT) if f.endswith('.gif')), [os.path.getsize(os.path.join(OUT, f)) // 1024 for f in sorted(os.listdir(OUT)) if f.endswith('.gif')])
