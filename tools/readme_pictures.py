@@ -135,5 +135,81 @@ with sync_playwright() as p:
     d = ImageDraw.Draw(bg); d.rectangle([0, (SH - TB) * SCALE, SW * SCALE, SH * SCALE], fill=(24, 28, 48, 235))
     for k in range(5): d.rounded_rectangle([(SW // 2 - 110 + k * 46) * SCALE, (SH - TB + 9) * SCALE, (SW // 2 - 110 + k * 46 + 28) * SCALE, (SH - 9) * SCALE], 6 * SCALE, fill=(90 + k * 20, 100 + k * 14, 150))
     bg.convert('RGB').resize((1280, 600), Image.LANCZOS).save(os.path.join(OUT, 'feature_snap.png'), optimize=True)
+
+    # ================= more pictures =================
+    def sp(f, w, h, extra='', scale=SCALE):
+        ctx = b.new_context(viewport={'width': w, 'height': h}, device_scale_factor=scale); pg = ctx.new_page(); pg.add_init_script(STUB)
+        if extra: pg.add_init_script(extra)
+        pg.goto('file://' + ROOT + '/' + f); pg.wait_for_timeout(600); return pg
+    def title(pg, label, x=14, y=10):   # no captions inside the app pictures: the README text explains them
+        return pg
+
+    # ---- the Finder (Ctrl+Alt+F): results in several languages, then an action ----
+    RES = """window.__RESULTS = q => {
+      const all = [
+        { id:'a', title:[{t:'Reiseplan',h:false}], snippet:[{t:'Fähre vor Freitag buchen. ',h:false},{t:'Budget',h:true},{t:' für Chania: 400 €',h:false}], color:'#B9E4FF', folder:'Trips', locked:false, pinned:true, updated:Date.now()-36e5 },
+        { id:'b', title:[{t:'Meeting notes',h:false}], snippet:[{t:'…talk about the ',h:false},{t:'budget',h:true},{t:' on Friday…',h:false}], color:'#FFF2A8', folder:'Work', locked:false, pinned:false, updated:Date.now()-5*36e5 },
+        { id:'c', title:[{t:'Προϋπολογισμός',h:false}], snippet:[{t:'Το ',h:false},{t:'budget',h:true},{t:' του έργου και τα έξοδα',h:false}], color:'#FFD1E3', folder:'', locked:false, pinned:false, updated:Date.now()-2*864e5 },
+        { id:'d', title:[{t:'Presupuesto',h:false}], snippet:[{t:'Revisar el ',h:false},{t:'presupuesto',h:true},{t:' antes del viernes',h:false}], color:'#D4F5C4', folder:'', locked:false, pinned:false, updated:Date.now()-4*864e5 }];
+      if (q.trim().startsWith('>')) return [{cmd:'snap-sides-toggle',title:[{t:'Snap to the sides of the screen',h:false}],snippet:[{t:'Now: off · half and full screen with Windows snapping',h:false}]},{cmd:'dark',title:[{t:'Dark mode',h:false}],snippet:[{t:'Switch the look to dark',h:false}]},{cmd:'tidy',title:[{t:'Tidy up notes',h:false}],snippet:[{t:'Arrange the open notes in rows',h:false}]}];
+      return q ? all.slice(0, 4) : all; };"""
+    pg = sp('quick.html', 640, 350, RES); pg.keyboard.type('budget'); pg.wait_for_timeout(500); snap(pg, 'feature_finder'); pg.close()
+    pg = sp('quick.html', 640, 350, RES, 1); fr = [grab(pg) for _ in range(4)]
+    for ch in 'budget':
+        pg.keyboard.type(ch); pg.wait_for_timeout(260); fr.append(grab(pg))
+    pg.wait_for_timeout(500); fr += [grab(pg) for _ in range(6)]
+    pg.keyboard.press('Control+a'); pg.keyboard.type('>sna'); pg.wait_for_timeout(500); fr += [grab(pg) for _ in range(8)]
+    pg.close(); gif(fr, 'demo_finder', ms=140, hold=(1500,), width=560)
+
+    # ---- word suggestions while you type ----
+    WORDS = "window.__WORDS=[{k:'meeting',w:'meeting',n:5},{k:'meetings',w:'meetings',n:3},{k:'memory',w:'memory',n:2}];"
+    pg = page(b, None, 340, 200, blocks=[], color='#FFF2A8', title='Mail', extra=WORDS)
+    pg.click('#ed'); pg.keyboard.type('Hi Nick, thanks for the mee'); pg.wait_for_timeout(300); snap(pg, 'feature_predict'); pg.close()
+
+    # ---- locking a note ----
+    pg = page(b, 'groceries', 660, 470); pg.click('#cfg'); pg.wait_for_timeout(250); pg.click('#rowLock > summary'); pg.wait_for_timeout(300)
+    pg.fill('#lockpw', 'secret-phrase'); pg.wait_for_timeout(200); snap(pg, 'feature_lock'); pg.close()
+
+    # ---- the first-start tour: three steps next to each other ----
+    steps = []
+    for k in range(2):
+        pg = sp('welcome.html', 520, 560)
+        for _ in range(k): pg.click('#next'); pg.wait_for_timeout(500)
+        pg.wait_for_timeout(900); steps.append(Image.open(io.BytesIO(pg.screenshot())).convert('RGB')); pg.close()
+    Wt = sum(i.width for i in steps) + 20 * SCALE; M = Image.new('RGB', (Wt, steps[0].height), (240, 240, 245)); x = 0
+    for i in steps: M.paste(i, (x, 0)); x += i.width + 20 * SCALE
+    M.resize((1400, round(1400 * M.height / M.width)), Image.LANCZOS).save(os.path.join(OUT, 'feature_tour.png'), optimize=True)
+
+    # ---- Settings > Notes: the snapping group ----
+    pg = sp('settings.html', 1030, 700); pg.click('[data-cat=notes]'); pg.wait_for_timeout(400); snap(pg, 'feature_settings_notes'); pg.close()
+
+    # ---- the Trash tab in Home ----
+    TR = """window.api.allList = async () => ({ emoji: '🌙', greeting: 'Good evening', notes: [
+      {id:'a',title:'Groceries',text:'For the weekend dinner',color:'#FFF2A8',group:null,updated:Date.now()-3e5,open:true}],
+      groups: [], trash: [
+      {id:'t1',title:'Old shopping list',text:'Milk, eggs, bread',color:'#FFF2A8',deletedAt:Date.now()-2*864e5},
+      {id:'t2',title:'Reiseplan (alt)',text:'Fähre buchen, Hotel suchen',color:'#B9E4FF',deletedAt:Date.now()-5*864e5},
+      {id:'t3',title:'Ιδέες',text:'Νέες ιδέες για το σπίτι',color:'#FFD1E3',deletedAt:Date.now()-12*864e5},
+      {id:'t4',title:'Meeting draft',text:'Agenda: budget, hiring',color:'#2E3440',deletedAt:Date.now()-20*864e5}], prefs: {} });"""
+    pg = sp('all.html', 900, 520, TR); pg.evaluate("document.querySelector('#tabTrash').click()"); pg.wait_for_timeout(500); snap(pg, 'feature_trash'); pg.close()
+
+    # ---- Tidy up: many notes arranged in rows on the desktop ----
+    keys = [('groceries', '#FFF2A8'), ('reise', '#B9E4FF'), ('photo', '#D4F5C4'), ('greek', '#FFD1E3'), ('dark', '#2E3440'), ('groceries', '#E6D5FF')]
+    cs = []
+    for key, col in keys:
+        pg = page(b, key, 340, 260, color=col); fit(pg, 20, 170); cs.append(rounded(Image.open(io.BytesIO(pg.screenshot())), 10)); pg.close()
+    TW, TH, G = 1280, 620, 22
+    bg = wallpaper(TW * SCALE, TH * SCALE); cw = 300 * SCALE
+    for i, c in enumerate(cs):
+        col, row = i % 3, i // 3; x = (40 + col * (340 + 40)) * SCALE; y = (40 + row * 290) * SCALE
+        sh, pad = shadow(c, 14, (0, 8), 90); bg.alpha_composite(sh, (x - pad, y - pad)); bg.alpha_composite(c, (x, y))
+    bg.convert('RGB').resize((1280, 620), Image.LANCZOS).save(os.path.join(OUT, 'feature_tidy.png'), optimize=True)
+
+    # ---- animation: choosing a theme changes the whole app ----
+    pg = sp('settings.html', 1030, 640, scale=1); pg.click('[data-cat=appearance]'); pg.wait_for_timeout(500)
+    ids = pg.evaluate("[...document.querySelectorAll('.th')].map(b=>b.dataset.id)"); fr = [grab(pg) for _ in range(4)]
+    for want in [i for i in ('purple', 'ocean', 'sunset', 'midnight', 'forest') if i in ids]:
+        pg.click('.th[data-id=%s]' % want); pg.wait_for_timeout(350); fr += [grab(pg) for _ in range(5)]
+    pg.close(); gif(fr, 'demo_themes', ms=140, hold=(1000,), width=720)
     b.close()
 print(sorted(f for f in os.listdir(OUT) if f.endswith('.gif')), [os.path.getsize(os.path.join(OUT, f)) // 1024 for f in sorted(os.listdir(OUT)) if f.endswith('.gif')])

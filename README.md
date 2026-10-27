@@ -38,6 +38,8 @@ Each note is its own small window on your desktop. Everything is stored on your 
 
 <img src="docs/images/feature_snap.png" width="560" alt="Two notes snapped to the left and right halves of the screen">
 
+<img src="docs/images/feature_tidy.png" width="560" alt="Six notes arranged in two rows by Tidy up notes"> <img src="docs/images/feature_settings_notes.png" width="560" alt="Settings, Notes page: the snapping options are grouped, with the half and full screen snapping marked off by default">
+
 The icons in the header, from the left: add a checklist item, pin, all notes, settings, roll up, close.
 
 ### Settings panel on the right
@@ -54,6 +56,8 @@ A search bar appears with **every match highlighted** and the current one in ora
 
 ### Text prediction
 After three letters of a word you have used before, a small list offers it. **Tab** finishes the word (Ctrl+Z takes back just that), **Up/Down** then **Enter** pick another, **Esc** closes it. It learns from your notes (never from locked ones) and works with Greek. Switch it off in *Settings > General*.
+
+<img src="docs/images/feature_predict.png" width="300" alt="A note where typing 'mee' offers the words meeting and meetings, with a Tab key hint">
 
 ### Reminders
 <img align="right" width="300" src="docs/images/feature_reminder.png" alt="The Note tab showing a reminder set for 5:55 PM">
@@ -79,13 +83,19 @@ A **.stickypad** file also keeps the note's look and settings (colour, font, siz
 ### Home: notes, trash, AI chat and settings in one window
 <img align="right" width="300" src="docs/images/feature_all.png" alt="The Home window with folders, coloured cards and the Support the project button">
 
+<img src="docs/images/feature_trash.png" width="560" alt="The Trash tab in Home: deleted notes with Restore and Delete forever buttons">
+
 Ctrl+Alt+Q, the tray icon, or the **house button** at the left of any note's title bar opens the **Home** window. A sidebar switches between **Notes** (every note as a card, with search, *Open all* per folder and *Tidy up*; **folder chips** show one folder at a time, and dropping a card on a chip moves the note there), **Trash**, **AI chat** (the chat, with a **list of your chats** on its left: open, rename, pin, save as a note, delete, search) and **Settings**. It is always the same one window, so nothing gets lost behind others. Closed notes are greyed out; click one to open it.
 
 ### Search all notes
 Press **Ctrl+Alt+F** (or *Search notes…* in the tray menu) from anywhere: a small search window opens in the middle of your screen. Type a few letters and the notes that contain **all** your words appear at once, best match first, each with a short piece of its text and the matching words marked. **Up and Down** choose, **Enter** opens the note, **Esc** (or a click elsewhere) closes it. It reads the **whole text** of every note, ignores capitals and accents (so *καλημερα* finds *Καλημέρα*), and notes with a lock are found by their title only. The search box in the Home window uses the same search.
 
+<img src="docs/images/demo_finder.gif" width="560" alt="Typing in the search window: matching notes in English, German, Greek and Spanish appear with the words highlighted, then an action is found by typing >sna">
+
 ### Lock
 Give a note a password (4+ characters) and its text is stored **encrypted (AES-256-GCM)**. It shows a lock screen until you enter the password. A forgotten password cannot be recovered. Pictures stay on disk unencrypted, but are hidden in the app.
+
+<img src="docs/images/feature_lock.png" width="560" alt="The Lock row in a note's panel with a password being typed">
 
 ### AI helper (off by default)
 <img align="right" width="300" src="docs/images/feature_chat_all.png" alt="The AI chat answering a question from all notes, with a Looked at line">
@@ -145,6 +155,8 @@ StickyPad remembers which screen each note is on. Unplug a monitor and its notes
 - **Automatic backups** once a day (the newest 7 are kept) and a *Back up now* button. **Restore from a backup** (same page) lists them and can add only the missing notes or replace everything (your current notes are kept first as `before-restore-…`).
 - **Ctrl+K** in any window opens search plus actions (type `>` for actions only).
 - **First-run welcome tour** with seven short steps (look, comfort, tidying your desk, finding notes, the AI, backups); open it again from *Settings > About*.
+
+  <img src="docs/images/feature_tour.png" width="560" alt="The first two steps of the welcome tour: the welcome with an optional name, and Pick your look">
 - **SQLite export/import** (`tools/stickypad_db.py`) for other apps or a future Android version.
 - Saves are crash-safe: files are written atomically.
 
@@ -157,6 +169,8 @@ StickyPad checks this repository's Releases when it starts and every few hours. 
 
 ### Themes, light and dark
 <img align="right" width="300" src="docs/images/feature_themes.png" alt="Settings, Appearance: Light, Dark or Same as Windows, and ten themes, each with a light and a dark preview">
+
+<img src="docs/images/demo_themes.gif" width="560" alt="Choosing different themes in Settings changes the colours of the whole app">
 
 A theme colours **the whole app**: the Home window, Settings, the AI chat, the note panel, and the colours offered for notes. There are **10 themes** (Classic, Purple, Paper, Pastel, Ocean, Forest, Sunset, Midnight, Neon, Mono), and **every theme has a light and a dark version**.
 
