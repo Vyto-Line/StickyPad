@@ -54,7 +54,7 @@ async function run(model, lang) {
       process.stdout.write(m + ' ' + l + ' ... ');
       const r = await run(m, l); secs += r.chatSec + r.sumSec;
       const pts = [r.chatLang, r.chatList >= 3, r.chatLen > 250, r.sumLang, r.sumShort]; ok += pts.filter(Boolean).length; tot += pts.length;
-      console.log(pts.map(p => p ? '✓' : '✗').join(''));
+      console.log(pts.map(p => p ? '✓' : '✗').join('') + (r.chatErr ? '   chat error: ' + r.chatErr : '') + (r.sumErr ? '   summary error: ' + r.sumErr : ''));
       detail.push('### ' + m + ' · ' + l, '', '**Chat answer** (' + r.chatSec.toFixed(0) + ' s, language ' + (r.chatLang ? 'ok' : 'WRONG') + ', checklist items ' + r.chatList + '):', '', '```', r.chat || r.chatErr || '(nothing)', '```', '', '**Summary** (' + r.sumSec.toFixed(0) + ' s, language ' + (r.sumLang ? 'ok' : 'WRONG') + '):', '', '```', r.sum || r.sumErr || '(nothing)', '```', '');
     }
     rows.push('| ' + m + ' | ' + Math.round(100 * ok / tot) + '% | ' + Math.round(secs / langs.length) + ' s |');
