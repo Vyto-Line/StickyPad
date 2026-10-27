@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.15.6
+- **Fix: the new log lines for "New note from the clipboard" stopped early** on some PCs because of one line that only exists in some versions of the app's engine. Each step is now checked on its own, so the performance log shows what happened when you press the shortcut.
+
 ## 1.15.5
 - **"New note from the clipboard" now tells you what happened.** If the clipboard has no text (a picture or a file does not count), StickyPad says so in its own message instead of a Windows notification that can be hidden. Every press is also written to the performance log (*Settings > About > Open performance log*), and a failure shows an error message and goes to the crash log.
 
