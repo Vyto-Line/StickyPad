@@ -8,7 +8,7 @@
 const fs = require('fs'), path = require('path');
 const here = f => { try { return require('../' + f); } catch (e) { if (e.code !== 'MODULE_NOT_FOUND') throw e; return require('./' + f); } };   // works inside the repo (tools/) and next to ai.js and langs.js
 const ai = here('ai'), LG = here('langs');
-const URL = process.env.OLLAMA_URL || 'http://127.0.0.1:11434';
+let URL = process.env.OLLAMA_URL || 'http://127.0.0.1:11434';
 
 // one request (a note-making chat) and one paragraph to summarise, per language
 const T = {
@@ -42,7 +42,17 @@ async function run(model, lang) {
   out.sumLang = !!out.sum && same(out.sum); out.sumShort = !!out.sum && out.sum.length < t.text.length * 0.8;
   return out;
 }
+async function findOllama() {   // say clearly what is wrong before running anything (the app's own error message hides the real reason)
+  const tries = [URL, ...(process.env.OLLAMA_URL ? [] : ['http://localhost:11434', 'http://[::1]:11434'])], why = [];
+  for (const u of tries) {
+    try { const r = await fetch(u + '/api/tags', { signal: AbortSignal.timeout(5000) }); if (r.ok) { URL = u; return true; } why.push(u + ' answered ' + r.status); }
+    catch (e) { why.push(u + ' -> ' + ((e.cause && (e.cause.code || e.cause.message)) || e.message)); }
+  }
+  console.log('Cannot reach Ollama:\n  ' + why.join('\n  ') + '\nIs Ollama running? (open StickyPad > Settings > AI and press "Start Ollama", or run: ollama serve)\nIf it runs on another address: set OLLAMA_URL=http://address:port first.');
+  return false;
+}
 (async () => {
+  if (!(await findOllama())) process.exit(1);
   let models = args.length ? args : await installed();
   models = models.filter(m => !/embed/i.test(m));
   if (!models.length) { console.log('No models found. Is Ollama running at ' + URL + ' ?'); process.exit(1); }
