@@ -104,29 +104,8 @@ with sync_playwright() as p:
     pg = page(b, None, 1030, 640, extra=setj); goto(pg, 'settings.html'); pg.click('[data-cat=data]'); pg.wait_for_timeout(300); shot(pg, 'feature_settings_data'); pg.click('[data-cat=about]'); pg.wait_for_timeout(300); shot(pg, 'feature_settings_about'); pg.close()
     b.close()
 
-# --- the hero picture: three notes on a desktop-like background ---
-def card(name, radius=14):
-    im = Image.open(os.path.join(OUT, name + '.png')).convert('RGBA')
-    m = Image.new('L', im.size, 0); ImageDraw.Draw(m).rounded_rectangle([0, 0, im.size[0] - 1, im.size[1] - 1], radius * SCALE, fill=255)
-    im.putalpha(m); return im
-def shadow(im, blur=22, off=(0, 14), alpha=110):
-    pad = blur * 3; sh = Image.new('RGBA', (im.size[0] + pad * 2, im.size[1] + pad * 2), (0, 0, 0, 0))
-    a = Image.new('L', im.size, alpha); a = Image.composite(a, Image.new('L', im.size, 0), im.split()[3])
-    sh.paste((0, 0, 0, 255), (pad + off[0], pad + off[1]), a); return sh.filter(ImageFilter.GaussianBlur(blur)), pad
-order = ['note_groceries', 'note_ideas', 'feature_find_greek', 'note_dark']
-ims = [card(n) for n in order]
-GAP, MARGIN, TOPS = 30 * SCALE, 48 * SCALE, [60 * SCALE, 24 * SCALE, 90 * SCALE, 40 * SCALE]
-W = MARGIN * 2 + sum(i.size[0] for i in ims) + GAP * (len(ims) - 1); H = max(t + i.size[1] for t, i in zip(TOPS, ims)) + 60 * SCALE
-bg = Image.new('RGBA', (W, H)); px = bg.load()
-for y in range(H):
-    for x in range(W):
-        t = x / W * 0.65 + y / H * 0.35
-        px[x, y] = (int(34 + 74 * t), int(48 + 44 * t), int(96 + 96 * t), 255)
-x = MARGIN
-for im, top in zip(ims, TOPS):
-    sh, pad = shadow(im); bg.alpha_composite(sh, (x - pad, top - pad)); bg.alpha_composite(im, (x, top)); x += im.size[0] + GAP
-bg = bg.convert('RGB'); bg = bg.resize((1800, round(1800 * H / W)), Image.LANCZOS); bg.save(os.path.join(OUT, 'hero.png'), optimize=True)
+# (the hero picture and the animations are made by tools/readme_pictures.py)
 for f in os.listdir(OUT):
-    if f.endswith('.png') and f != 'hero.png':
+    if f.endswith('.png') and f not in ('hero.png', 'feature_snap.png'):
         Image.open(os.path.join(OUT, f)).save(os.path.join(OUT, f), optimize=True)
 print(sorted(os.listdir(OUT)))

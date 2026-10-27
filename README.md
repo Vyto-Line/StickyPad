@@ -4,7 +4,7 @@
 
 Each note is its own small window on your desktop. Everything is stored on your PC; nothing leaves it unless you choose an online AI provider.
 
-![Four StickyPad notes on a desktop: a checklist, a trip plan, a Greek note with a search highlighted, and a dark meeting note](docs/images/hero.png)
+![Five StickyPad notes on a desktop in English, German and Greek: a checklist, a trip plan, a note with a picture, a Greek note with a search highlighted, and a dark meeting note](docs/images/hero.png)
 
 - **Light and simple**: one small window per note, a tray icon, and it can start with Windows.
 - **Private**: no account, no cloud. Lock a note with a password, or keep the AI on your own PC with [Ollama](https://ollama.com).
@@ -13,6 +13,11 @@ Each note is its own small window on your desktop. Everything is stored on your 
 - **Easy on memory**: Low memory mode (on by default) and an AI model that only stays loaded while you use it. *Settings > About > Measure* shows what StickyPad uses.
 
 [Download the latest installer](../../releases/latest) · [What's new](CHANGELOG.md) · [Report a problem](../../issues) · [☕ Buy me a coffee](https://ko-fi.com/vyto)
+
+### See it work
+<img src="docs/images/demo_checklist.gif" width="250" alt="Ticking items off a checklist in a note"> <img src="docs/images/demo_picture.gif" width="250" alt="Dragging the handle of a picture to make it smaller"> <img src="docs/images/demo_ai_edit.gif" width="250" alt="The AI fixing the spelling of a whole note, with Undo and Keep">
+
+*Tick things off · resize a picture · let the AI fix a whole note (on your own PC).*
 
 ---
 
@@ -23,11 +28,15 @@ Each note is its own small window on your desktop. Everything is stored on your 
 
 - **Colours, 9 themes, any font and size.** Pick a colour per note, or apply a theme to one note or all of them.
 - **Checklists** (Ctrl+Shift+C): tick items off, *Remove ticked* clears the finished ones, *Make plain text* turns them back into lines.
-- **Pictures**: paste or drop them straight into the text.
+- **Pictures**: paste or drop them straight into the text, then click one and drag the round handle on its corner to resize it (or pick 25%, 50%, 75% or Full; double-click goes back to full width).
+
+  <img src="docs/images/feature_picture.png" width="260" alt="A picture in a note, selected, with a round resize handle and a 25, 50, 75, Full size bar">
 - **Links**: web and e-mail addresses are underlined; **Ctrl+click** opens them, and a right-click offers *Open link* and *Copy link*. The note on the right shows links, a date suggestion and the update bar.
 - **Pin** a note on top of other windows, **roll it up** to just its title, or **close** it and reopen it from the tray.
 - **Folders** to group notes; **snap** to screen edges and to other notes, and (optional, *Settings > Notes*) **snap to the sides of the screen** with Windows' own snapping, like the Home window: drag a note to the left or right edge for that half of the screen, to the top edge for the whole screen, and drag it away to get its old size back; **tidy up** arranges the open notes in rows.
 - **Trash** keeps deleted notes for 30 days, so nothing is lost by accident.
+
+<img src="docs/images/feature_snap.png" width="560" alt="Two notes snapped to the left and right halves of the screen">
 
 The icons in the header, from the left: add a checklist item, pin, all notes, settings, roll up, close.
 

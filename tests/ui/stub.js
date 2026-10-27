@@ -72,7 +72,7 @@
     aiEdit: async ({ id, mode, text, to }) => {
       S.calls.push(['edit', mode, text]); S.lastTo = to;
       if (S.editMode === 'error') { emit('ai', { id, type: 'error', error: 'Ollama is not running' }); return true; }
-      const out = S.editOut || 'Hello world, this is a test.'; const parts = out.match(/\S+\s*/g);
+      const out = (S.editMap && S.editMap[text]) || S.editOut || 'Hello world, this is a test.'; const parts = out.match(/\S+\s*/g);
       S.stop = false;
       for (const p of parts) { await new Promise(r => setTimeout(r, S.editDelay || 40)); if (S.stop) { emit('ai', { id, type: 'done', stopped: true }); return true; } emit('ai', { id, type: 'chunk', text: p }); }
       emit('ai', { id, type: 'done', text: out }); return true;
