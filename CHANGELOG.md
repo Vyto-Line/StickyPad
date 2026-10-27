@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.15.5
+- **"New note from the clipboard" now tells you what happened.** If the clipboard has no text (a picture or a file does not count), StickyPad says so in its own message instead of a Windows notification that can be hidden. Every press is also written to the performance log (*Settings > About > Open performance log*), and a failure shows an error message and goes to the crash log.
+
 ## 1.15.4
 - **Summarize, note titles and "Make a checklist" now stay in the language of your note** for every language, not only Greek. With some AI models a Spanish, French or Italian note could get an English summary.
 - **The log files (performance, AI and update) are trimmed at whole lines.** When one gets long, the oldest lines are removed at a line break instead of in the middle of a line, and the heading at the top is kept.
