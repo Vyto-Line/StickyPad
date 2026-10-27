@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.15.7
+- **"New note from the clipboard" (Ctrl+Alt+V) also works with pictures.** Copy a screenshot or use *Copy image* in a browser, press the shortcut, and a new note opens holding the picture (you can resize it by dragging its corner). If the clipboard has both words and a picture, the words are used. With nothing usable on the clipboard, StickyPad says so in a message.
+
 ## 1.15.6
 - **Fix: "New note from the clipboard" (Ctrl+Alt+V) did nothing.** The app's engine now hands back the clipboard text a moment later than before, and StickyPad did not wait for it, so it always saw an empty clipboard. It now waits, and the new note appears with the copied words. The performance log also records each press (*Settings > About > Open performance log*), and a failure shows a message instead of nothing.
 

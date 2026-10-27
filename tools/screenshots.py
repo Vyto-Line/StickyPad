@@ -71,7 +71,7 @@ with sync_playwright() as p:
     NOTES['links'] = dict(title='Weekend', color='#CDEFFF', font='Segoe UI', size=15,
       blocks=[T('Tickets: https://www.aegeanair.com/booking\nHotel contact: reservations@seaview.gr\nDentist tomorrow at 5pm\nCall Nick'), ])
     pg = page(b, 'links'); goto(pg, 'note.html'); pg.wait_for_timeout(1000); shot(pg, 'feature_links'); pg.close()
-    pg = page(b, 'links', extra="window.__S.updateNow={state:'ready',version:'1.15.6'}"); goto(pg, 'note.html'); pg.wait_for_timeout(1000); shot(pg, 'feature_update'); pg.close()
+    pg = page(b, 'links', extra="window.__S.updateNow={state:'ready',version:'1.15.7'}"); goto(pg, 'note.html'); pg.wait_for_timeout(1000); shot(pg, 'feature_update'); pg.close()
     # shortcuts you can change
     pg = page(b, None, 1030, 700); goto(pg, 'settings.html'); pg.click('[data-cat=shortcuts]'); pg.wait_for_timeout(300)
     pg.click('[data-key=g_clip]'); pg.keyboard.press('Control+Alt+Shift+V'); pg.wait_for_timeout(300); shot(pg, 'feature_shortcuts'); pg.close()
