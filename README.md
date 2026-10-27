@@ -83,7 +83,7 @@ A **.stickypad** file also keeps the note's look and settings (colour, font, siz
 ### Home: notes, trash, AI chat and settings in one window
 <img align="right" width="300" src="docs/images/feature_all.png" alt="The Home window with folders, coloured cards and the Support the project button">
 
-<img src="docs/images/feature_trash.png" width="560" alt="The Trash tab in Home: deleted notes with Restore and Delete forever buttons">
+<img align="right" width="300" src="docs/images/feature_trash.png" alt="The Trash tab in Home: deleted notes with Restore and Delete forever buttons">
 
 Ctrl+Alt+Q, the tray icon, or the **house button** at the left of any note's title bar opens the **Home** window. A sidebar switches between **Notes** (every note as a card, with search, *Open all* per folder and *Tidy up*; **folder chips** show one folder at a time, and dropping a card on a chip moves the note there), **Trash**, **AI chat** (the chat, with a **list of your chats** on its left: open, rename, pin, save as a note, delete, search) and **Settings**. It is always the same one window, so nothing gets lost behind others. Closed notes are greyed out; click one to open it.
 
@@ -168,9 +168,7 @@ StickyPad checks this repository's Releases when it starts and every few hours. 
 <img src="docs/images/feature_update_progress.png" width="300" alt="The neon progress bar while an update downloads"> <img src="docs/images/feature_update.png" width="300" alt="The Restart to update bar at the bottom of a note">
 
 ### Themes, light and dark
-<img align="right" width="300" src="docs/images/feature_themes.png" alt="Settings, Appearance: Light, Dark or Same as Windows, and ten themes, each with a light and a dark preview">
-
-<img src="docs/images/demo_themes.gif" width="560" alt="Choosing different themes in Settings changes the colours of the whole app">
+<img src="docs/images/demo_themes.gif" width="560" alt="Settings, Appearance: choosing Light, Dark or Same as Windows and one of the ten themes changes the colours of the whole app">
 
 A theme colours **the whole app**: the Home window, Settings, the AI chat, the note panel, and the colours offered for notes. There are **10 themes** (Classic, Purple, Paper, Pastel, Ocean, Forest, Sunset, Midnight, Neon, Mono), and **every theme has a light and a dark version**.
 
