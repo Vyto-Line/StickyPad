@@ -1521,7 +1521,7 @@ ai.setLogger(aiLog);
 const perfLogFile = () => path.join(app.getPath('userData'), 'perf.log');
 function perfLog(line) {
   try {
-    logfile.append(perfLogFile(), `StickyPad performance log. Only slow moments are listed here (a window that took over 0.5 s to appear, a freeze of the app over 0.3 s, a save over 60 ms).\nStickyPad ${app.getVersion()} on ${process.platform} ${process.arch}, ${Math.round(require('os').totalmem() / 1073741824)} GB RAM\n`, new Date().toISOString() + '  v' + app.getVersion() + '  ' + line);
+    logfile.append(perfLogFile(), `StickyPad performance log. Slow moments are listed here (a window that took over 0.5 s to appear, a freeze of the app over 0.3 s, a save over 60 ms), and a line each time you make a note from the clipboard.\nStickyPad ${app.getVersion()} on ${process.platform} ${process.arch}, ${Math.round(require('os').totalmem() / 1073741824)} GB RAM\n`, new Date().toISOString() + '  v' + app.getVersion() + '  ' + line);
   } catch {}
 }
 const slowWindow = (what, t0) => { const ms = Date.now() - t0; if (ms > 500) perfLog('SLOW WINDOW  ' + what + ' took ' + ms + ' ms to appear  (notes ' + Object.keys(notes).length + ', file ' + (lastBytes / 1e6).toFixed(1) + ' MB, open windows ' + BrowserWindow.getAllWindows().length + ')'); };
@@ -1599,12 +1599,26 @@ function registerShortcuts() {
 }
 // A new note holding whatever text you last copied.
 function newFromClipboard() {
-  let text = ''; try { text = clipboard.readText() || ''; } catch {}
-  if (!text.trim()) { try { new Notification({ title: 'StickyPad', body: 'There is no text on the clipboard to make a note from.' }).show(); } catch {} return null; }
-  if (text.length > MAX_TEXT) text = text.slice(0, MAX_TEXT);
-  const c = convert.fromMarkdown(text, ''), blocks = sanitizeBlocks(c.blocks);
-  const n = makeNote(null, { title: c.title, blocks, text: textOf(blocks) });
-  return n;
+  let text = '', fmts = [];
+  try { text = clipboard.readText() || ''; fmts = clipboard.availableFormats(); } catch (e) { perfLog('CLIPBOARD NOTE could not read the clipboard: ' + (e && e.message)); }
+  const say = body => { perfLog('CLIPBOARD NOTE ' + body); };
+  if (!text.trim()) {
+    say('nothing made: no text on the clipboard (formats: ' + (fmts.join(', ') || 'none') + ')');
+    // a message inside StickyPad's own window, in case Windows hides notifications (Focus assist, Do Not Disturb)
+    try { dialog.showMessageBox({ type: 'info', title: 'StickyPad', message: 'There is no text on the clipboard to make a note from.', detail: 'Copy some words first (a picture or a file does not count), then press the shortcut again.', buttons: ['OK'] }); } catch {}
+    return null;
+  }
+  try {
+    if (text.length > MAX_TEXT) text = text.slice(0, MAX_TEXT);
+    const c = convert.fromMarkdown(text, ''), blocks = sanitizeBlocks(c.blocks);
+    const n = makeNote(null, { title: c.title, blocks, text: textOf(blocks) });
+    say('made a note from ' + text.length + ' characters');
+    return n;
+  } catch (e) {
+    crashLog('clipboard note', e); say('FAILED: ' + (e && e.message));
+    try { dialog.showMessageBox({ type: 'error', title: 'StickyPad', message: 'The note from the clipboard could not be made.', detail: String((e && e.message) || e).slice(0, 300) + '\n\nDetails are in the performance log (Settings > About).', buttons: ['OK'] }); } catch {}
+    return null;
+  }
 }
 function setKeys(p) {
   const want = {};
