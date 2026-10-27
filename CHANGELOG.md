@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.15.8
+- **Safer copying from the menus.** *Copy text* (note menu in Home) and *Copy link* / *Copy e-mail address* now ignore a failed write to the clipboard instead of raising an error, which matters with the newer app engine where the clipboard answers a moment later.
+- Notes for the future: a list of what to check when the app's engine (Electron) is upgraded (docs/ELECTRON_NOTES.md), and new pictures and animations on the GitHub page.
+
 ## 1.15.7
 - **"New note from the clipboard" (Ctrl+Alt+V) also works with pictures.** Copy a screenshot or use *Copy image* in a browser, press the shortcut, and a new note opens holding the picture (you can resize it by dragging its corner). If the clipboard has both words and a picture, the words are used. With nothing usable on the clipboard, StickyPad says so in a message.
 
