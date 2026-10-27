@@ -89,10 +89,7 @@ with sync_playwright() as p:
       {id:'f',title:'Reading list',text:'Dune, The Left Hand of Darkness',color:'#E6D5FF',group:'g1',updated:Date.now()-5*864e5,open:false}],
       groups: [{id:'g1',name:'Home',collapsed:false},{id:'g2',name:'Work',collapsed:false}], trash: [], prefs: {} });'''
     pg = page(b, None, 900, 560, extra=allj); goto(pg, 'all.html'); shot(pg, 'feature_all'); pg.close()
-    # Select mode: numbered choice and the action bar
-    pg = page(b, None, 900, 560, extra=allj); goto(pg, 'all.html'); pg.click('#selectBtn')
-    for t in ('Groceries', 'Crete trip', 'Meeting'): pg.click('.card >> text=' + t)
-    pg.wait_for_timeout(300); shot(pg, 'feature_select'); pg.close()
+    # (Select mode is shown by an animation made in tools/readme_pictures.py)
     # Print options with the preview
     import json, subprocess
     items = [dict(title=NOTES[k]['title'], blocks=NOTES[k]['blocks'], font='Segoe UI', color=NOTES[k]['color']) for k in ('groceries', 'ideas', 'greek')]

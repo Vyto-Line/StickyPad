@@ -213,5 +213,24 @@ with sync_playwright() as p:
         pg.evaluate("([id,dark])=>{const T=window.StickyThemes;window.StickyUiTheme.paint({id,dark,vars:T.vars(id,dark)});document.querySelectorAll('.theme').forEach(b=>{const on=b.title.toLowerCase().startsWith(id);b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)})}", [want, dark])
         pg.wait_for_timeout(300); fr += [grab(pg) for _ in range(5)]
     pg.close(); gif(fr, 'demo_themes', ms=140, hold=(1000,), width=720)
+
+    # ================= Select mode, printing and the chat about one note =================
+    ALLJ = """window.api.allList = async () => ({ emoji: '☀️', greeting: 'Good morning', notes: [
+      {id:'a',title:'Groceries',text:'For the weekend dinner\\n☑ Tomatoes and basil\\n☐ Olive oil',color:'#FFF2A8',group:'g1',updated:Date.now()-3e5,open:true},
+      {id:'b',title:'Reiseplan',text:'Fähre vor Freitag buchen. Samaria-Schlucht: früh los',color:'#B9E4FF',group:'g2',updated:Date.now()-36e5,open:true},
+      {id:'c',title:'Σχέδιο',text:'Καλημέρα! Σήμερα έχουμε συνάντηση το απόγευμα',color:'#FFD1E3',group:null,updated:Date.now()-72e5,open:true},
+      {id:'d',title:'Meeting',text:'Agenda: Budget review, Launch date',color:'#2E3440',group:'g2',updated:Date.now()-864e5,open:false},
+      {id:'e',title:'Presupuesto',text:'Revisar el presupuesto antes del viernes',color:'#D4F5C4',group:null,updated:Date.now()-2*864e5,open:false},
+      {id:'f',title:'Reading list',text:'Dune, The Left Hand of Darkness',color:'#E6D5FF',group:'g1',updated:Date.now()-5*864e5,open:false}],
+      groups: [{id:'g1',name:'Home',collapsed:false},{id:'g2',name:'Work',collapsed:false}], trash: [], prefs: {} });"""
+    pg = sp('all.html', 900, 520, ALLJ, 1); fr = [grab(pg) for _ in range(4)]
+    pg.evaluate("document.querySelector('#selectBtn').click()"); pg.wait_for_timeout(350); fr += [grab(pg) for _ in range(4)]
+    for t in ('Groceries', 'Reiseplan', 'Meeting'):
+        pg.click('.card >> text=' + t); pg.wait_for_timeout(350); fr += [grab(pg) for _ in range(4)]
+    pg.close(); gif(fr, 'demo_select', ms=150, hold=(1800,), width=760)
+
+    # the chat about ONE note
+    CH = """window.api.chatLoad=async()=>({messages:[{role:'user',content:'Which things on this list are still open?'},{role:'assistant',content:'Three things are still open on **Groceries**:\\n\\n- Olive oil\\n- Sourdough bread\\n- Lemons\\n\\nYou also wrote to ask Maria if she is coming.'},{role:'user',content:'Add a line about dessert'},{role:'assistant',content:'Here is the list with a dessert line added:\\n\\n- Olive oil\\n- Sourdough bread\\n- Lemons\\n- **Yoghurt and honey for dessert**'}],noteId:'n1',provider:'ollama',model:'gemma4:e4b'});window.api.chatNotes=async()=>[{id:'n1',title:'Groceries'},{id:'n2',title:'Reiseplan'}];"""
+    pg = sp('chat.html', 900, 560, CH); pg.wait_for_timeout(500); snap(pg, 'feature_chat_note'); pg.close()
     b.close()
 print(sorted(f for f in os.listdir(OUT) if f.endswith('.gif')), [os.path.getsize(os.path.join(OUT, f)) // 1024 for f in sorted(os.listdir(OUT)) if f.endswith('.gif')])

@@ -1059,7 +1059,7 @@ ipcMain.handle('all:context', (e, id) => {
   const move = gid => { n.group = gid; save(); };
   Menu.buildFromTemplate([
     { label: 'Open note', click: () => { const w = openNote(n); if (w.isMinimized()) w.restore(); w.show(); w.focus(); } },
-    { label: 'Copy text', enabled: !n.lock && String(n.text || '').trim() !== '', click: () => clipboard.writeText(String(n.text || '')) },
+    { label: 'Copy text', enabled: !n.lock && String(n.text || '').trim() !== '', click: () => { Promise.resolve(clipboard.writeText(String(n.text || ''))).catch(() => {}); } },
     { label: 'Print…', enabled: !n.lock || sessions.has(n.id), click: () => { printNote(n); } },
     { label: 'Move to folder', submenu: [
       { label: 'No folder', type: 'radio', checked: !n.group, click: () => move(null) },
@@ -1239,7 +1239,7 @@ ipcMain.handle('app:linkMenu', (e, url) => {
   const mail = /^mailto:/i.test(url), plain = String(url).replace(/^mailto:/i, '');
   Menu.buildFromTemplate([
     { label: mail ? 'Write an e-mail' : 'Open link', click: () => shell.openExternal(String(url)) },
-    { label: mail ? 'Copy e-mail address' : 'Copy link', click: () => clipboard.writeText(plain) }
+    { label: mail ? 'Copy e-mail address' : 'Copy link', click: () => { Promise.resolve(clipboard.writeText(plain)).catch(() => {}); } }
   ]).popup({ window: BrowserWindow.fromWebContents(e.sender) || undefined });
   return true;
 });

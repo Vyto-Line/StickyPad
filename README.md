@@ -99,6 +99,7 @@ Give a note a password (4+ characters) and its text is stored **encrypted (AES-2
 
 ### AI helper (off by default)
 <img align="right" width="300" src="docs/images/feature_chat_all.png" alt="The AI chat answering a question from all notes, with a Looked at line">
+<img align="right" width="300" src="docs/images/feature_chat_note.png" alt="A chat about one note, Groceries: the AI lists the open items and offers a version with a dessert line, with Copy, Save as note and Apply to note buttons">
 
 Open the sliders button (*This note*): **AI** is a drop-down row that starts with a big **Chat about this note** button, then **Summarize** and **Translate…** side by side, then a **More AI actions** list with a **Run** button (the model and connection options are in the **Model and connection** drop-down at the bottom of the AI row, and open by themselves when something needs fixing):
 
@@ -137,7 +138,7 @@ Notes of hundreds of thousands of lines open in a fraction of a second and type 
 *Settings > About* opens three logs: the **performance log** (a window that took more than half a second, a freeze over 0.3 s, a slow save), the **update log** and the **AI log** (*Settings > AI*, what the model answered or why it did not). They hold only times, sizes and error text, never your notes.
 
 ### Select several notes
-<img src="docs/images/feature_select.png" width="560" alt="Home in select mode: three numbered notes and the Print, Move to folder and Move to trash buttons">
+<img src="docs/images/demo_select.gif" width="560" alt="Pressing Select in Home, then clicking three notes: they get the numbers 1, 2 and 3 and the Print, Move to folder and Move to trash buttons turn on">
 
 In Home, **Select** lets you choose notes (click, **Shift+click** for a range, **Ctrl+A** for all) and then **Print…**, **Move to folder…** or **Move to trash** them in one go.
 
