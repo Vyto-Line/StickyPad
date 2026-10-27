@@ -1598,11 +1598,12 @@ function registerShortcuts() {
   reg('g_find', () => toggleQuick());
 }
 // A new note holding whatever text you last copied.
-function newFromClipboard() {
+async function newFromClipboard() {
   let text = '', fmts = [];
   const say = body => { perfLog('CLIPBOARD NOTE ' + body); };
-  try { text = clipboard.readText() || ''; } catch (e) { say('could not read the clipboard text: ' + (e && e.message)); }
-  try { if (typeof clipboard.availableFormats === 'function') fmts = clipboard.availableFormats(); } catch {}   // only for the log: not every Electron version has it
+  try { text = (await clipboard.readText()) || ''; } catch (e) { say('could not read the clipboard text: ' + (e && e.message)); }
+  try { if (typeof clipboard.availableFormats === 'function') fmts = await clipboard.availableFormats(); } catch {}   // only for the log: not every Electron version has it
+  if (typeof text !== 'string') text = '';
   say('pressed: ' + text.length + ' characters of text on the clipboard' + (fmts.length ? ' (formats: ' + fmts.join(', ') + ')' : ''));
   if (!text.trim()) {
     say('nothing made: no text on the clipboard');

@@ -70,11 +70,15 @@ const H = require('./fake-electron');
   electron.__failAccels.clear(); st2 = await h['settings:set']({}, { keys: {} }); assert.deepStrictEqual(st2.keys, KEYS.DEFAULTS); assert.deepStrictEqual(st2.keysFailed, []);
   // note from clipboard
   const before = JSON.stringify(await h['all:list']({})).length; const cnt0 = Object.keys(JSON.parse(JSON.stringify(await h['all:list']({})))).length;
-  electron.__clip = '# Idea\n- [ ] call Nick\nsome words'; const wcount = wins.length; electron.__reg['Control+Alt+V']();
+  electron.__clip = '# Idea\n- [ ] call Nick\nsome words'; const wcount = wins.length; await electron.__reg['Control+Alt+V']();
   assert.strictEqual(wins.length, wcount + 1, 'a window opened for the clipboard note'); const cw = wins[wins.length - 1]; const cn = await h['note:get'](H.ev(cw));
   assert.strictEqual(cn.title, 'Idea'); assert.ok(cn.blocks.some(b => b.t === 'check' && b.v === 'call Nick')); 
-  electron.__clip = '   '; electron.__notes.length = 0; const wc2 = wins.length; electron.__reg['Control+Alt+V'](); electron.__boxes = []; electron.__reg['Control+Alt+V'](); assert.strictEqual(wins.length, wc2, 'empty clipboard: no note'); assert.ok(electron.__boxes.length === 1 && /no text on the clipboard/.test(electron.__boxes[0].message), 'and it says so in a StickyPad message, not only a Windows notification');
+  electron.__clip = '   '; electron.__notes.length = 0; const wc2 = wins.length; await electron.__reg['Control+Alt+V'](); electron.__boxes = []; await electron.__reg['Control+Alt+V'](); assert.strictEqual(wins.length, wc2, 'empty clipboard: no note'); assert.ok(electron.__boxes.length === 1 && /no text on the clipboard/.test(electron.__boxes[0].message), 'and it says so in a StickyPad message, not only a Windows notification');
   assert.ok(/CLIPBOARD NOTE nothing made: no text on the clipboard/.test(fs.readFileSync(path.join(tmp, 'userData', 'perf.log'), 'utf8')), 'the press is written to the performance log, with what the clipboard held'); assert.ok(/CLIPBOARD NOTE made a note from \d+ characters/.test(fs.readFileSync(path.join(tmp, 'userData', 'perf.log'), 'utf8')), 'and so is a note that was made');
+  // newer Electron versions hand back a Promise when the clipboard is read: the note must still be made
+  electron.__clipAsync = true; electron.__clip = 'Alpha Bank\n22 TX\n18 RX'; const wc3 = wins.length; await electron.__reg['Control+Alt+V']();
+  assert.strictEqual(wins.length, wc3 + 1, 'the clipboard note is made when the clipboard answers with a Promise'); assert.ok(/Alpha Bank/.test(JSON.stringify(await h['note:get'](H.ev(wins[wins.length - 1])))), 'with the copied words');
+  electron.__clipAsync = false;
   // links: only safe addresses are opened
   H.dialogCalls.length = 0;
   assert.strictEqual(await h['app:openLink'](e, 'https://example.com/a'), true); assert.strictEqual(await h['app:openLink'](e, 'file:///c:/windows/system32/calc.exe'), false); assert.strictEqual(await h['app:openLink'](e, 'javascript:alert(1)'), false);

@@ -1,7 +1,7 @@
 # Changelog
 
 ## 1.15.6
-- **Fix: the new log lines for "New note from the clipboard" stopped early** on some PCs because of one line that only exists in some versions of the app's engine. Each step is now checked on its own, so the performance log shows what happened when you press the shortcut.
+- **Fix: "New note from the clipboard" (Ctrl+Alt+V) did nothing.** The app's engine now hands back the clipboard text a moment later than before, and StickyPad did not wait for it, so it always saw an empty clipboard. It now waits, and the new note appears with the copied words. The performance log also records each press (*Settings > About > Open performance log*), and a failure shows a message instead of nothing.
 
 ## 1.15.5
 - **"New note from the clipboard" now tells you what happened.** If the clipboard has no text (a picture or a file does not count), StickyPad says so in its own message instead of a Windows notification that can be hidden. Every press is also written to the performance log (*Settings > About > Open performance log*), and a failure shows an error message and goes to the crash log.
