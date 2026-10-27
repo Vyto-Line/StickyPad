@@ -1600,10 +1600,12 @@ function registerShortcuts() {
 // A new note holding whatever text you last copied.
 function newFromClipboard() {
   let text = '', fmts = [];
-  try { text = clipboard.readText() || ''; fmts = clipboard.availableFormats(); } catch (e) { perfLog('CLIPBOARD NOTE could not read the clipboard: ' + (e && e.message)); }
   const say = body => { perfLog('CLIPBOARD NOTE ' + body); };
+  try { text = clipboard.readText() || ''; } catch (e) { say('could not read the clipboard text: ' + (e && e.message)); }
+  try { if (typeof clipboard.availableFormats === 'function') fmts = clipboard.availableFormats(); } catch {}   // only for the log: not every Electron version has it
+  say('pressed: ' + text.length + ' characters of text on the clipboard' + (fmts.length ? ' (formats: ' + fmts.join(', ') + ')' : ''));
   if (!text.trim()) {
-    say('nothing made: no text on the clipboard (formats: ' + (fmts.join(', ') || 'none') + ')');
+    say('nothing made: no text on the clipboard');
     // a message inside StickyPad's own window, in case Windows hides notifications (Focus assist, Do Not Disturb)
     try { dialog.showMessageBox({ type: 'info', title: 'StickyPad', message: 'There is no text on the clipboard to make a note from.', detail: 'Copy some words first (a picture or a file does not count), then press the shortcut again.', buttons: ['OK'] }); } catch {}
     return null;
