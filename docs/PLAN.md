@@ -49,6 +49,14 @@ Not yet: updating the GitHub build helpers (Node 20 warning); Alex said "not yet
 5. **App language (translate StickyPad's own interface)** (Alex agreed 2026-10-26; mockup sent, nothing built). Greek first, English stays the default (or "Same as Windows"). The Settings row "Greeting language" becomes "Language" and covers the whole app (greeting too). All visible text moves into language files; Greek wording is a draft that Alex reviews; more languages and right-to-left later. Needs a test that every English string has a Greek one. Off by default: nobody sees a change unless they pick a language. **First run (Alex, 2026-10-26):** the language choice is the very first step of the welcome tour (before the other steps), so a new user picks it right away; it defaults to the Windows language when we have it, otherwise English, and can be changed later in Settings. **Design chosen (Alex, 2026-10-26, mockup 2):** the user's Windows language and English as two big cards, a "More languages…" link that opens a searchable list (type "de" to find Deutsch), every language written in its own script with the English name beside it; the same searchable list in the Settings Language row; keyboard friendly (arrows, Enter).
 
 
+6. **Duplicate note** (Alex, 2026-10-27): one action that copies a note with its colour, font and content (also for several chosen notes in Select mode). Needs a mockup of where the action lives.
+7. **Pinned notes strip at the top of Home** (Alex, 2026-10-27): pinned notes stay in view without scrolling. Needs a mockup.
+
+## Planned for 1.17.0 (Alex, 2026-10-27; nothing built)
+- Snooze buttons on reminders (10 minutes, 1 hour, Tomorrow); folder colours or icons; checklist templates; AI on a whole folder; lists and headings in notes; automatic backups on a schedule.
+- Dropped: tags (folders do the same job).
+
+
 ## Next
 1. Finish Select mode in Home: Export, Colour, Open/Close/Pin, Trash-tab Restore/Delete forever, drag a chosen group onto a folder or Trash.
 2. More tests (search, AI, update handlers).
