@@ -5,7 +5,7 @@
 const LG = require('./langs');
 
 const SYS_SUMMARY =
-  'You summarise sticky notes. Reply in the same language as the note (English or Greek). ' +
+  'You summarise sticky notes. Reply in the same language as the note (whatever language it is written in). ' +
   'Write at most 3 short bullet lines, each starting with "• ". Do not add information that is not in the note. ' +
   'If the note is very short, reply with one short sentence. Reply with the summary only. ' +
   'Cover the whole note, including the last lines: do not stop at the beginning.';
@@ -20,7 +20,7 @@ const SYS_GRAMMAR =
 const SYS_CHECKLIST =
   'You turn a messy sticky note into a clean checklist. Return ONLY a JSON object {"items":[{"text":"...","done":false}]}. ' +
   'Keep every task, idea or thing to remember from the note, one per item, as a short line in the SAME language as the note ' +
-  '(English or Greek). Merge duplicates, drop filler words, keep names, numbers, dates and times. Do not invent tasks. ' +
+  '(whatever language it is written in). Merge duplicates, drop filler words, keep names, numbers, dates and times. Do not invent tasks. ' +
   'Lines marked [x] in the input are already done: use "done":true for them. If the first line is just a title, do not make it an item. ' +
   'Cover the WHOLE input, including its last lines.';
 
@@ -73,6 +73,8 @@ const THINKERS = /^(qwen3|qwen3\.5|deepseek-r1|deepseek-v3\.1|qwq|magistral|gemm
 const LEVEL_ONLY = /^gpt-oss/i;   // gpt-oss cannot switch thinking off, only turn it down
 // Ollama setting that stops a model from "thinking" first. A model that has not been told sometimes spends its whole answer on thinking and sends back nothing.
 const thinkOff = model => { const m = String(model || '').replace(/^.*\//, ''); return LEVEL_ONLY.test(m) ? { think: 'low' } : THINKERS.test(m) ? { think: false } : {}; };
+// Any other language the detector knows gets its name spelled out, so a small model does not slip into English (Greek already has its own rules)
+const langLine = (sample, what) => { const d = LG.detect(sample); return d && d.code !== 'el' ? ' Write the ' + what + ' in ' + d.name + '.' : ''; };
 const withLang = (sys, sample) => isGreek(sample) ? sys + ' ' + GREEK_RULES : sys;
 
 const GREEK_GRAMMAR_EXAMPLE =
@@ -228,7 +230,7 @@ async function summarize(cfg, text, fetchImpl = fetch) {
   text = String(text || '').trim();
   if (!text) throw fail('There is nothing to summarise yet.');
   if (text.length > MAX_TOTAL) throw fail('This note is too long to summarise.');
-  const sys = withLang(SYS_SUMMARY, text) + (isGreek(text) ? ' Write the summary in Greek.' : '');
+  const sys = withLang(SYS_SUMMARY, text) + (isGreek(text) ? ' Write the summary in Greek.' : langLine(text, 'summary'));
   if (text.length <= CHUNK) return unwrap(await callModel(cfg, sys + NOTE_RULE, wrapNote(text, 'Summarise the note above.'), { predict: 320 }, fetchImpl)).trim();
   // long note: summarise each part, then summarise the summaries, so the end of the note counts as much as the start
   const parts = splitPieces(text, CHUNK), notes = [];
@@ -247,7 +249,7 @@ async function suggestTitle(cfg, text, fetchImpl = fetch) {
   text = String(text || '').trim();
   if (!text) throw fail('There is nothing to title yet.');
   const sample = text.length > 2500 ? text.slice(0, 2500) : text;
-  const sys = withLang(SYS_TITLE, sample) + (isGreek(sample) ? ' Write the title in Greek.' : '');
+  const sys = withLang(SYS_TITLE, sample) + (isGreek(sample) ? ' Write the title in Greek.' : langLine(sample, 'title'));
   const t = cleanTitle(unwrap(await callModel(cfg, sys + NOTE_RULE, wrapNote(sample, 'Write the title for the note above.'), { predict: 40 }, fetchImpl)));
   if (!t) throw fail('The AI did not give a title. Try again.');
   return t;
@@ -304,7 +306,7 @@ async function toChecklist(cfg, text, fetchImpl = fetch) {
   text = String(text || '').trim();
   if (!text) throw fail('There is nothing to turn into a checklist yet.');
   if (text.length > MAX_TOTAL) throw fail('This note is too long to convert.');
-  const sys = withLang(SYS_CHECKLIST, text);
+  const sys = withLang(SYS_CHECKLIST, text) + langLine(text, 'checklist items');
   if (text.length <= CHUNK) return parseChecklist(await callModel(cfg, sys + NOTE_RULE, wrapNote(text, 'Return the JSON checklist for the note above.'), { json: true, predict: 900 }, fetchImpl));
   const all = [], seen = new Set();
   for (const p of splitPieces(text, CHUNK)) {
@@ -450,7 +452,7 @@ function translateSystem(text, to = translateTarget(text)) {
     'Output ONLY the translation: no quotes, no code fences, no introduction, no explanation, no notes.';
 }
 const editSystem = (mode, text = '') => mode === 'translate' ? translateSystem(text) : 'You edit text inside a sticky note. ' + (EDIT_MODES[mode] || EDIT_MODES.fix) + (isGreek(text) ? ' ' + GREEK_RULES : '') +
-  ' Reply in the same language as the text (English or Greek; keep Greek accents). Keep line breaks. ' +
+  ' Reply in the same language as the text (any language: keep its accents and letters). Keep line breaks. ' +
   'Output ONLY the resulting text: no quotes, no code fences, no introduction, no explanation.';
 function cleanEdit(t) {
   t = stripThink(t).replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/, '');
@@ -533,4 +535,4 @@ async function ping(cfg, fetchImpl = fetch) {
   return r.trim().slice(0, 40);
 }
 
-module.exports = { cutRepeat, chatLanguage, chatLanguageRule, chatLanguageTail, setLogger, thinkOff, tagFilter, translationProblem, suggestTitle, cleanTitle, keepOf, translateTarget, translateSystem, splitPieces, isGreek, ctxFor, editStream, editSystem, EDIT_MODES, warmup, summarize, fixGrammar, toChecklist, chatStream, SYS_CHAT, ping, callModel, DEFAULT_CLAUDE_MODEL, };
+module.exports = { langLine, cutRepeat, chatLanguage, chatLanguageRule, chatLanguageTail, setLogger, thinkOff, tagFilter, translationProblem, suggestTitle, cleanTitle, keepOf, translateTarget, translateSystem, splitPieces, isGreek, ctxFor, editStream, editSystem, EDIT_MODES, warmup, summarize, fixGrammar, toChecklist, chatStream, SYS_CHAT, ping, callModel, DEFAULT_CLAUDE_MODEL, };
