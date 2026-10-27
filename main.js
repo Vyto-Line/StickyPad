@@ -1597,21 +1597,35 @@ function registerShortcuts() {
   reg('g_clip', () => newFromClipboard());
   reg('g_find', () => toggleQuick());
 }
-// A new note holding whatever text you last copied.
-async function newFromClipboard() {
-  let text = '', fmts = [];
-  const say = body => { perfLog('CLIPBOARD NOTE ' + body); };
-  try { text = (await clipboard.readText()) || ''; } catch (e) { say('could not read the clipboard text: ' + (e && e.message)); }
-  try { if (typeof clipboard.availableFormats === 'function') fmts = await clipboard.availableFormats(); } catch {}   // only for the log: not every Electron version has it
-  if (typeof text !== 'string') text = '';
-  say('pressed: ' + text.length + ' characters of text on the clipboard' + (fmts.length ? ' (formats: ' + fmts.join(', ') + ')' : ''));
-  if (!text.trim()) {
-    say('nothing made: no text on the clipboard');
-    // a message inside StickyPad's own window, in case Windows hides notifications (Focus assist, Do Not Disturb)
-    try { dialog.showMessageBox({ type: 'info', title: 'StickyPad', message: 'There is no text on the clipboard to make a note from.', detail: 'Copy some words first (a picture or a file does not count), then press the shortcut again.', buttons: ['OK'] }); } catch {}
-    return null;
-  }
+// A picture on the clipboard (a screenshot, "Copy image" in a browser). Newer Electron versions read it with clipboard.read(); older ones with readImage().
+async function clipboardPicture() {
   try {
+    if (typeof clipboard.read === 'function') {
+      const items = await clipboard.read();
+      if (Array.isArray(items)) for (const it of items) for (const t of (it && it.types) || []) {
+        if (/^image\/(png|jpeg|webp|gif)$/.test(t)) { const blob = await it.getType(t); return { type: t, buf: Buffer.from(await blob.arrayBuffer()) }; }
+      }
+    }
+    if (typeof clipboard.readImage === 'function') { const img = await clipboard.readImage(); if (img && typeof img.isEmpty === 'function' && !img.isEmpty()) return { type: 'image/png', buf: img.toPNG() }; }
+  } catch (e) { perfLog('CLIPBOARD NOTE could not read a picture: ' + (e && e.message)); }
+  return null;
+}
+// A new note holding whatever you last copied: the text, or (when there is no text) the picture.
+async function newFromClipboard() {
+  let text = '';
+  const say = body => { perfLog('CLIPBOARD NOTE ' + body); };
+  const tell = (type, message, detail) => { try { dialog.showMessageBox({ type, title: 'StickyPad', message, detail, buttons: ['OK'] }); } catch {} };   // inside StickyPad: Windows may hide notifications (Focus assist)
+  try { text = (await clipboard.readText()) || ''; } catch (e) { say('could not read the clipboard text: ' + (e && e.message)); }
+  if (typeof text !== 'string') text = '';
+  try {
+    if (!text.trim()) {
+      const pic = await clipboardPicture();
+      if (!pic) { say('nothing made: no text or picture on the clipboard'); tell('info', 'There is no text or picture on the clipboard to make a note from.', 'Copy some words or a picture first, then press the shortcut again.'); return null; }
+      const id = saveImgData('data:' + pic.type + ';base64,' + pic.buf.toString('base64'));
+      if (!id) { say('FAILED: the picture (' + pic.buf.length + ' bytes) could not be saved (too big?)'); tell('warning', 'The picture on the clipboard could not be saved.', 'It may be too big (the limit is about 10 MB).'); return null; }
+      const blocks = sanitizeBlocks([{ t: 'img', id }]), n = makeNote(null, { title: '', blocks, text: '' });
+      say('made a note from a picture (' + pic.buf.length + ' bytes)'); return n;
+    }
     if (text.length > MAX_TEXT) text = text.slice(0, MAX_TEXT);
     const c = convert.fromMarkdown(text, ''), blocks = sanitizeBlocks(c.blocks);
     const n = makeNote(null, { title: c.title, blocks, text: textOf(blocks) });
@@ -1619,7 +1633,7 @@ async function newFromClipboard() {
     return n;
   } catch (e) {
     crashLog('clipboard note', e); say('FAILED: ' + (e && e.message));
-    try { dialog.showMessageBox({ type: 'error', title: 'StickyPad', message: 'The note from the clipboard could not be made.', detail: String((e && e.message) || e).slice(0, 300) + '\n\nDetails are in the performance log (Settings > About).', buttons: ['OK'] }); } catch {}
+    tell('error', 'The note from the clipboard could not be made.', String((e && e.message) || e).slice(0, 300) + '\n\nDetails are in the performance log (Settings > About).');
     return null;
   }
 }
