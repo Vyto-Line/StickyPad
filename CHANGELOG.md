@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.15.4
+- **Summarize, note titles and "Make a checklist" now stay in the language of your note** for every language, not only Greek. With some AI models a Spanish, French or Italian note could get an English summary.
+- **The log files (performance, AI and update) are trimmed at whole lines.** When one gets long, the oldest lines are removed at a line break instead of in the middle of a line, and the heading at the top is kept.
+
 ## 1.15.3
 - **You can resize a picture in a note.** Click a picture and a round handle appears on its corner: drag it to make the picture smaller or bigger (it keeps its shape). A small bar above it also offers **25%, 50%, 75% and Full**, and a double-click returns it to full width. The size is saved with the note, and printing and export follow it. Existing pictures stay full width, and nothing changes until you resize one.
 - **Home shows just "3 notes"** instead of "3 notes · right-click for more".
