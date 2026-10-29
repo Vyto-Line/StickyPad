@@ -3,6 +3,7 @@ const NT = nativeTheme || { shouldUseDarkColors: false, themeSource: 'system', o
 const ai = require('./ai');
 const ollama = require('./ollama');
 const logfile = require('./logfile');
+const ctxmenu = require('./contextmenu');
 const datadir = require('./datadir');
 const updaterLib = require('./updater');
 const backup = require('./backup');
@@ -1810,6 +1811,16 @@ app.on('second-instance', (e, argv) => {
   const mode = settings.launch;
   if (mode !== 'all') showAll();
   if (mode === 'all' || mode === 'both') { openAll(); raise(homeWin); }
+});
+// Right-click in any text (a note, a search box, the chat box): Cut, Copy, Paste, Select all and spelling suggestions.
+app.on('web-contents-created', (e, wc) => {
+  if (!wc || typeof wc.on !== 'function') return;
+  wc.on('context-menu', (ev, params) => {
+    try {
+      const tpl = ctxmenu.buildTemplate(params, wc);
+      if (tpl.length) Menu.buildFromTemplate(tpl).popup({ window: BrowserWindow.fromWebContents(wc) || undefined });
+    } catch (err) { try { crashLog('context menu', err); } catch (e2) {} }
+  });
 });
 app.whenReady().then(async () => {
   watchStalls();
