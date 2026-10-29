@@ -10,7 +10,7 @@ fs.writeFileSync(path.join(dir, 'launch.json'), '{"lowMemory":"yes"}'); assert.s
 const on = L.plan({ lowMemory: true }), off = L.plan({ lowMemory: false });
 assert.strictEqual(on.disableGpu, true); assert.strictEqual(off.disableGpu, false);
 const feat = p => p.switches.find(s => s[0] === 'disable-features')[1].split(',');
-assert.ok(feat(on).includes('CalculateNativeWinOcclusion') && feat(on).includes('MediaRouter')); assert.deepStrictEqual(feat(off), ['CalculateNativeWinOcclusion']);
+assert.ok(feat(on).includes('CalculateNativeWinOcclusion') && feat(on).includes('MediaRouter')); assert.deepStrictEqual(feat(off), ['CalculateNativeWinOcclusion', 'WinUseBrowserSpellChecker']);
 assert.ok(on.switches.some(s => s[0] === 'js-flags' && /optimize-for-size/.test(s[1]))); assert.ok(!off.switches.some(s => s[0] === 'js-flags'));
 assert.strictEqual(on.switches.filter(s => s[0] === 'disable-features').length, 1, 'disable-features is given once (a second one would override the first)');
 fs.rmSync(dir, { recursive: true, force: true });

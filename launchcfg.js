@@ -19,7 +19,9 @@ function write(dir, cfg) {
 // What to tell Chromium. Low memory mode: no GPU process (software drawing is plenty for notes), V8 tuned for size,
 // and background services a notes app never uses are switched off.
 function plan(cfg) {
-  const features = ['CalculateNativeWinOcclusion'];
+  // WinUseBrowserSpellChecker off: spell checking uses Chromium's own dictionaries (downloaded once, English and Greek), not the one built into Windows,
+  // which only knows the languages installed in Windows (Greek spell checking is usually not).
+  const features = ['CalculateNativeWinOcclusion', 'WinUseBrowserSpellChecker'];
   const switches = [];
   if (cfg.lowMemory) {
     features.push('MediaRouter', 'Translate', 'OptimizationHints', 'AutofillServerCommunication');
