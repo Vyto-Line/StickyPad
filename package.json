@@ -1,7 +1,7 @@
 {
   "name": "stickypad",
   "productName": "StickyPad",
-  "version": "1.15.10",
+  "version": "1.15.11",
   "description": "Colourful sticky notes for Windows with a local AI helper (Ollama) and optional sync through any synced folder",
   "main": "main.js",
   "scripts": {
@@ -87,6 +87,7 @@
       "datadir.js",
       "logfile.js",
       "contextmenu.js",
+      "spell.js",
       "ollama.js",
       "ollamaui.js",
       "CHANGELOG.md",

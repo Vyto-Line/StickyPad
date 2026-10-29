@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.15.11
+- **Fix: misspelled words were not underlined and the right-click menu had no corrections.** StickyPad now switches spell checking on for English, Greek and the language of Windows, and writes what happens to the performance log. Low memory mode no longer blocks the dictionary download.
+
 ## 1.15.10
 - **Double-click the top bar of a note to roll it up.** Double-click the empty part of a note's top bar and the note rolls up to just its bar. Double-click again and it rolls back down. It does the same as the small arrow button. The title box and the buttons are not affected.
 

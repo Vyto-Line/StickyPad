@@ -23,7 +23,7 @@ function plan(cfg) {
   const switches = [];
   if (cfg.lowMemory) {
     features.push('MediaRouter', 'Translate', 'OptimizationHints', 'AutofillServerCommunication');
-    switches.push(['js-flags', '--optimize-for-size'], ['disable-background-networking'], ['no-pings'], ['disable-domain-reliability']);
+    switches.push(['js-flags', '--optimize-for-size'], ['no-pings'], ['disable-domain-reliability']);
   }
   switches.unshift(['disable-features', features.join(',')]);
   return { disableGpu: !!cfg.lowMemory, switches };

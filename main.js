@@ -1,9 +1,10 @@
-const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, screen, globalShortcut, clipboard, safeStorage, shell, dialog, Notification, net, nativeTheme } = require('electron');
+const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, screen, globalShortcut, clipboard, safeStorage, shell, dialog, Notification, net, nativeTheme, session } = require('electron');
 const NT = nativeTheme || { shouldUseDarkColors: false, themeSource: 'system', on() {} };   // light/dark of Windows (and of our own windows)
 const ai = require('./ai');
 const ollama = require('./ollama');
 const logfile = require('./logfile');
 const ctxmenu = require('./contextmenu');
+const spell = require('./spell');
 const datadir = require('./datadir');
 const updaterLib = require('./updater');
 const backup = require('./backup');
@@ -1870,6 +1871,7 @@ app.on('web-contents-created', (e, wc) => {
 });
 app.whenReady().then(async () => {
   watchStalls();
+  spell.setup(session.defaultSession, [app.getLocale()], perfLog);
   DATA = datadir.resolve(app.getPath('userData'));
   // The notes were moved to another folder (OneDrive, Dropbox...) but it cannot be reached right now: it may only be slow to start after a restart.
   // Wait a little. If it stays away, ask, instead of quietly starting with an empty set.
