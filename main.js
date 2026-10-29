@@ -364,6 +364,7 @@ function openNote(n) {
   if (n.rolled) w.setMaximumSize(10000, ROLL_H);
   if (!solid && Number.isFinite(n.opacity) && n.opacity < 1) { try { w.setOpacity(Math.min(1, Math.max(0.3, n.opacity))); } catch {} }   // whole note fades
   seeThrough.set(n.id, solid);
+  hookRollDblClick(n, w);
   wins.set(n.id, w); byContents.set(w.webContents.id, n.id); w.on('focus', () => { lastNote = n.id; });
   if (n.pinned) w.setAlwaysOnTop(true, 'screen-saver');
   const t0 = Date.now();
@@ -962,8 +963,8 @@ ipcMain.handle('note:pin', (e, v) => {
   n.pinned = !!v; w.setAlwaysOnTop(n.pinned, 'screen-saver'); save(); return n.pinned;
 });
 
-ipcMain.handle('note:roll', (e, v) => {
-  const n = notes[idOf(e)], w = winOf(e); if (!n || !w) return false;
+// Rolls a note up to its title bar, or back down. Used by the roll button and by a double-click on the title bar.
+function setRolled(n, w, v) {
   if (v && w.isMaximized()) w.unmaximize();   // a rolled-up note cannot stay snapped to a full screen
   const b = w.getBounds(); n.rolled = !!v;
   if (n.rolled) {
@@ -974,7 +975,30 @@ ipcMain.handle('note:roll', (e, v) => {
   }
   snapAbility(n.id);
   save(); return n.rolled;
+}
+ipcMain.handle('note:roll', (e, v) => {
+  const n = notes[idOf(e)], w = winOf(e); if (!n || !w) return false;
+  return setRolled(n, w, v);
 });
+// Double-click on the empty part of a note's title bar (the part you drag by) rolls it up or down. The bar is a drag area, so the page never
+// sees the click; Windows reports it as WM_NCLBUTTONDBLCLK (0xA3) with the hit code HTCAPTION (2). Windows would also try to maximize the
+// note when "Snap to the sides" is on, so maximizing is switched off for that moment and given back right after.
+const WM_NCLBUTTONDBLCLK = 0x00A3, HTCAPTION = 2;
+const hitCode = b => { try { return Buffer.isBuffer(b) ? b.readUInt32LE(0) : Number(b); } catch { return -1; } };
+function hookRollDblClick(n, w) {
+  if (typeof w.hookWindowMessage !== 'function') return;   // Windows only
+  try {
+    w.hookWindowMessage(WM_NCLBUTTONDBLCLK, wParam => {
+      try {
+        if (hitCode(wParam) !== HTCAPTION || w.isDestroyed() || !notes[n.id]) return;
+        w.setMaximizable(false);
+        setTimeout(() => { try { snapAbility(n.id); } catch {} }, 80);
+        const v = setRolled(notes[n.id], w, !notes[n.id].rolled);
+        w.webContents.send('note:rolled', v);
+      } catch (err) { try { crashLog('roll by double-click', err); } catch {} }
+    });
+  } catch {}
+}
 
 ipcMain.handle('note:lock', (e, pw) => {
   const n = notes[idOf(e)]; if (!n || n.lock || typeof pw !== 'string' || pw.length < 4) return false;

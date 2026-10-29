@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.15.10
+- **Double-click the top bar of a note to roll it up.** Double-click the empty part of a note's top bar (the part you drag it by) and the note rolls up to just its bar; double-click again and it rolls back down. It does the same as the small arrow button. The title box and the buttons are not affected, and with *Snap to the sides* on, a double-click never makes the note fill the screen.
+
 ## 1.15.9
 - **Fix: right-clicking in a note showed no menu.** Right-clicking in the text of a note (or in any text box, such as the search box or the chat box) now opens a menu with *Cut*, *Copy*, *Paste* and *Select all*, so you no longer have to use Ctrl+C and Ctrl+V. Pasting through the menu works exactly like Ctrl+V (pictures included). Cut and Copy are greyed out when nothing is selected. Selected words in read-only text (such as a chat answer) get *Copy*.
 - **Spelling suggestions.** When you right-click a word that is underlined as misspelled, the menu offers up to five corrections and *Add to dictionary*.

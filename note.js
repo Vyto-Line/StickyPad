@@ -735,6 +735,7 @@ async function appliedFromChat() {
   const s = snap(); if (s !== before) { pushUndo(before); redoS.length = 0; cur = s; }
 }
 api.onApplied(() => { appliedFromChat().catch(() => {}); });
+api.onRolled(v => { if (note) { note.rolled = v; apply(); } });   // a double-click on the title bar rolled the note up or down
 api.onReload(() => { if (!timer && !edit && document.activeElement !== $('#topic')) reload(); });   // a note changed on another PC
 (async () => {
   await reload();
