@@ -983,40 +983,50 @@ ipcMain.handle('note:roll', (e, v) => {
 // Double-click on the empty part of a note's title bar (the part you drag by) rolls it up or down. The bar is a drag area, so the page never
 // sees the click; Windows reports it as WM_NCLBUTTONDBLCLK (0xA3) with the hit code HTCAPTION (2). Windows would also try to maximize the
 // note when "Snap to the sides" is on, so maximizing is switched off for that moment and given back right after.
-const WM_NCLBUTTONDBLCLK = 0x00A3, HTCAPTION = 2;
+const WM_NCLBUTTONDOWN = 0x00A1, WM_NCLBUTTONDBLCLK = 0x00A3, HTCAPTION = 2;
 const hitCode = b => { try { return Buffer.isBuffer(b) ? b.readUInt32LE(0) : Number(b); } catch { return -1; } };
 function hookRollDblClick(n, w) {
-  let lastMove = 0;   // when the note was last being dragged (a note let go at the top edge is snapped by Windows; that must stay as it is)
-  try { w.on('move', () => { lastMove = Date.now(); }); } catch {}
+  let rollAt = 0, lastDown = { t: 0, x: 0, y: 0 };
   const roll = why => {
-    if (w.isDestroyed() || !notes[n.id]) return;
+    if (w.isDestroyed() || !notes[n.id] || Date.now() - rollAt < 600) return;   // never twice for one double-click
+    rollAt = Date.now();
     const v = setRolled(notes[n.id], w, !notes[n.id].rolled);
     w.webContents.send('note:rolled', v);
     perfLog('ROLL by double-click (' + why + '): note is now ' + (v ? 'rolled up' : 'rolled down'));
   };
+  const noMaximize = () => { try { w.setMaximizable(false); } catch {} setTimeout(() => { try { snapAbility(n.id); } catch {} }, 120); };
   if (typeof w.hookWindowMessage === 'function') {   // Windows only
     try {
+      // Two quick presses on the title bar (the part you drag by) count as a double-click. Windows' own double-click message is logged as well.
+      w.hookWindowMessage(WM_NCLBUTTONDOWN, wParam => {
+        try {
+          if (hitCode(wParam) !== HTCAPTION) return;
+          const c = screen.getCursorScreenPoint(), now = Date.now();
+          const dbl = now - lastDown.t < 500 && Math.abs(c.x - lastDown.x) <= 4 && Math.abs(c.y - lastDown.y) <= 4;
+          perfLog('ROLL press on the title bar' + (dbl ? ' (second press: double-click)' : ''));
+          lastDown = dbl ? { t: 0, x: 0, y: 0 } : { t: now, x: c.x, y: c.y };
+          if (dbl) { noMaximize(); roll('two presses'); }
+        } catch (err) { try { crashLog('roll by double-click (press)', err); } catch {} }
+      });
       w.hookWindowMessage(WM_NCLBUTTONDBLCLK, wParam => {
         try {
           const code = hitCode(wParam);
-          perfLog('ROLL double-click on the window frame: hit code ' + code + (code === HTCAPTION ? ' (title bar)' : ''));
+          perfLog('ROLL double-click message from Windows: hit code ' + code + (code === HTCAPTION ? ' (title bar)' : ''));
           if (code !== HTCAPTION) return;
-          w.setMaximizable(false);
-          setTimeout(() => { try { snapAbility(n.id); } catch {} }, 80);
-          roll('title bar message');
+          noMaximize(); roll('Windows double-click message');
         } catch (err) { try { crashLog('roll by double-click', err); } catch {} }
       });
     } catch {}
   }
-  // Second way in: if Windows maximized the note anyway, and the mouse is on the note's title bar and the note was not just being dragged
-  // (so not a snap to the top edge, and not Win+Up), that was a double-click on the title bar: put the note back and roll it up instead.
+  // Another way in: if Windows maximized the note anyway after a double-click on its title bar, put it back and roll it up instead.
+  // Only when the mouse is on the title bar and not at the very top of the screen (that is a note dragged to the top edge, which Windows snaps).
   try {
     w.on('maximize', () => {
       try {
-        const nb = w.getNormalBounds(), c = screen.getCursorScreenPoint();
-        const inBar = c.x >= nb.x && c.x <= nb.x + nb.width && c.y >= nb.y && c.y <= nb.y + 38, still = Date.now() - lastMove > 700;
-        perfLog('ROLL note was maximized: mouse ' + (inBar ? 'on' : 'not on') + ' the title bar, ' + (still ? 'not' : 'just') + ' dragged');
-        if (inBar && still && notes[n.id] && !notes[n.id].rolled) { w.unmaximize(); roll('maximized by the double-click'); }
+        const nb = w.getNormalBounds(), c = screen.getCursorScreenPoint(), d = screen.getDisplayNearestPoint(c);
+        const inBar = c.x >= nb.x && c.x <= nb.x + nb.width && c.y >= nb.y && c.y <= nb.y + 38, atTop = d && c.y - d.bounds.y <= 6;
+        perfLog('ROLL note was maximized: mouse ' + (inBar ? 'on' : 'not on') + ' the title bar, ' + (atTop ? 'at' : 'not at') + ' the top edge of the screen');
+        if (inBar && !atTop && notes[n.id] && !notes[n.id].rolled) { w.unmaximize(); roll('maximized by the double-click'); }
       } catch (err) { try { crashLog('roll by double-click (maximize)', err); } catch {} }
     });
   } catch {}
