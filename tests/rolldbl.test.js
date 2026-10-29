@@ -54,5 +54,12 @@ const H = require('./fake-electron');
   press(cap); assert.strictEqual(sent().length, n0 + 1, 'the second quick press rolls the note');
   const hit = Buffer.alloc(8); hit.writeUInt32LE(20, 0); press(hit); press(hit);
   assert.strictEqual(sent().length, n0 + 1, 'presses elsewhere on the window do nothing');
+  // first click: Windows' move loop ends without the note having moved -> the page is told to get ready for a second click
+  H.electron.__cursor = { x: bn.x + 100, y: bn.y + 12 };
+  const armed = () => w.webContents.sent.filter(m => m[0] === 'note:armdbl').length, a0 = armed();
+  w.emit('moved'); assert.strictEqual(armed(), a0 + 1, 'a click on the title bar (the note did not move) arms the double-click');
+  w.emit('will-move'); w.emit('moved'); assert.strictEqual(armed(), a0 + 1, 'dragging the note does not');
+  w.emit('will-resize'); w.emit('moved'); assert.strictEqual(armed(), a0 + 1, 'nor does resizing it');
+  H.electron.__cursor = { x: bn.x + 100, y: bn.y + 200 }; w.emit('moved'); assert.strictEqual(armed(), a0 + 1, 'nor a click away from the title bar');
   console.log('rolldbl ok');
 })().catch(e => { console.error(e); process.exit(1); });

@@ -18,6 +18,7 @@ contextBridge.exposeInMainWorld('api', {
   onSettingsSection: cb => ipcRenderer.on('settings:section', (e, s) => cb(s)),
   themeSet: call('theme:set'), themeApplyAll: call('theme:applyAll'),
   onReload: cb => ipcRenderer.on('note:reload', () => cb()),
+  onArmDbl: cb => ipcRenderer.on('note:armdbl', () => cb()),
   onRolled: cb => ipcRenderer.on('note:rolled', (e, v) => cb(!!v)),
   onSnapHint: cb => ipcRenderer.on('note:snaphint', () => cb()), snapHintAnswer: call('snaphint:answer'),
   onApplied: cb => ipcRenderer.on('note:applied', () => cb()),

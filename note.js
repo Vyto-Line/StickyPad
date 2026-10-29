@@ -815,7 +815,16 @@ $('#grp').onchange = e => { note.group = e.target.value || null; api.grpMove(not
 $('#chk').onclick = () => { addTodo(); ed.focus(); };
 $('#topic').addEventListener('input', e => { note.title = e.target.value; api.update({ title: note.title }); });
 $('#topic').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); ed.focus(); } });
-$('#roll').onclick = async () => { if (timer) saveNow(); note.rolled = await api.roll(!note.rolled); apply(); };
+async function rollToggle() { if (timer) saveNow(); note.rolled = await api.roll(!note.rolled); apply(); }
+$('#roll').onclick = rollToggle;
+// Double-click on the title bar rolls the note up or down. The bar is a drag area, so the page never sees clicks on it; after the first click the app
+// says so (armdbl) and the bar stops being a drag area for a moment, so the second press arrives here.
+let dblTimer = null;
+api.onArmDbl(() => { document.body.classList.add('dblarm'); clearTimeout(dblTimer); dblTimer = setTimeout(() => document.body.classList.remove('dblarm'), 450); });
+document.querySelector('header').addEventListener('mousedown', e => {
+  if (!document.body.classList.contains('dblarm') || e.button !== 0 || e.target.closest('button, input')) return;
+  e.preventDefault(); clearTimeout(dblTimer); document.body.classList.remove('dblarm'); rollToggle();
+});
 
 /* ---------- AI helper: summarise and fix grammar ---------- */
 let aiCfgState = null, aiBusy = false, aiToken = 0;

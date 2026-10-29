@@ -986,7 +986,24 @@ ipcMain.handle('note:roll', (e, v) => {
 const WM_NCLBUTTONDOWN = 0x00A1, WM_NCLBUTTONDBLCLK = 0x00A3, HTCAPTION = 2;
 const hitCode = b => { try { return Buffer.isBuffer(b) ? b.readUInt32LE(0) : Number(b); } catch { return -1; } };
 function hookRollDblClick(n, w) {
-  let rollAt = 0, lastDown = { t: 0, x: 0, y: 0 };
+  let rollAt = 0, lastDown = { t: 0, x: 0, y: 0 }, moving = false;
+  // First click on the title bar: pressing the drag area starts Windows' own move loop; when it ends without the note having moved, that was a click.
+  // The page is told, and for the next half second the title bar stops being a drag area, so the second click of a double-click reaches the page
+  // (a drag area never sees clicks) and the page rolls the note up or down. No maximizing, so nothing jumps.
+  try {
+    w.on('will-move', () => { moving = true; });
+    w.on('will-resize', () => { moving = true; });
+    w.on('moved', () => {
+      const was = moving; moving = false;
+      try {
+        if (was || w.isDestroyed() || !notes[n.id]) return;
+        const b = w.getBounds(), c = screen.getCursorScreenPoint();
+        const inBar = c.x >= b.x && c.x <= b.x + b.width && c.y >= b.y && c.y <= b.y + 40;
+        perfLog('ROLL click on the title bar: ' + (inBar ? 'ready for a second click' : 'mouse not on the title bar'));
+        if (inBar) w.webContents.send('note:armdbl');
+      } catch {}
+    });
+  } catch {}
   const roll = (why, base) => {
     if (w.isDestroyed() || !notes[n.id] || Date.now() - rollAt < 600) return;   // never twice for one double-click
     rollAt = Date.now();
