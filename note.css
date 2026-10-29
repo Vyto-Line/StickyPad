@@ -12,14 +12,14 @@ button:focus-visible,input:focus-visible,select:focus-visible,.sw:focus-within{o
 
 /* header */
 header{flex:none;height:38px;display:flex;align-items:center;gap:1px;padding:0 5px 0 2px;background:var(--tint);user-select:none}   /* the title bar is moved by the page (see note.js), not by Windows */
-.grip{flex:none;width:16px;align-self:stretch;opacity:.4;cursor:move}
+.grip{flex:none;width:16px;align-self:stretch;opacity:.4}
 .grip::before{content:"";display:block;width:6px;height:15px;margin:11px 5px;background:radial-gradient(circle,currentColor 1.1px,transparent 1.5px) 0 0/6px 5px}
 #topic{-webkit-app-region:no-drag;flex:0 1 34%;transition:flex-basis .15s;min-width:56px;font:inherit;font-weight:700;font-size:13.5px;color:inherit;background:transparent;border:0;
   border-radius:6px;padding:3px 6px;outline:0;text-overflow:ellipsis}
 #topic:hover{background:var(--tint)}
 #topic:focus{background:var(--tint2);flex-basis:58%}   /* grows while you type a longer topic */
 #topic::placeholder{color:inherit;opacity:.4;font-weight:500}
-.dragfill{flex:1 1 0;min-width:20px;align-self:stretch;cursor:move}
+.dragfill{flex:1 1 0;min-width:20px;align-self:stretch}
 .ib[hidden]{display:none}
 .ib{-webkit-app-region:no-drag;flex:none;width:25px;height:27px;display:grid;place-items:center;border:0;border-radius:8px;background:none;color:inherit;opacity:.68;cursor:pointer}
 .ib:hover:not(:disabled){background:var(--tint2);opacity:1}
