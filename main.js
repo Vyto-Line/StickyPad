@@ -364,7 +364,6 @@ function openNote(n) {
   if (n.rolled) w.setMaximumSize(10000, ROLL_H);
   if (!solid && Number.isFinite(n.opacity) && n.opacity < 1) { try { w.setOpacity(Math.min(1, Math.max(0.3, n.opacity))); } catch {} }   // whole note fades
   seeThrough.set(n.id, solid);
-  hookRollDblClick(n, w);
   wins.set(n.id, w); byContents.set(w.webContents.id, n.id); w.on('focus', () => { lastNote = n.id; });
   if (n.pinned) w.setAlwaysOnTop(true, 'screen-saver');
   const t0 = Date.now();
@@ -964,9 +963,9 @@ ipcMain.handle('note:pin', (e, v) => {
 });
 
 // Rolls a note up to its title bar, or back down. Used by the roll button and by a double-click on the title bar.
-function setRolled(n, w, v, base) {   // base: the size to roll from, when the window is not at its real size yet
+function setRolled(n, w, v) {
   if (v && w.isMaximized()) w.unmaximize();   // a rolled-up note cannot stay snapped to a full screen
-  const b = base || w.getBounds(); n.rolled = !!v;
+  const b = w.getBounds(); n.rolled = !!v;
   if (n.rolled) {
     n.bounds = { ...n.bounds, x: b.x, y: b.y, width: b.width, height: b.height };
     w.setMinimumSize(MIN_W, ROLL_H); w.setMaximumSize(10000, ROLL_H); w.setBounds({ ...b, height: ROLL_H });
@@ -980,87 +979,48 @@ ipcMain.handle('note:roll', (e, v) => {
   const n = notes[idOf(e)], w = winOf(e); if (!n || !w) return false;
   return setRolled(n, w, v);
 });
-// Double-click on the empty part of a note's title bar (the part you drag by) rolls it up or down. The bar is a drag area, so the page never
-// sees the click; Windows reports it as WM_NCLBUTTONDBLCLK (0xA3) with the hit code HTCAPTION (2). Windows would also try to maximize the
-// note when "Snap to the sides" is on, so maximizing is switched off for that moment and given back right after.
-const WM_NCLBUTTONDOWN = 0x00A1, WM_NCLBUTTONDBLCLK = 0x00A3, HTCAPTION = 2;
-const hitCode = b => { try { return Buffer.isBuffer(b) ? b.readUInt32LE(0) : Number(b); } catch { return -1; } };
-function hookRollDblClick(n, w) {
-  let rollAt = 0, lastDown = { t: 0, x: 0, y: 0 }, moving = false;
-  // First click on the title bar: pressing the drag area starts Windows' own move loop; when it ends without the note having moved, that was a click.
-  // The page is told, and for the next half second the title bar stops being a drag area, so the second click of a double-click reaches the page
-  // (a drag area never sees clicks) and the page rolls the note up or down. No maximizing, so nothing jumps.
+// Moving a note by its title bar is done here, not by Windows. A drag area of the window never shows clicks to the page, so a double-click on the
+// bar (which rolls the note up or down) could not be seen. The page tells us when a drag starts and ends; in between, the note follows the mouse.
+const drags = new Map();   // noteId -> { w, c0, b, timer }
+function dragStop(id, snap) {
+  const d = drags.get(id); if (!d) return;
+  drags.delete(id); clearInterval(d.timer); clearTimeout(d.cap);
+  const w = d.w; if (w.isDestroyed()) return;
   try {
-    w.on('will-move', () => { moving = true; });
-    w.on('will-resize', () => { moving = true; });
-    w.on('moved', () => {
-      const was = moving; moving = false;
-      try {
-        if (was || w.isDestroyed() || !notes[n.id]) return;
-        const b = w.getBounds(), c = screen.getCursorScreenPoint();
-        const inBar = c.x >= b.x && c.x <= b.x + b.width && c.y >= b.y && c.y <= b.y + 40;
-        perfLog('ROLL click on the title bar: ' + (inBar ? 'ready for a second click' : 'mouse not on the title bar'));
-        if (inBar) w.webContents.send('note:armdbl');
-      } catch {}
-    });
-  } catch {}
-  const roll = (why, base) => {
-    if (w.isDestroyed() || !notes[n.id] || Date.now() - rollAt < 600) return;   // never twice for one double-click
-    rollAt = Date.now();
-    const v = setRolled(notes[n.id], w, !notes[n.id].rolled, base);
-    w.webContents.send('note:rolled', v);
-    perfLog('ROLL by double-click (' + why + '): note is now ' + (v ? 'rolled up' : 'rolled down'));
-  };
-  const noMaximize = () => { try { w.setMaximizable(false); } catch {} setTimeout(() => { try { snapAbility(n.id); } catch {} }, 120); };
-  if (typeof w.hookWindowMessage === 'function') {   // Windows only
-    try {
-      // Two quick presses on the title bar (the part you drag by) count as a double-click. Windows' own double-click message is logged as well.
-      w.hookWindowMessage(WM_NCLBUTTONDOWN, wParam => {
-        try {
-          if (hitCode(wParam) !== HTCAPTION) return;
-          const c = screen.getCursorScreenPoint(), now = Date.now();
-          const dbl = now - lastDown.t < 500 && Math.abs(c.x - lastDown.x) <= 4 && Math.abs(c.y - lastDown.y) <= 4;
-          perfLog('ROLL press on the title bar' + (dbl ? ' (second press: double-click)' : ''));
-          lastDown = dbl ? { t: 0, x: 0, y: 0 } : { t: now, x: c.x, y: c.y };
-          if (dbl) { noMaximize(); roll('two presses'); }
-        } catch (err) { try { crashLog('roll by double-click (press)', err); } catch {} }
-      });
-      w.hookWindowMessage(WM_NCLBUTTONDBLCLK, wParam => {
-        try {
-          const code = hitCode(wParam);
-          perfLog('ROLL double-click message from Windows: hit code ' + code + (code === HTCAPTION ? ' (title bar)' : ''));
-          if (code !== HTCAPTION) return;
-          noMaximize(); roll('Windows double-click message');
-        } catch (err) { try { crashLog('roll by double-click', err); } catch {} }
-      });
-    } catch {}
-  }
-  // Another way in: if Windows maximized the note anyway after a double-click on its title bar, put it back and roll it up instead.
-  // Only when the mouse is on the title bar and not at the very top of the screen (that is a note dragged to the top edge, which Windows snaps).
-  try {
-    w.on('maximize', () => {
-      try {
-        const nb = w.getNormalBounds(), c = screen.getCursorScreenPoint(), d = screen.getDisplayNearestPoint(c);
-        const inBar = c.x >= nb.x && c.x <= nb.x + nb.width && c.y >= nb.y && c.y <= nb.y + 38, atTop = d && c.y - d.bounds.y <= 6;
-        perfLog('ROLL note was maximized: mouse ' + (inBar ? 'on' : 'not on') + ' the title bar, ' + (atTop ? 'at' : 'not at') + ' the top edge of the screen');
-        if (inBar && !atTop && notes[n.id] && !notes[n.id].rolled) {
-          // Windows has not given the window its normal size back yet, so roll from the size it had before (nb), not from the full screen.
-          // The window is invisible for that moment so the jump to full screen is not seen.
-          try { w.setOpacity(0); } catch {}
-          w.unmaximize();
-          setTimeout(() => {
-            try {
-              if (w.isDestroyed()) return;
-              if (w.isMaximized()) w.unmaximize();
-              w.setBounds(nb); roll('maximized by the double-click', nb);
-            } catch (err) { try { crashLog('roll by double-click (restore)', err); } catch {} }
-            try { const m = notes[n.id]; w.setOpacity(!seeThrough.get(n.id) && m && Number.isFinite(m.opacity) && m.opacity < 1 ? Math.min(1, Math.max(0.3, m.opacity)) : 1); } catch {}
-          }, 60);
-        }
-      } catch (err) { try { crashLog('roll by double-click (maximize)', err); } catch {} }
-    });
+    const c = screen.getCursorScreenPoint(), wa = screen.getDisplayNearestPoint(c).workArea;
+    if (snap && canSnap(id)) {   // what Windows does with a note let go at the top or a side of the screen (Settings > Notes > Snap to the sides)
+      if (c.y <= wa.y + 1) { w.maximize(); return; }
+      if (c.x <= wa.x + 1) { w.setBounds({ x: wa.x, y: wa.y, width: Math.round(wa.width / 2), height: wa.height }); }
+      else if (c.x >= wa.x + wa.width - 2) { const hw = Math.round(wa.width / 2); w.setBounds({ x: wa.x + wa.width - hw, y: wa.y, width: hw, height: wa.height }); }
+    }
+    const now = w.getBounds();
+    if (now.x !== d.b.x || now.y !== d.b.y) w.emit('moved');   // the same "let go" steps as a drag by Windows: remember the place, snap to other notes
   } catch {}
 }
+ipcMain.handle('note:dragStart', e => {
+  const id = idOf(e), w = winOf(e); if (!notes[id] || !w || w.isDestroyed()) return false;
+  dragStop(id, false);
+  const c0 = screen.getCursorScreenPoint();
+  let b = w.getBounds();
+  if (w.isMaximized()) {   // pulling a snapped note off the edge: it gets its old size back under the mouse, like Windows does
+    const nb = w.getNormalBounds(), ratio = b.width ? (c0.x - b.x) / b.width : 0.5;
+    w.unmaximize();
+    w.setBounds({ x: Math.round(c0.x - nb.width * ratio), y: Math.round(c0.y - 18), width: nb.width, height: nb.height });
+    b = w.getBounds();
+  }
+  const d = { w, c0, b, timer: null, cap: null };
+  d.timer = setInterval(() => {
+    try {
+      if (w.isDestroyed()) return dragStop(id, false);
+      const c = screen.getCursorScreenPoint(), x = b.x + c.x - c0.x, y = b.y + c.y - c0.y, cur = w.getBounds();
+      if (x !== cur.x || y !== cur.y) w.setBounds({ x, y, width: b.width, height: b.height });
+    } catch {}
+  }, 8);
+  d.cap = setTimeout(() => dragStop(id, false), 120000);   // never follow the mouse forever if the page never says it let go
+  drags.set(id, d);
+  return true;
+});
+ipcMain.handle('note:dragEnd', e => { dragStop(idOf(e), true); return true; });
 
 ipcMain.handle('note:lock', (e, pw) => {
   const n = notes[idOf(e)]; if (!n || n.lock || typeof pw !== 'string' || pw.length < 4) return false;

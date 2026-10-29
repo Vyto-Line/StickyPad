@@ -735,7 +735,6 @@ async function appliedFromChat() {
   const s = snap(); if (s !== before) { pushUndo(before); redoS.length = 0; cur = s; }
 }
 api.onApplied(() => { appliedFromChat().catch(() => {}); });
-api.onRolled(v => { if (note) { note.rolled = v; apply(); } });   // a double-click on the title bar rolled the note up or down
 api.onReload(() => { if (!timer && !edit && document.activeElement !== $('#topic')) reload(); });   // a note changed on another PC
 (async () => {
   await reload();
@@ -817,14 +816,26 @@ $('#topic').addEventListener('input', e => { note.title = e.target.value; api.up
 $('#topic').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); ed.focus(); } });
 async function rollToggle() { if (timer) saveNow(); note.rolled = await api.roll(!note.rolled); apply(); }
 $('#roll').onclick = rollToggle;
-// Double-click on the title bar rolls the note up or down. The bar is a drag area, so the page never sees clicks on it; after the first click the app
-// says so (armdbl) and the bar stops being a drag area for a moment, so the second press arrives here.
-let dblTimer = null;
-api.onArmDbl(() => { document.body.classList.add('dblarm'); clearTimeout(dblTimer); dblTimer = setTimeout(() => document.body.classList.remove('dblarm'), 450); });
-document.querySelector('header').addEventListener('mousedown', e => {
-  if (!document.body.classList.contains('dblarm') || e.button !== 0 || e.target.closest('button, input')) return;
-  e.preventDefault(); clearTimeout(dblTimer); document.body.classList.remove('dblarm'); rollToggle();
-});
+// The title bar moves the note. This is done here (the app moves the window to follow the mouse) rather than by Windows, because a Windows drag area
+// never shows clicks to the page, and a double-click on the bar rolls the note up or down.
+(() => {
+  const hd = document.querySelector('header'); let st = null;
+  const interactive = t => t.closest('button, input, select, textarea, a');
+  hd.addEventListener('pointerdown', e => {
+    if (e.button !== 0 || interactive(e.target)) return;
+    st = { id: e.pointerId, x: e.screenX, y: e.screenY, drag: false };
+    try { hd.setPointerCapture(e.pointerId); } catch {}
+  });
+  hd.addEventListener('pointermove', e => {
+    if (!st || e.pointerId !== st.id || st.drag) return;
+    if (Math.abs(e.screenX - st.x) + Math.abs(e.screenY - st.y) < 4) return;   // a click is not a drag
+    st.drag = true; api.dragStart();
+  });
+  const end = () => { if (!st) return; const d = st.drag; st = null; if (d) api.dragEnd(); };
+  hd.addEventListener('pointerup', end); hd.addEventListener('pointercancel', end); hd.addEventListener('lostpointercapture', end);
+  window.addEventListener('blur', end);
+  hd.addEventListener('dblclick', e => { if (interactive(e.target)) return; try { getSelection().removeAllRanges(); } catch {} rollToggle(); });
+})();
 
 /* ---------- AI helper: summarise and fix grammar ---------- */
 let aiCfgState = null, aiBusy = false, aiToken = 0;
