@@ -30,9 +30,15 @@ const H = require('./fake-electron');
   // second way in: Windows maximized the note anyway after a double-click on its title bar -> put it back and roll it up instead
   await h['settings:set']({}, { snapSides: true });
   const bn = w._b; H.electron.__cursor = { x: bn.x + 100, y: bn.y + 10 };
-  w._max = true; await new Promise(r => setTimeout(r, 800)); w.emit('maximize');
+  const normal = { ...w._b };   // the size the note had before Windows maximized it
+  w._max = true; w._b = { x: 0, y: 0, width: 1920, height: 1040 }; w.getNormalBounds = () => normal;   // (full screen while maximized)
+  await new Promise(r => setTimeout(r, 800)); w.emit('maximize'); await new Promise(r => setTimeout(r, 200));
   assert.strictEqual(w._max, false, 'the note is taken out of full screen');
   assert.deepStrictEqual(sent().slice(-1), [true], 'and rolled up');
+  assert.strictEqual(w._b.width, normal.width, 'it rolls from its normal width, not the full-screen one: ' + w._b.width);
+  assert.strictEqual(w._b.height, 40, 'down to the title bar');
+  assert.strictEqual(w.opacity, 1, 'and is visible again');
+  w.getNormalBounds = () => w._b;
   // not on the title bar (Win+Up, or a snap by dragging to the screen edge): stays maximized
   await hk(cap); await new Promise(r => setTimeout(r, 150));   // roll it down again
   H.electron.__cursor = { x: bn.x + 100, y: bn.y + 300 }; w._max = true; w.emit('maximize');

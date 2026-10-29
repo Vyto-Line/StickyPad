@@ -964,9 +964,9 @@ ipcMain.handle('note:pin', (e, v) => {
 });
 
 // Rolls a note up to its title bar, or back down. Used by the roll button and by a double-click on the title bar.
-function setRolled(n, w, v) {
+function setRolled(n, w, v, base) {   // base: the size to roll from, when the window is not at its real size yet
   if (v && w.isMaximized()) w.unmaximize();   // a rolled-up note cannot stay snapped to a full screen
-  const b = w.getBounds(); n.rolled = !!v;
+  const b = base || w.getBounds(); n.rolled = !!v;
   if (n.rolled) {
     n.bounds = { ...n.bounds, x: b.x, y: b.y, width: b.width, height: b.height };
     w.setMinimumSize(MIN_W, ROLL_H); w.setMaximumSize(10000, ROLL_H); w.setBounds({ ...b, height: ROLL_H });
@@ -987,10 +987,10 @@ const WM_NCLBUTTONDOWN = 0x00A1, WM_NCLBUTTONDBLCLK = 0x00A3, HTCAPTION = 2;
 const hitCode = b => { try { return Buffer.isBuffer(b) ? b.readUInt32LE(0) : Number(b); } catch { return -1; } };
 function hookRollDblClick(n, w) {
   let rollAt = 0, lastDown = { t: 0, x: 0, y: 0 };
-  const roll = why => {
+  const roll = (why, base) => {
     if (w.isDestroyed() || !notes[n.id] || Date.now() - rollAt < 600) return;   // never twice for one double-click
     rollAt = Date.now();
-    const v = setRolled(notes[n.id], w, !notes[n.id].rolled);
+    const v = setRolled(notes[n.id], w, !notes[n.id].rolled, base);
     w.webContents.send('note:rolled', v);
     perfLog('ROLL by double-click (' + why + '): note is now ' + (v ? 'rolled up' : 'rolled down'));
   };
@@ -1026,7 +1026,20 @@ function hookRollDblClick(n, w) {
         const nb = w.getNormalBounds(), c = screen.getCursorScreenPoint(), d = screen.getDisplayNearestPoint(c);
         const inBar = c.x >= nb.x && c.x <= nb.x + nb.width && c.y >= nb.y && c.y <= nb.y + 38, atTop = d && c.y - d.bounds.y <= 6;
         perfLog('ROLL note was maximized: mouse ' + (inBar ? 'on' : 'not on') + ' the title bar, ' + (atTop ? 'at' : 'not at') + ' the top edge of the screen');
-        if (inBar && !atTop && notes[n.id] && !notes[n.id].rolled) { w.unmaximize(); roll('maximized by the double-click'); }
+        if (inBar && !atTop && notes[n.id] && !notes[n.id].rolled) {
+          // Windows has not given the window its normal size back yet, so roll from the size it had before (nb), not from the full screen.
+          // The window is invisible for that moment so the jump to full screen is not seen.
+          try { w.setOpacity(0); } catch {}
+          w.unmaximize();
+          setTimeout(() => {
+            try {
+              if (w.isDestroyed()) return;
+              if (w.isMaximized()) w.unmaximize();
+              w.setBounds(nb); roll('maximized by the double-click', nb);
+            } catch (err) { try { crashLog('roll by double-click (restore)', err); } catch {} }
+            try { const m = notes[n.id]; w.setOpacity(!seeThrough.get(n.id) && m && Number.isFinite(m.opacity) && m.opacity < 1 ? Math.min(1, Math.max(0.3, m.opacity)) : 1); } catch {}
+          }, 60);
+        }
       } catch (err) { try { crashLog('roll by double-click (maximize)', err); } catch {} }
     });
   } catch {}
