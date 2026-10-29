@@ -51,6 +51,7 @@ Not yet: updating the GitHub build helpers (Node 20 warning); Alex said "not yet
 
 6. **Duplicate note** (Alex, 2026-10-27): one action that copies a note with its colour, font and content (also for several chosen notes in Select mode). Mockup approved 2026-10-27: "Duplicate" in the card right-click menu after Print…, also in the note menu and in the Select bar More menu; the copy is named "<title> (copy)", keeps content, colour, font and folder, starts unpinned and unlocked, and has no reminder; a short message confirms it.
 7. **Pinned notes strip at the top of Home** (Alex, 2026-10-27): pinned notes stay in view without scrolling. Mockup approved 2026-10-27: a "Pinned" section at the top of Home with normal-size cards and a pin on each; a pinned note is shown there only, not again in its folder (folder counts still include it); the section only appears when something is pinned; Pin and Unpin from the card menu, the Select More menu and the note.
+8. **"What's new" also lists the older versions** (Alex, 2026-10-29). Same window and look as today, nothing redesigned: the newest changes stay on top and the older versions follow below in the same style, as far back as the changelog goes (the window already scrolls). Opened by hand it shows all versions; after an update the new ones still come first.
 
 ## Planned for 1.17.0 (Alex, 2026-10-27; nothing built)
 - Snooze buttons on reminders (10 minutes, 1 hour, Tomorrow); folder colours or icons; checklist templates; AI on a whole folder; lists and headings in notes; automatic backups on a schedule.
