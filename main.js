@@ -1871,7 +1871,7 @@ app.on('web-contents-created', (e, wc) => {
 });
 app.whenReady().then(async () => {
   watchStalls();
-  spell.setup(session.defaultSession, [app.getLocale()], perfLog);
+  spell.setup(session.defaultSession, [app.getLocale()], perfLog, app.getPath('userData'));
   DATA = datadir.resolve(app.getPath('userData'));
   // The notes were moved to another folder (OneDrive, Dropbox...) but it cannot be reached right now: it may only be slow to start after a restart.
   // Wait a little. If it stays away, ask, instead of quietly starting with an empty set.

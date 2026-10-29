@@ -14,7 +14,7 @@ function languages(available, system) {
   return out;
 }
 
-function setup(ses, system, log) {
+function setup(ses, system, log, dir) {
   const note = (w, extra) => { try { log('SPELL ' + w + (extra ? ': ' + extra : '')); } catch {} };
   try {
     ['spellcheck-dictionary-initialized', 'spellcheck-dictionary-download-begin', 'spellcheck-dictionary-download-success', 'spellcheck-dictionary-download-failure']
@@ -23,6 +23,15 @@ function setup(ses, system, log) {
     if (langs.length) ses.setSpellCheckerLanguages(langs);
     note('languages', langs.join(', ') || 'none available');
     if (ses.spellCheckerEnabled === false) ses.setSpellCheckerEnabled(true);
+    // a little later: what the engine ended up with, and which dictionary files are on disk (to see why a language does not work)
+    const t = setTimeout(() => {
+      try {
+        const fs = require('fs'), path = require('path');
+        let files = 'no folder'; try { files = fs.readdirSync(path.join(dir || '', 'Dictionaries')).map(f => f + ' ' + fs.statSync(path.join(dir, 'Dictionaries', f)).size).join(', ') || 'empty'; } catch {}
+        note('state', 'languages ' + (ses.getSpellCheckerLanguages ? ses.getSpellCheckerLanguages().join(',') : '?') + '; enabled ' + ses.isSpellCheckerEnabled() + '; files: ' + files);
+      } catch (e) { note('state failed', e && e.message); }
+    }, 12000);
+    if (t.unref) t.unref();
   } catch (err) { note('setup failed', err && err.message); }
 }
 
