@@ -26,6 +26,17 @@ const H = require('./fake-electron');
   assert.strictEqual(w.maximizable, false, 'a rolled-up note stays unsnappable (as the roll button does)');
   hook(cap); await new Promise(r => setTimeout(r, 150));
   assert.strictEqual(w.maximizable, true, 'rolled down again: snapping is back');
-  // a note that was deleted does nothing
+  // second way in: Windows maximized the note anyway after a double-click on its title bar -> put it back and roll it up instead
+  await h['settings:set']({}, { snapSides: true });
+  const bn = w._b; H.electron.__cursor = { x: bn.x + 100, y: bn.y + 10 };
+  w._max = true; await new Promise(r => setTimeout(r, 800)); w.emit('maximize');
+  assert.strictEqual(w._max, false, 'the note is taken out of full screen');
+  assert.deepStrictEqual(sent().slice(-1), [true], 'and rolled up');
+  // not on the title bar (Win+Up, or a snap by dragging to the screen edge): stays maximized
+  hook(cap); await new Promise(r => setTimeout(r, 150));   // roll it down again
+  H.electron.__cursor = { x: bn.x + 100, y: bn.y + 300 }; w._max = true; w.emit('maximize');
+  assert.strictEqual(w._max, true, 'a maximize with the mouse elsewhere is left alone');
+  H.electron.__cursor = { x: bn.x + 100, y: bn.y + 10 }; w.emit('move'); w.emit('maximize');
+  assert.strictEqual(w._max, true, 'and so is one right after dragging the note (snapped at the top edge)');
   console.log('rolldbl ok');
 })().catch(e => { console.error(e); process.exit(1); });
