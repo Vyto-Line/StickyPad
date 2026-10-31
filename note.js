@@ -31,11 +31,11 @@ function palMenuOpen() {
   const add = (id, name, cols, on, mine) => {
     const b = document.createElement('button'); b.type = 'button'; b.className = 'pal' + (on ? ' on' : ''); b.setAttribute('role', 'menuitemradio'); b.setAttribute('aria-checked', on ? 'true' : 'false');
     const dots = document.createElement('span'); dots.className = 'dots'; cols.forEach(c => { const i = document.createElement('i'); i.style.background = c; dots.appendChild(i); });
-    const nm = document.createElement('span'); nm.className = 'pn'; nm.textContent = name + (on ? '  ✓' : '');
+    const nm = document.createElement('span'); nm.className = 'pn'; nm.textContent = name + (on ? '  ✓' : ''); if (mine) nm.setAttribute('data-notr', '');
     b.append(dots, nm); b.onclick = () => { api.paletteSet(id); palMenuClose(); }; m.appendChild(b);
   };
   add('theme', 'From the theme (' + TH.byId(UT.id).name + ')', TH.palette(UT.id, uiDarkNow).slice(0, 6), UT.paletteId === 'theme');
-  (UT.palettes || []).forEach(p => add(p.id, p.name, (uiDarkNow ? p.dark : p.colors), UT.paletteId === p.id));
+  (UT.palettes || []).forEach(p => add(p.id, p.name, (uiDarkNow ? p.dark : p.colors), UT.paletteId === p.id, p.custom));
   const mk = document.createElement('button'); mk.type = 'button'; mk.className = 'pal make'; mk.textContent = 'Make my own palette…'; mk.onclick = () => { palMenuClose(); api.openSettings('appearance'); };
   m.appendChild(mk); m.hidden = false; $('#palBtn').setAttribute('aria-expanded', 'true');
 }
@@ -1048,10 +1048,10 @@ async function refreshInfo() {
   const i = await api.info();
   const g = $('#grp'); g.innerHTML = '';
   const none = document.createElement('option'); none.value = ''; none.textContent = '— No folder —'; g.appendChild(none);
-  i.groups.forEach(x => { const o = document.createElement('option'); o.value = x.id; o.textContent = x.name; g.appendChild(o); });
+  i.groups.forEach(x => { const o = document.createElement('option'); o.value = x.id; o.textContent = x.name; o.setAttribute('data-notr', ''); g.appendChild(o); });
   g.value = note.group || ''; grpPaint();
 }
-function grpPaint() { const g = $('#grp'), o = g.selectedOptions[0]; $('#grpSum').textContent = g.value && o ? o.textContent : 'None'; }
+function grpPaint() { const g = $('#grp'), o = g.selectedOptions[0], mine = !!(g.value && o); $('#grpSum').toggleAttribute('data-notr', mine); $('#grpSum').textContent = mine ? o.textContent : 'None'; }
 $('#grp').onchange = e => { note.group = e.target.value || null; api.grpMove(note.id, note.group); grpPaint(); };
 $('#chk').onclick = () => { addTodo(); ed.focus(); };
 $('#topic').addEventListener('input', e => { note.title = e.target.value; api.update({ title: note.title }); });
@@ -1513,6 +1513,8 @@ document.addEventListener('keydown', e => {   // Ctrl+A anywhere outside a text 
 document.addEventListener('keydown', e => { if (KEY(e, 'n_new')) { e.preventDefault(); api.newNote(); } });
 document.addEventListener('keydown', e => { if (KEY(e, 'n_edit')) { e.preventDefault(); liveEdit(); } });
 document.addEventListener('keydown', e => { if (KEY(e, 'n_settings')) { e.preventDefault(); openAllSettings(); } });
+document.addEventListener('keydown', e => { if (KEY(e, 'n_pin')) { e.preventDefault(); if (note && !e.repeat) $('#pin').click(); } });   // Keep on top, like the pin button
+document.addEventListener('keydown', e => { if (StickyKeysHelp.isShortcut(e)) { e.preventDefault(); StickyKeysHelp.toggle('note', KEYMAP); } });   // the shortcuts list
 function openAllSettings(section) { $('#panel').hidden = true; $('#cfg').setAttribute('aria-expanded', 'false'); api.openSettings(section); }
 $('#allSet').onclick = () => openAllSettings();
 

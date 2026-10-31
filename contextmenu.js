@@ -11,7 +11,7 @@ function buildTemplate(params, wc) {
     const word = typeof p.misspelledWord === 'string' ? p.misspelledWord : '';
     if (word) {
       const sug = Array.isArray(p.dictionarySuggestions) ? p.dictionarySuggestions.slice(0, MAX_SUGGESTIONS) : [];
-      for (const s of sug) out.push({ label: s, click: () => { try { wc.replaceMisspelling(s); } catch (e) {} } });
+      for (const s of sug) out.push({ label: s, noTr: true, click: () => { try { wc.replaceMisspelling(s); } catch (e) {} } });
       if (!sug.length) out.push({ label: 'No suggestions', enabled: false });
       out.push({ label: 'Add to dictionary', click: () => { try { wc.session.addWordToSpellCheckerDictionary(word); } catch (e) {} } });
       out.push({ type: 'separator' });

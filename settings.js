@@ -116,7 +116,7 @@ function drawPalettes() {
     const on = S.notePalette === id, b = document.createElement('div'); b.className = 'pal' + (on ? ' on' : ''); b.tabIndex = 0;
     b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', on); b.title = name;
     const sw = document.createElement('span'); sw.className = 'sws'; cols.forEach(c => { const i = document.createElement('i'); i.style.background = c; sw.appendChild(i); });
-    const nm = document.createElement('span'); nm.textContent = name; b.append(sw, nm);
+    const nm = document.createElement('span'); nm.textContent = name; if (mine) nm.setAttribute('data-notr', ''); b.append(sw, nm);
     if (mine) { const e = document.createElement('button'); e.type = 'button'; e.className = 'pe'; e.textContent = 'Edit'; e.onclick = ev => { ev.stopPropagation(); editPalette(mine); }; b.appendChild(e); }
     const pick = () => api.paletteSet(id).then(load);
     b.onclick = pick; b.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } };
@@ -164,7 +164,7 @@ function drawFolders() {
   if (!S.groups.length) { const p = document.createElement('p'); p.className = 'empty'; p.textContent = 'No folders yet.'; box.appendChild(p); return; }
   S.groups.forEach(g => {
     const r = document.createElement('div'); r.className = 'frow';
-    const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = '📁 ' + g.name;
+    const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = '📁 ' + g.name; nm.setAttribute('data-notr', '');
     const ren = document.createElement('button'); ren.textContent = 'Rename';
     ren.onclick = () => {
       const inp = document.createElement('input'); inp.value = g.name; inp.maxLength = 40; nm.replaceWith(inp); inp.focus(); inp.select();

@@ -29,6 +29,7 @@
     themeSet: async id => { S.calls.push(['themeSet', id]); return id; },
     themeApplyAll: async id => { S.calls.push(['themeApplyAll', id]); return id; },
     allBulk: async (a, ids, arg) => { S.calls.push(['allBulk', a, ids.slice(), arg]); return window.__BULK ? window.__BULK(a, ids, arg) : { ok: true, done: ids.length, skipped: 0 }; },
+    pin: async v => { S.calls.push(['pin', !!v]); return !!v; },
     allShow: async id => { S.calls.push(['allShow', id]); },
     allUndoTrash: async () => { S.calls.push(['allUndoTrash']); return { ok: true, done: 1 }; },
     trashBulk: async (a, ids) => { S.calls.push(['trashBulk', a, ids.slice()]); return { ok: true, done: ids.length }; },

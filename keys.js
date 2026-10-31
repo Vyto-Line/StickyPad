@@ -7,13 +7,13 @@
   };
   const NOTE = {
     n_new: ['New note', 'Ctrl+N'], n_todo: ['Add a checklist item', 'Ctrl+Shift+C'], n_find: ['Find in the note', 'Ctrl+F'],
-    n_copy: ['Copy note as text', 'Ctrl+Shift+T'], n_edit: ['Live AI edit', 'Ctrl+Shift+E'], n_settings: ['All settings', 'Ctrl+,']
+    n_copy: ['Copy note as text', 'Ctrl+Shift+T'], n_pin: ['Keep on top', 'Ctrl+Shift+P'], n_edit: ['Live AI edit', 'Ctrl+Shift+E'], n_settings: ['All settings', 'Ctrl+,']
   };
   const LABELS = {}, DEFAULTS = {};
   [GLOBAL, NOTE].forEach(g => Object.keys(g).forEach(k => { LABELS[k] = g[k][0]; DEFAULTS[k] = g[k][1]; }));
   const isGlobal = id => Object.prototype.hasOwnProperty.call(GLOBAL, id), isNote = id => Object.prototype.hasOwnProperty.call(NOTE, id);
   // keys a note needs for itself (editing, undo, cut and paste); they cannot be taken
-  const RESERVED = ['Ctrl+A', 'Ctrl+C', 'Ctrl+V', 'Ctrl+X', 'Ctrl+Z', 'Ctrl+Y', 'Ctrl+Shift+Z', 'Ctrl+B', 'Ctrl+I', 'Ctrl+U', 'Ctrl+Shift+X', 'Ctrl+Shift+V'];
+  const RESERVED = ['Ctrl+A', 'Ctrl+C', 'Ctrl+V', 'Ctrl+X', 'Ctrl+Z', 'Ctrl+Y', 'Ctrl+Shift+Z', 'Ctrl+B', 'Ctrl+I', 'Ctrl+U', 'Ctrl+Shift+X', 'Ctrl+Shift+V', 'Ctrl+/'];
 
   const PUNCT = { Comma: ',', Period: '.', Slash: '/', Semicolon: ';', Quote: "'", BracketLeft: '[', BracketRight: ']', Backslash: '\\', Minus: '-', Equal: '=', Backquote: '`' };
   const NAMED = { Space: 'Space', Enter: 'Enter', Tab: 'Tab', ArrowUp: 'Up', ArrowDown: 'Down', ArrowLeft: 'Left', ArrowRight: 'Right', Home: 'Home', End: 'End', PageUp: 'PageUp', PageDown: 'PageDown', Insert: 'Insert', Delete: 'Delete' };

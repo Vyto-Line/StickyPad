@@ -109,7 +109,7 @@ function card(n) {
 function section(g, items, label) {
   const sec = document.createElement('section'); sec.className = 'sec' + (g && g.collapsed ? ' collapsed' : '');
   const h = document.createElement('div'); h.className = 'sh';
-  const name = document.createElement('span'); name.className = 'nm'; name.textContent = (g ? '📁 ' : '') + (g ? g.name : label);
+  const name = document.createElement('span'); name.className = 'nm'; name.textContent = (g ? '📁 ' : '') + (g ? g.name : label); if (g) name.setAttribute('data-notr', '');
   const cnt = document.createElement('span'); cnt.className = 'n'; cnt.textContent = items.length;
   if (g) {
     const tg = document.createElement('button'); tg.textContent = g.collapsed ? '▸' : '▾'; tg.title = g.collapsed ? 'Expand' : 'Collapse';
@@ -225,7 +225,7 @@ function drawPins(q) {
     const b = document.createElement('button'); b.type = 'button'; b.className = n.open ? '' : 'closed'; b.dataset.id = n.id;
     const lines = String(n.text || '').split('\n').map(x => x.trim()).filter(Boolean);
     b.textContent = n.title || (lines[0] || '').replace(/^[☐☑]\s?/, '') || (n.locked ? 'Locked note' : '(empty note)');
-    b.style.background = n.color; b.style.color = isDark(n.color) ? '#f2f2f2' : '#1b1b1b'; b.title = (n.open ? 'Show this note' : 'Open this note');
+    b.setAttribute('data-notr', ''); b.style.background = n.color; b.style.color = isDark(n.color) ? '#f2f2f2' : '#1b1b1b'; b.title = (n.open ? 'Show this note' : 'Open this note');
     b.onclick = () => api.allShow(n.id); b.oncontextmenu = e => { e.preventDefault(); api.allContext(n.id); };
     box.appendChild(b);
   });
@@ -237,7 +237,7 @@ function drawChips(match) {
   box.hidden = false;
   const chip = (id, label, n) => {
     const b = document.createElement('button'); b.type = 'button'; b.className = 'fchip' + (folder === id ? ' on' : ''); b.setAttribute('aria-pressed', folder === id);
-    b.textContent = label; const c = document.createElement('em'); c.textContent = n; b.appendChild(c);
+    b.textContent = label; if (id !== '*' && id !== '-') b.setAttribute('data-notr', ''); const c = document.createElement('em'); c.textContent = n; b.appendChild(c);
     b.onclick = () => { folder = id; try { localStorage.setItem('sp.folder', id); } catch (e) {} draw(); };
     if (id !== '*') {
       b.ondragover = e => { e.preventDefault(); b.classList.add('over'); };
@@ -334,7 +334,7 @@ $('#selColour').onclick = () => openPop('colour', $('#selColour'), p => {
 });
 $('#selFolder').onclick = () => openPop('folder', $('#selFolder'), p => {
   mi(p, 'No folder', () => moveSel(null, 'no folder'));
-  data.groups.forEach(g => mi(p, '📁 ' + g.name, () => moveSel(g.id, g.name)));
+  data.groups.forEach(g => mi(p, '📁 ' + g.name, () => moveSel(g.id, g.name)).setAttribute('data-notr', ''));
 });
 async function moveSel(gid, name) {
   const ids = sel.slice(); if (!ids.length) return; closePop();
@@ -372,6 +372,9 @@ $('#newFolder').onclick = addFolder;
 $('#fname').addEventListener('keydown', e => { if (e.key === 'Enter') addFolder(); if (e.key === 'Escape') folderRow(false); });
 $('#chatBtn').onclick = () => api.openChat();
 $('#gear').onclick = () => api.openSettings();
+let homeKeys = null;
+if (api.welcomeGet) api.welcomeGet().then(r => { homeKeys = r && r.keys; }).catch(() => {});
+document.addEventListener('keydown', e => { if (window.StickyKeysHelp && StickyKeysHelp.isShortcut(e)) { e.preventDefault(); StickyKeysHelp.toggle('home', homeKeys); } });
 document.addEventListener('keydown', e => {
   if (e.ctrlKey && e.key.toLowerCase() === 'n') { e.preventDefault(); api.allNew(); }
   if (e.key === 'Escape' && selecting && !e.target.closest('input')) selectMode(false);

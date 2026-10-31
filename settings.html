@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="settings.css">
 <script src="apptheme.js"></script>
 <script src="access.js"></script>
+<script src="i18n.js"></script><script src="i18n-el.js"></script><script src="i18n-el-settings.js"></script>
 </head>
 <body>
 <aside>
@@ -38,7 +39,7 @@
     <div class="row"><div class="lbl"><b>Low memory mode</b><span id="lowMemInfo">Draws windows without the graphics card process and tunes the engine for size. Uses noticeably less memory; applies after a restart.</span></div><div class="ctl"><input id="lowMemory" class="toggle" type="checkbox" data-set="lowMemory"><button id="lowMemRestart" class="btn" hidden>Restart now</button></div></div>
     <div class="row"><div class="lbl"><b>Hide notes from the taskbar</b><span>Notes stay open but no longer take space on the taskbar. Use the tray icon to find them.</span></div><div class="ctl"><input id="hideTaskbar" class="toggle" type="checkbox" data-set="hideTaskbar"></div></div>
     <div class="row"><div class="lbl"><b>Your name</b><span>Shown in the greeting at the top of Home and in the startup animation.</span></div><div class="ctl"><input id="name" class="field" data-pref="name" maxlength="30" placeholder="Optional" autocomplete="off" spellcheck="false"></div></div>
-    <div class="row"><div class="lbl"><b>Greeting language</b><span>Good morning / Καλημέρα.</span></div><div class="ctl"><select id="lang" class="field" data-pref="lang"><option value="en">English</option><option value="el">Ελληνικά</option></select></div></div>
+    <div class="row"><div class="lbl"><b>Language</b><span>The language of menus, buttons and the greeting. Parts that are not translated yet stay in English.</span></div><div class="ctl"><select id="lang" class="field" data-pref="lang" data-notr aria-label="Language"><option value="en">English</option><option value="el">Ελληνικά</option></select></div></div>
   </section>
 
   <section class="cat" id="cat-appearance" data-title="Appearance">

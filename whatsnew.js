@@ -20,11 +20,11 @@
     const list = $('#list'); list.textContent = '';
     $('#sub').textContent = d && d.version ? 'You are now on version ' + d.version : '';
     $('#off').checked = !!(d && d.off);
-    if (!d || !d.sections || !d.sections.length) { const e = document.createElement('p'); e.className = 'empty'; e.textContent = 'Nothing to show.'; list.appendChild(e); return; }
-    d.sections.forEach((s, i) => {
-      const sec = document.createElement('section');
+    if (!d || (!(d.sections && d.sections.length) && !(d.older && d.older.length))) { const e = document.createElement('p'); e.className = 'empty'; e.textContent = 'Nothing to show.'; list.appendChild(e); return; }
+    const one = (s, i, old) => {
+      const sec = document.createElement('section'); if (old) sec.className = 'old';
       const h = document.createElement('h2'); h.textContent = 'Version ' + s.version;
-      if (i === 0) { const t = document.createElement('span'); t.className = 'tag'; t.textContent = 'Latest'; h.appendChild(t); }
+      if (i === 0 && !old) { const t = document.createElement('span'); t.className = 'tag'; t.textContent = 'Latest'; h.appendChild(t); }
       sec.appendChild(h);
       let ul = null;
       s.blocks.forEach(b => {
@@ -33,7 +33,12 @@
         const e = document.createElement(b.t === 'h' ? 'h3' : 'p'); if (b.t === 'p') e.className = 'pp'; rich(e, b.v); sec.appendChild(e);
       });
       list.appendChild(sec);
-    });
+    };
+    d.sections.forEach((s, i) => one(s, i, false));
+    if (d.older && d.older.length) {   // the older versions, below, in the same look
+      const hr = document.createElement('h2'); hr.className = 'earlier'; hr.textContent = 'Earlier versions'; list.appendChild(hr);
+      d.older.forEach((s, i) => one(s, i, true));
+    }
   }
   $('#ok').onclick = () => window.api.whatsNewClose({ off: $('#off').checked });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') $('#ok').click(); });

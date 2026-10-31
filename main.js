@@ -15,6 +15,10 @@ const convert = require('./convert');
 const printer = require('./print');
 const words = require('./words');
 const THEMES = require('./themes');
+const I18N = require('./i18n'); require('./i18n-el'); require('./i18n-el-settings');
+// Menus: every label is translated for the chosen language (items marked noTr, like spelling suggestions, are left as they are).
+const trT = tpl => tpl.map(it => { if (!it || typeof it !== 'object') return it; const { noTr, ...o } = it; if (typeof o.label === 'string' && !noTr) o.label = I18N.t(o.label); if (Array.isArray(o.submenu)) o.submenu = trT(o.submenu); return o; });
+const menuT = tpl => Menu.buildFromTemplate(trT(tpl));
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
@@ -171,7 +175,7 @@ function applyData(d) {
   } else { notes = d || {}; trash = []; }
   if (!notes || typeof notes !== 'object') notes = {};
   if (!Array.isArray(trash)) trash = [];
-  THEMES.setCustom(settings.customPalettes); settings.customPalettes = THEMES.customList();
+  THEMES.setCustom(settings.customPalettes); settings.customPalettes = THEMES.customList(); I18N.setLang(settings.lang === 'el' ? 'el' : 'en');
   trash = trash.filter(t => t && Date.now() - t.deletedAt < settings.trashDays * DAY);
   // Clean out empty checklist items that older versions saved (they used to show up as stray tick boxes).
   Object.values(notes).concat(trash).forEach(n => {
@@ -485,7 +489,7 @@ const prefs = () => ({ name: settings.name, lang: settings.lang, launch: setting
 function setPrefs(p) {
   if (p) {
     if (typeof p.name === 'string') settings.name = p.name.trim().slice(0, 30);
-    if (p.lang === 'en' || p.lang === 'el') settings.lang = p.lang;
+    if (p.lang === 'en' || p.lang === 'el') { settings.lang = p.lang; I18N.setLang(settings.lang); themeChanged(); }   // menus now; the windows follow through the theme message
     if (['notes', 'all', 'both'].includes(p.launch)) settings.launch = p.launch;
     if (typeof p.splash === 'boolean') settings.splash = p.splash;
     save(); refreshTray();
@@ -521,7 +525,10 @@ function showSplash() {
 /* ---------- "What's new": shown once on the first start after an update ---------- */
 function whatsNewData(from) {
   let md = ''; try { md = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8'); } catch {}
-  return { version: app.getVersion(), sections: changelog.since(changelog.parse(md), from || null, app.getVersion(), from ? 12 : whatsMax), off: settings.whatsNew === false };
+  const all = changelog.parse(md), cur = app.getVersion(), sections = changelog.since(all, from || null, cur, from ? 12 : whatsMax), shown = new Set(sections.map(x => x.version));
+  // every older version below the new ones (newest first), so the whole history is in the same window
+  const older = all.filter(x => !shown.has(x.version) && changelog.cmp(x.version, cur) <= 0).sort((x, y) => changelog.cmp(y.version, x.version)).slice(0, 80);
+  return { version: cur, sections, older, off: settings.whatsNew === false };
 }
 function openWhatsNew(from, max) {
   whatsFrom = from || null; whatsMax = max || 3;
@@ -632,7 +639,7 @@ function setStartup(v) {
 /* ---------- tray ---------- */
 function buildMenu() {
   const launch = (label, v) => ({ label, type: 'radio', checked: settings.launch === v, click: () => setPrefs({ launch: v }) });
-  return Menu.buildFromTemplate([
+  return menuT([
     { label: 'Search notes…  (' + curKeys().g_find + ')', click: () => toggleQuick() },
     { label: 'Home…  (' + curKeys().g_all + ')', click: () => openAll() },
     { label: 'Settings…  (' + curKeys().g_settings + ')', click: () => openSettings() },
@@ -640,7 +647,7 @@ function buildMenu() {
     { label: 'New note  (' + curKeys().g_new + ')', click: () => makeNote(null) },
     { label: 'Show all notes', click: showAll },
     { label: 'Tidy up notes', click: tidy },
-    { label: `Trash (${trash.length})`, click: () => openAll('trash') },
+    { label: `Trash (${trash.length})`, click: () => openAll('trash') },   // (translated by a pattern rule)
     { type: 'separator' },
     { label: 'When StickyPad starts', submenu: [launch('Open my notes', 'notes'), launch('Open Home only', 'all'), launch('Open both', 'both')] },
     { label: 'Startup animation', type: 'checkbox', checked: !!settings.splash, click: i => setPrefs({ splash: i.checked }) },
@@ -1126,7 +1133,7 @@ ipcMain.handle('all:list', () => {
 ipcMain.handle('all:context', (e, id) => {
   const n = notes[id]; if (!n) return;
   const move = gid => { n.group = gid; save(); };
-  Menu.buildFromTemplate([
+  menuT([
     { label: 'Open note', click: () => { const w = openNote(n); if (w.isMinimized()) w.restore(); w.show(); w.focus(); } },
     { label: 'Copy text', enabled: !n.lock && String(n.text || '').trim() !== '', click: () => { Promise.resolve(clipboard.writeText(String(n.text || ''))).catch(() => {}); } },
     { label: 'Print…', enabled: !n.lock || sessions.has(n.id), click: () => { printNote(n); } },
@@ -1134,7 +1141,7 @@ ipcMain.handle('all:context', (e, id) => {
     { label: 'Move to folder', submenu: [
       { label: 'No folder', type: 'radio', checked: !n.group, click: () => move(null) },
       ...(groups.length ? [{ type: 'separator' }] : []),
-      ...groups.map(g => ({ label: g.name, type: 'radio', checked: n.group === g.id, click: () => move(g.id) }))
+      ...groups.map(g => ({ label: g.name, noTr: true, type: 'radio', checked: n.group === g.id, click: () => move(g.id) }))
     ] },
     { type: 'separator' },
     { label: 'Move to trash', click: () => deleteNote(id) }
@@ -1354,7 +1361,7 @@ ipcMain.handle('note:panel', (e, open) => {
 ipcMain.handle('app:linkMenu', (e, url) => {
   if (!links.safe(url)) return false;
   const mail = /^mailto:/i.test(url), plain = String(url).replace(/^mailto:/i, '');
-  Menu.buildFromTemplate([
+  menuT([
     { label: mail ? 'Write an e-mail' : 'Open link', click: () => shell.openExternal(String(url)) },
     { label: mail ? 'Copy e-mail address' : 'Copy link', click: () => { Promise.resolve(clipboard.writeText(plain)).catch(() => {}); } }
   ]).popup({ window: BrowserWindow.fromWebContents(e.sender) || undefined });
@@ -1475,7 +1482,7 @@ function applyMode() { try { NT.themeSource = modeOf(); } catch {} }
 function uiTheme() {
   const dark = uiDark(), id = THEMES.byId(settings.theme).id, pid = notePal();
   const pals = THEMES.allPalettes().map(p => ({ id: p.id, name: p.name, custom: !!p.custom, colors: p.colors.slice(0, 6), dark: p.dark.slice(0, 6), names: p.names.slice(0, 6) }));
-  return { id, dark, mode: modeOf(), follow: settings.notesFollowMode !== false, vars: THEMES.vars(id, dark), palette: THEMES.palette(id, dark, pid), names: THEMES.paletteNames(id, pid), paletteId: pid,
+  return { lang: settings.lang === 'el' ? 'el' : 'en', id, dark, mode: modeOf(), follow: settings.notesFollowMode !== false, vars: THEMES.vars(id, dark), palette: THEMES.palette(id, dark, pid), names: THEMES.paletteNames(id, pid), paletteId: pid,
     paletteName: pid === 'theme' ? THEMES.byId(id).name + ' (from the theme)' : THEMES.paletteById(pid).name, palettes: pals, mine: THEMES.customList() };
 }
 // Tells every window about the theme. When light/dark changed, notes in theme colours follow (custom colours never change).
@@ -1954,7 +1961,7 @@ app.on('web-contents-created', (e, wc) => {
   wc.on('context-menu', (ev, params) => {
     try {
       const tpl = ctxmenu.buildTemplate(params, wc);
-      if (tpl.length) Menu.buildFromTemplate(tpl).popup({ window: BrowserWindow.fromWebContents(wc) || undefined });
+      if (tpl.length) menuT(tpl).popup({ window: BrowserWindow.fromWebContents(wc) || undefined });
     } catch (err) { try { crashLog('context menu', err); } catch (e2) {} }
   });
 });
