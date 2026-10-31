@@ -88,6 +88,7 @@
       "logfile.js",
       "contextmenu.js",
       "spell.js",
+      "marks.js",
       "ollama.js",
       "ollamaui.js",
       "CHANGELOG.md",

@@ -19,6 +19,8 @@ function buildTemplate(params, wc) {
     out.push({ label: 'Cut', role: 'cut', enabled: f.canCut !== false && text });
     out.push({ label: 'Copy', role: 'copy', enabled: f.canCopy !== false && text });
     out.push({ label: 'Paste', role: 'paste', enabled: f.canPaste !== false });
+    // in a note, text copied from a formatted note keeps its formatting when pasted: this pastes the words only
+    if (wc && typeof wc.getURL === 'function' && /note\.html/.test(String(wc.getURL()))) out.push({ label: 'Paste as plain text', accelerator: 'CommandOrControl+Shift+V', enabled: f.canPaste !== false, click: () => { try { wc.send('ctx:plainPaste'); wc.paste(); } catch (e) {} } });
     out.push({ type: 'separator' });
     out.push({ label: 'Select all', role: 'selectAll', enabled: f.canSelectAll !== false });
   } else {

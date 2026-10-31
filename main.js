@@ -5,6 +5,7 @@ const ollama = require('./ollama');
 const logfile = require('./logfile');
 const ctxmenu = require('./contextmenu');
 const spell = require('./spell');
+const marks = require('./marks');
 const datadir = require('./datadir');
 const updaterLib = require('./updater');
 const backup = require('./backup');
@@ -105,8 +106,8 @@ function sanitizeBlocks(arr) {
   const out = [];
   for (const b of (Array.isArray(arr) ? arr : []).slice(0, MAX_BLOCKS)) {
     if (!b) continue;
-    if (b.t === 'text' && typeof b.v === 'string' && b.v !== '') out.push({ t: 'text', v: b.v.slice(0, MAX_TEXT) });
-    else if (b.t === 'check' && typeof b.v === 'string' && b.v.trim() !== '') out.push({ t: 'check', v: b.v.slice(0, 20000), done: !!b.done });   // empty items are dropped
+    if (b.t === 'text' && typeof b.v === 'string' && b.v !== '') { const v = b.v.slice(0, MAX_TEXT), m = marks.sanitize({ v, m: b.m }); out.push(m ? { t: 'text', v, m } : { t: 'text', v }); }   // m: optional formatting (see marks.js)
+    else if (b.t === 'check' && typeof b.v === 'string' && b.v.trim() !== '') { const v = b.v.slice(0, 20000), m = marks.sanitize({ v, m: b.m }); out.push(m ? { t: 'check', v, done: !!b.done, m } : { t: 'check', v, done: !!b.done }); }   // empty items are dropped
     else if (b.t === 'img' && typeof b.id === 'string' && IMG_ID.test(b.id)) { const w = Math.round(Number(b.w)); out.push(w >= 10 && w < 100 ? { t: 'img', id: b.id, w } : { t: 'img', id: b.id }); }   // w = how wide the picture is shown, in % of the note (no w = full width, as before)
   }
   return out;

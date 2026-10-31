@@ -149,12 +149,25 @@
 <div id="snapbar" hidden role="status"><span class="dbIc" aria-hidden="true">🧲</span><span>Snap to half screen?</span><button id="snapOpen" class="btn primary" title="Open Settings > Notes">Settings</button><button id="snapNo" class="btn" aria-label="No thanks, do not ask again">No thanks</button></div>
 <div id="datebar" hidden role="status"><span class="dbIc" aria-hidden="true">⏰</span><span id="dateTxt"></span><button id="dateSet" class="btn primary">Remind me</button><button id="dateNo" class="btn" aria-label="Not now" title="Not now">✕</button></div>
 <script src="themes.js"></script>
+<script src="marks.js"></script>
 <script src="keys.js"></script>
 <script src="links.js"></script>
 <script src="words.js"></script>
 <script src="dates.js"></script>
 <script src="reminders.js"></script>
 <script src="ollamaui.js"></script>
+<div id="fmt" role="toolbar" aria-label="Text formatting" hidden>
+  <button type="button" data-k="b" title="Bold (Ctrl+B)" aria-label="Bold"><b>B</b></button>
+  <button type="button" data-k="i" title="Italic (Ctrl+I)" aria-label="Italic"><i>I</i></button>
+  <button type="button" data-k="u" title="Underline (Ctrl+U)" aria-label="Underline"><u>U</u></button>
+  <button type="button" data-k="s" title="Strikethrough (Ctrl+Shift+X)" aria-label="Strikethrough"><s>S</s></button>
+  <span class="fsep"></span>
+  <button type="button" id="fmtC" title="Letter colour" aria-label="Letter colour" aria-haspopup="true"><span class="fa">A</span><span class="fbar" id="fmtCbar"></span></button>
+  <span class="fhl"><button type="button" id="fmtH" title="Highlight" aria-label="Highlight"><span class="fa">A</span></button><button type="button" id="fmtHa" class="farrow" title="Highlight colours" aria-label="Highlight colours" aria-haspopup="true">▾</button></span>
+  <span class="fsep"></span>
+  <button type="button" id="fmtX" title="Clear formatting" aria-label="Clear formatting">✕</button>
+  <div id="fmtPal" hidden></div>
+</div>
 <div id="ac" role="listbox" aria-label="Word suggestions" hidden></div>
 <script src="note.js"></script>
 <script src="quiet.js"></script>

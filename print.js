@@ -1,4 +1,5 @@
 'use strict';
+const marks = require('./marks');
 // Notes as a printable page. Pure functions: no Electron, no disk.
 const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const IMG_ID = /^[a-z0-9]{6,40}\.(png|jpe?g|webp|gif)$/;
@@ -27,8 +28,8 @@ function inner(title, blocks, imgBase, o) {
   const t = String(title || '').trim(), out = [];
   (Array.isArray(blocks) ? blocks : []).forEach(b => {
     if (!b) return;
-    if (b.t === 'text' && typeof b.v === 'string') out.push('<div class="tx">' + esc(b.v.replace(/\n$/, '')) + '</div>');
-    else if (b.t === 'check' && typeof b.v === 'string') out.push('<div class="ck"><span class="bx">' + (b.done ? '&#9745;' : '&#9744;') + '</span><span class="' + (b.done ? 'dn' : '') + '">' + esc(b.v) + '</span></div>');
+    if (b.t === 'text' && typeof b.v === 'string') out.push('<div class="tx">' + (b.m ? marks.toHtml(b.v.replace(/\n$/, ''), b.m) : esc(b.v.replace(/\n$/, ''))) + '</div>');
+    else if (b.t === 'check' && typeof b.v === 'string') out.push('<div class="ck"><span class="bx">' + (b.done ? '&#9745;' : '&#9744;') + '</span><span class="' + (b.done ? 'dn' : '') + '">' + (b.m ? marks.toHtml(b.v, b.m) : esc(b.v)) + '</span></div>');
     else if (b.t === 'img' && o.pictures && IMG_ID.test(String(b.id || '')) && imgBase) out.push('<div class="im"><img src="' + esc(imgBase + b.id) + '" alt=""' + (b.w >= 10 && b.w < 100 ? ' style="width:' + Math.round(b.w) + '%"' : '') + '></div>');
   });
   return (t && o.title ? '<h1>' + esc(t) + '</h1>' : '') + out.join('\n');

@@ -82,10 +82,19 @@ function makeImg(id, src, w) {
   im.src = src; im.dataset.id = id; im.alt = 'Picture'; im.contentEditable = 'false'; im.draggable = false;
   return im;
 }
-function makeTodo(text, done) {
+const MK = window.StickyMarks;
+// Text with formatting: the plain text cut into runs, a run with formatting becomes <span class="f-b f-h1 ...">
+function fillText(el, v, m) {
+  if (!m || !m.length) { el.appendChild(document.createTextNode(v)); return; }
+  for (const r of MK.runs(v, m)) {
+    if (!r.kinds.length) { el.appendChild(document.createTextNode(r.text)); continue; }
+    const sp = document.createElement('span'); sp.className = r.kinds.map(k => 'f-' + k).join(' '); sp.textContent = r.text; el.appendChild(sp);
+  }
+}
+function makeTodo(text, done, m) {
   const d = document.createElement('div'); d.className = 'todo' + (done ? ' done' : '');
   const c = document.createElement('input'); c.type = 'checkbox'; c.checked = !!done; c.contentEditable = 'false'; c.setAttribute('aria-label', 'Done');
-  const t = document.createElement('span'); t.className = 'tx'; t.textContent = text || '';
+  const t = document.createElement('span'); t.className = 'tx'; if (m && m.length) fillText(t, text || '', m); else t.textContent = text || '';
   const x = document.createElement('button'); x.className = 'x'; x.type = 'button'; x.textContent = '×'; x.contentEditable = 'false';
   x.tabIndex = -1; x.title = 'Remove this item'; x.setAttribute('aria-label', 'Remove this item');
   d.append(c, t, x); return d;
@@ -155,7 +164,8 @@ function render(blocks) {
   ed.spellcheck = !blocks.some(b => b.t === 'text' && b.v.length > 200000);   // checking the spelling of millions of letters makes a huge note crawl
   blocks.forEach(b => {
     if (b.t === 'img') { const src = b.src || srcCache.get(b.id); if (src) ed.appendChild(makeImg(b.id, src, b.w)); }
-    else if (b.t === 'check') ed.appendChild(makeTodo(b.v, b.done));
+    else if (b.t === 'check') ed.appendChild(makeTodo(b.v, b.done, b.m));
+    else if (b.m && b.m.length && b.v.length <= 200000) fillText(ed, b.v, b.m);
     else if (b.v.length > BIG_TEXT) bigText(b.v);
     else ed.appendChild(document.createTextNode(b.v));
   });
@@ -186,26 +196,53 @@ function serialize() {
   if (ed.textContent.length > 100000 && !ed.querySelector('.todo')) { memoWatch.takeRecords(); memoBlocks = out; }
   return out;
 }
-function serializeNow() {
+// The formatting kinds written on an element (its class names f-b, f-h1 ...).
+function typesOf(el) { const out = []; if (el.classList) el.classList.forEach(c => { if (c.startsWith('f-') && MK.KIND.test(c.slice(2))) out.push(c.slice(2)); }); return out; }
+// The text of an inline element (a checklist item) and its formatting. probes: see serializeNow.
+function inlineOf(el, probes, blockIdx) {
+  let text = ''; const mk = [];
+  (function w(n, types) {
+    for (const c of n.childNodes) {
+      if (c.nodeType === 3) {
+        if (probes) for (const p of probes) {
+          if (p.node === c && !p.res) p.res = { block: blockIdx, off: text.length + p.offset };
+          else if (p.node === undefined && !p.res && p.block === blockIdx && p.off >= text.length && p.off <= text.length + c.nodeValue.length) { p.found = c; p.at = p.off - text.length; p.res = true; }
+        }
+        if (c.nodeValue) { for (const k of types) mk.push([text.length, text.length + c.nodeValue.length, k]); text += c.nodeValue; }
+      } else if (c.nodeType === 1) w(c, types.concat(typesOf(c)));
+    }
+  })(el, []);
+  return { text, m: MK.clean(mk, text.length) };
+}
+// probes (optional) are positions asked about while reading: { node, offset } -> res { block, off }: which block, and how far into its text, that spot in the page is;
+// and { block, off } -> found, at: the text node and offset for a block and place.
+function serializeNow(probes) {
   // The text is collected in pieces and joined at the end. Asking a half-built giant string whether it ends with a line break forces the browser to
   // glue it together each time, which took almost a second for a 3.7 MB note.
-  const blocks = []; let parts = [], size = 0, endNl = false;
-  const add = t => { if (t) { parts.push(t); size += t.length; endNl = t.charCodeAt(t.length - 1) === 10; } };
-  const flush = () => { if (size) { blocks.push({ t: 'text', v: parts.join('') }); parts = []; size = 0; endNl = false; } };
-  const walk = node => {
+  const blocks = []; let parts = [], size = 0, endNl = false, mk = [];
+  const add = (t, types) => { if (t) { if (types && types.length) for (const k of types) mk.push([size, size + t.length, k]); parts.push(t); size += t.length; endNl = t.charCodeAt(t.length - 1) === 10; } };
+  const flush = () => { if (size) { const v = parts.join(''), b = { t: 'text', v }, m = mk.length ? MK.clean(mk, v.length) : []; if (m.length) b.m = m; blocks.push(b); parts = []; size = 0; endNl = false; } mk = []; };
+  const probe = c => {
+    for (const p of probes) {
+      if (p.node === c && !p.res) p.res = { block: blocks.length, off: size + p.offset };
+      else if (p.node === undefined && !p.res && p.block === blocks.length && p.off >= size && p.off <= size + c.nodeValue.length) { p.found = c; p.at = p.off - size; p.res = true; }
+    }
+  };
+  const walk = (node, types) => {
     for (const c of node.childNodes) {
-      if (c.nodeType === 3) add(c.nodeValue);
+      if (c.nodeType === 3) { if (probes) probe(c); add(c.nodeValue, types); }
       else if (c.nodeName === 'BR') add('\n');
       else if (c.nodeName === 'IMG') { flush(); if (c.dataset.id) blocks.push(c.dataset.w ? { t: 'img', id: c.dataset.id, w: +c.dataset.w } : { t: 'img', id: c.dataset.id }); }
       else if (c.classList && c.classList.contains('todo')) {
         flush(); const tx = c.querySelector('.tx'), box = c.querySelector('input');
-        if (tx) blocks.push({ t: 'check', v: tx.textContent, done: !!(box && box.checked) });
+        if (tx) { const r = inlineOf(tx, probes, blocks.length), b = { t: 'check', v: r.text, done: !!(box && box.checked) }; if (r.m.length) b.m = r.m; blocks.push(b); }
         else { const w = c.textContent.replace(/×/g, ''); if (w.trim()) blocks.push({ t: 'text', v: w }); }   // damaged item: keep its words
       }
-      else if (c.nodeType === 1) { if (size && !endNl) add('\n'); walk(c); if (size && !endNl && !(c.classList && c.classList.contains('last') && c.classList.contains('chunk'))) add('\n'); }
+      else if (c.nodeName === 'SPAN') walk(c, types.concat(typesOf(c)));   // formatting (or a leftover span): part of the same line, adds no line break
+      else if (c.nodeType === 1) { if (size && !endNl) add('\n'); walk(c, types); if (size && !endNl && !(c.classList && c.classList.contains('last') && c.classList.contains('chunk'))) add('\n'); }
     }
   };
-  walk(ed);
+  walk(ed, []);
   if (size && endNl) { const last = parts.pop(); size -= 1; const cut = last.slice(0, -1); if (cut) parts.push(cut); }   // the browser's trailing placeholder line break
   flush();
   return blocks;
@@ -404,9 +441,37 @@ function pasteText(cd) {
   if (/\r?\n$/.test(t) && /<table|Excel\.Sheet|schemas-microsoft-com:office:excel/i.test(cd.getData('text/html'))) t = t.replace(/\r?\n$/, '');
   return t;
 }
+// Text copied from a formatted StickyPad note carries its formatting inside the HTML on the clipboard; pasting it here brings the formatting back.
+// Anything else (and "Paste as plain text", Ctrl+Shift+V) pastes the words only.
+let plainNext = false, plainTimer = null;
+const askPlain = () => { plainNext = true; clearTimeout(plainTimer); plainTimer = setTimeout(() => { plainNext = false; }, 1500); };
+api.onPlainPaste(askPlain);
+ed.addEventListener('keydown', e => { if (e.ctrlKey && e.shiftKey && !e.altKey && e.key.toLowerCase() === 'v') askPlain(); });
+function formattedFrom(cd, t) {
+  try {
+    const m = /data-stickypad="([^"]*)"/.exec(cd.getData('text/html') || ''); if (!m) return null;
+    const o = JSON.parse(decodeURIComponent(m[1])), norm = x => String(x).replace(/\r\n?/g, '\n');
+    if (!o || typeof o.v !== 'string' || norm(o.v) !== norm(t)) return null;   // the text was changed on the way: do not guess
+    const marks = MK.clean(o.m, o.v.length); return marks.length ? { v: o.v, m: marks } : null;
+  } catch { return null; }
+}
+// Put text in at the cursor and give it its formatting.
+function insertFormatted(f) {
+  const r = caretRange(); r.deleteContents();
+  if (closestTodo(r.startContainer) && /[\r\n]/.test(f.v)) { insertText(f.v); return; }   // a checklist item is one line: the line breaks go, so the places no longer fit
+  const n = document.createTextNode(f.v.replace(/\r\n?/g, '\n')); r.insertNode(n); r.setStartAfter(n); placeCaret(r);
+  const probes = [{ node: n, offset: 0 }], blocks = serializeNow(probes), p = probes[0].res;
+  if (!p || !blocks[p.block]) return;
+  const b = blocks[p.block]; f.m.forEach(x => { b.m = MK.add(b.m, p.off + x[0], p.off + x[1], x[2], b.v.length); });
+  const top = ed.scrollTop; render(blocks); ed.scrollTop = top;
+  const at = rangeAt({ block: p.block, off: p.off + f.v.length }, { block: p.block, off: p.off + f.v.length });
+  ed.focus(); if (at) { const sl = getSelection(); sl.removeAllRanges(); sl.addRange(at); }
+}
 ed.addEventListener('paste', e => {
   e.preventDefault();
   const t = pasteText(e.clipboardData);
+  const fm = plainNext ? null : formattedFrom(e.clipboardData, t); plainNext = false;
+  if (fm) { insertFormatted(fm); mark(); queue(); schedule(); return; }
   // Excel (and some other apps) put the text AND a picture of it on the clipboard: when there is text, the text wins.
   // A picture is pasted only when there is nothing to read.
   if (/\S/.test(t)) { insertText(t); mark(); queue(); schedule(); return; }
@@ -439,11 +504,161 @@ function copyCut(e) {
   const sel = getSelection(); if (!sel.rangeCount || sel.isCollapsed || !ed.contains(sel.anchorNode)) return;
   const r = sel.getRangeAt(0), frag = r.cloneContents();
   if (frag.querySelector && frag.querySelector('img')) return;   // pictures in the selection: the normal copy
-  const text = plainFrom(frag);
-  e.preventDefault(); e.clipboardData.setData('text/plain', text); e.clipboardData.setData('text/html', htmlFromPlain(text));
+  let text = plainFrom(frag), html = htmlFromPlain(text);
+  const f = selectedFormatted();   // formatted text: the HTML carries the formatting (Word, mail), and the same list for pasting into another note
+  if (f) { text = f.text; html = '<div data-stickypad="' + encodeURIComponent(JSON.stringify({ v: f.text, m: f.m })) + '">' + MK.toHtml(f.text, f.m, false) + '</div>'; }
+  e.preventDefault(); e.clipboardData.setData('text/plain', text); e.clipboardData.setData('text/html', html);
   if (e.type === 'cut') document.execCommand('delete');
 }
 ed.addEventListener('copy', copyCut); ed.addEventListener('cut', copyCut);
+/* ---------- text formatting: bold, italic, underline, strikethrough, highlight, letter colour ---------- */
+// The text nodes a range touches, as the first and last with how far into each the range goes.
+function rangeEnds(rng) {
+  const w = document.createTreeWalker(ed, NodeFilter.SHOW_TEXT, { acceptNode: n => (!n.parentElement.closest('.x, button') && rng.intersectsNode(n)) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT });
+  let first = null, last = null;
+  for (let n = w.nextNode(); n; n = w.nextNode()) { if (!first) first = n; last = n; }
+  if (!first) return null;
+  const a = first === rng.startContainer ? rng.startOffset : 0, b = last === rng.endContainer ? rng.endOffset : last.nodeValue.length;
+  return { first, last, a, b };
+}
+// After the page was drawn again: a range from "block, place" to "block, place".
+function rangeAt(p0, p1) {
+  const wants = [{ block: p0.block, off: p0.off }, { block: p1.block, off: p1.off }];
+  serializeNow(wants);
+  if (!wants[0].found || !wants[1].found) return null;
+  const r = document.createRange(); r.setStart(wants[0].found, wants[0].at); r.setEnd(wants[1].found, wants[1].at); return r;
+}
+// Change the formatting of the selected text. change(blocks, parts): blocks is the note as saved, parts [{ i, s, e }] the stretches of text blocks and
+// checklist items inside the selection; change returns false when there is nothing to do. The page is drawn again from the changed blocks.
+function fmtEdit(change) {
+  if (!note || bodyLocked() || edit) return false;
+  const sel = getSelection(); if (!sel.rangeCount || sel.isCollapsed || !ed.contains(sel.anchorNode)) return false;
+  const ends = rangeEnds(sel.getRangeAt(0)); if (!ends) return false;
+  commitNow();
+  const probes = [{ node: ends.first, offset: ends.a }, { node: ends.last, offset: ends.b }];
+  const blocks = serializeNow(probes);
+  if (!probes[0].res || !probes[1].res) return false;
+  const p0 = probes[0].res, p1 = probes[1].res, parts = [];
+  for (let i = p0.block; i <= p1.block && i < blocks.length; i++) {
+    const b = blocks[i]; if (b.t !== 'text' && b.t !== 'check') continue;
+    const s0 = i === p0.block ? p0.off : 0, e0 = i === p1.block ? p1.off : b.v.length;
+    if (e0 > s0) parts.push({ i, s: s0, e: e0 });
+  }
+  if (!parts.length || change(blocks, parts) === false) return false;
+  blocks.forEach(b => { if (b.m && !b.m.length) delete b.m; });
+  const top = ed.scrollTop; render(blocks); ed.scrollTop = top;
+  const r = rangeAt(p0, p1); ed.focus();
+  if (r) { const sl = getSelection(); sl.removeAllRanges(); sl.addRange(r); }
+  mark(); queue(); schedule(); fmtBarUpdate();
+  return true;
+}
+// Switch one kind on (or off when the whole selection already has it). value: true / false to force.
+function fmtToggle(kind, value) {
+  return fmtEdit((blocks, parts) => {
+    const on = value === undefined ? !parts.every(p => MK.covered(blocks[p.i].m, p.s, p.e, kind)) : value;
+    parts.forEach(p => { const b = blocks[p.i]; b.m = on ? MK.add(b.m, p.s, p.e, kind, b.v.length) : MK.remove(b.m, p.s, p.e, kind); });
+  });
+}
+function fmtRemoveGroup(prefix) {
+  return fmtEdit((blocks, parts) => parts.forEach(p => { const b = blocks[p.i]; Object.keys(prefix === 'h' ? MK.HIGHLIGHT : MK.LETTER).forEach(k => { b.m = MK.remove(b.m, p.s, p.e, k); }); }));
+}
+const fmtClear = () => fmtEdit((blocks, parts) => parts.forEach(p => { const b = blocks[p.i]; b.m = MK.clear(b.m, p.s, p.e); }));
+// What the selection already has (for the lit buttons): kinds found on the whole selection.
+function fmtState() {
+  const sel = getSelection(); if (!sel.rangeCount || sel.isCollapsed || !ed.contains(sel.anchorNode)) return {};
+  const ends = rangeEnds(sel.getRangeAt(0)); if (!ends) return {};
+  const probes = [{ node: ends.first, offset: ends.a }, { node: ends.last, offset: ends.b }], blocks = serializeNow(probes);
+  if (!probes[0].res || !probes[1].res) return {};
+  const p0 = probes[0].res, p1 = probes[1].res, out = {}; let any = false; const kinds = ['b', 'i', 'u', 's', ...Object.keys(MK.HIGHLIGHT), ...Object.keys(MK.LETTER)]; const all = {};
+  kinds.forEach(k => { all[k] = true; });
+  for (let i = p0.block; i <= p1.block && i < blocks.length; i++) {
+    const b = blocks[i]; if (b.t !== 'text' && b.t !== 'check') continue;
+    const s0 = i === p0.block ? p0.off : 0, e0 = i === p1.block ? p1.off : b.v.length; if (e0 <= s0) continue;
+    any = true; kinds.forEach(k => { if (!MK.covered(b.m, s0, e0, k)) all[k] = false; });
+  }
+  if (any) kinds.forEach(k => { if (all[k]) out[k] = true; });
+  return out;
+}
+
+// The selected text with its formatting as one piece: { text, m }, or null when nothing in it is formatted.
+function selectedFormatted() {
+  const sel = getSelection(); if (!sel.rangeCount || sel.isCollapsed || !ed.contains(sel.anchorNode)) return null;
+  const ends = rangeEnds(sel.getRangeAt(0)); if (!ends) return null;
+  const probes = [{ node: ends.first, offset: ends.a }, { node: ends.last, offset: ends.b }], blocks = serializeNow(probes);
+  if (!probes[0].res || !probes[1].res) return null;
+  const p0 = probes[0].res, p1 = probes[1].res; let text = '', m = [], marked = false;
+  for (let i = p0.block; i <= p1.block && i < blocks.length; i++) {
+    const b = blocks[i]; if (b.t !== 'text' && b.t !== 'check') continue;
+    const s0 = i === p0.block ? p0.off : 0, e0 = i === p1.block ? p1.off : b.v.length; if (e0 <= s0) continue;
+    if (text && !text.endsWith('\n')) text += '\n';
+    const base = text.length - s0; text += b.v.slice(s0, e0);
+    (b.m || []).forEach(x => { const a = Math.max(x[0], s0), z = Math.min(x[1], e0); if (z > a) { m.push([a + base, z + base, x[2]]); marked = true; } });
+  }
+  return marked ? { text, m: MK.clean(m, text.length) } : null;
+}
+// The little bar over selected text (flips below when there is no room above), and the colour choices.
+const fmtBar = $('#fmt'), fmtPal = $('#fmtPal');
+let hlLast = 'h1', fmtPalFor = null;
+try { const v = localStorage.getItem('stickypad.hl'); if (MK.HIGHLIGHT[v]) hlLast = v; } catch {}
+function fmtPalClose() { fmtPal.hidden = true; fmtPalFor = null; $('#fmtC').setAttribute('aria-expanded', 'false'); $('#fmtHa').setAttribute('aria-expanded', 'false'); }
+function fmtPalOpen(which) {
+  if (fmtPalFor === which) { fmtPalClose(); return; }
+  const st = fmtState(); fmtPal.textContent = ''; fmtPalFor = which;
+  const table = which === 'h' ? MK.HIGHLIGHT : MK.LETTER;
+  fmtPal.style.gridTemplateColumns = 'repeat(' + (which === 'h' ? 6 : 7) + ',28px)';
+  Object.keys(table).forEach(k => {
+    const d = document.createElement('button'); d.type = 'button'; d.className = 'dot' + (st[k] ? ' on' : ''); d.dataset.k = k;
+    d.style.background = which === 'h' ? table[k][1] : table[k][1]; d.title = table[k][0]; d.setAttribute('aria-label', table[k][0]);
+    if (which === 'c' && k === 'c1') d.style.background = 'linear-gradient(90deg,#111 50%,#f5f5f2 50%)';
+    fmtPal.appendChild(d);
+  });
+  const n = document.createElement('button'); n.type = 'button'; n.className = 'none'; n.dataset.k = '';
+  n.innerHTML = '<i></i>' + (which === 'h' ? 'No highlight' : 'Automatic'); fmtPal.appendChild(n);
+  fmtPal.hidden = false; fmtPal.classList.toggle('up', fmtBar.getBoundingClientRect().bottom + 110 > innerHeight);
+  $(which === 'h' ? '#fmtHa' : '#fmtC').setAttribute('aria-expanded', 'true');
+}
+function fmtBarUpdate() {
+  const sel = getSelection();
+  const show = note && !bodyLocked() && !edit && sel.rangeCount && !sel.isCollapsed && ed.contains(sel.anchorNode) && ed.contains(sel.focusNode) && !/^\s*$/.test(sel.toString() || ' ') && !sel.getRangeAt(0).cloneContents().querySelector('img');
+  if (!show) { fmtBar.hidden = true; fmtPalClose(); return; }
+  const st = fmtState();
+  fmtBar.querySelectorAll('button[data-k]').forEach(b => { b.classList.toggle('on', !!st[b.dataset.k]); b.setAttribute('aria-pressed', st[b.dataset.k] ? 'true' : 'false'); });
+  fmtBar.style.setProperty('--hl', MK.HIGHLIGHT[hlLast][1]);
+  const cur = Object.keys(MK.LETTER).find(k => st[k]); $('#fmtCbar').style.background = cur ? (document.body.classList.contains('dark') ? MK.LETTER[cur][2] : MK.LETTER[cur][1]) : '#ff6b6b';
+  const was = fmtBar.hidden; fmtBar.hidden = false;
+  const r = sel.getRangeAt(0).getBoundingClientRect(), bw = fmtBar.offsetWidth, bh = fmtBar.offsetHeight;
+  let top = r.top - bh - 8; if (top < 38) top = r.bottom + 8; if (top + bh > innerHeight - 4) top = Math.max(4, innerHeight - bh - 4);
+  fmtBar.style.left = Math.max(4, Math.min(innerWidth - bw - 4, r.left + r.width / 2 - bw / 2)) + 'px'; fmtBar.style.top = top + 'px';
+  if (was) fmtPalClose();
+}
+let fmtRaf = 0;
+document.addEventListener('selectionchange', () => { if (fmtRaf) return; fmtRaf = requestAnimationFrame(() => { fmtRaf = 0; fmtBarUpdate(); }); });
+ed.addEventListener('scroll', () => fmtBarUpdate(), { passive: true });
+fmtBar.addEventListener('mousedown', e => { if (!e.target.closest('input')) e.preventDefault(); });   // the selection must stay while a button is pressed
+fmtBar.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.id === 'fmtPalNone') return;
+  if (b.closest('#fmtPal')) {
+    const k = b.dataset.k, which = fmtPalFor; fmtPalClose();
+    if (which === 'h') { if (k) { hlLast = k; try { localStorage.setItem('stickypad.hl', k); } catch {} fmtEdit((blocks, parts) => parts.forEach(p => { const bl = blocks[p.i]; bl.m = MK.add(bl.m, p.s, p.e, k, bl.v.length); })); } else fmtRemoveGroup('h'); }
+    else if (which === 'c') { if (k) fmtEdit((blocks, parts) => parts.forEach(p => { const bl = blocks[p.i]; bl.m = MK.add(bl.m, p.s, p.e, k, bl.v.length); })); else fmtRemoveGroup('c'); }
+    return;
+  }
+  if (b.dataset.k) { fmtPalClose(); fmtToggle(b.dataset.k); return; }
+  if (b.id === 'fmtC') { fmtPalOpen('c'); return; }
+  if (b.id === 'fmtHa') { fmtPalOpen('h'); return; }
+  if (b.id === 'fmtH') { fmtPalClose(); const st = fmtState(); if (st[hlLast]) fmtRemoveGroup('h'); else fmtEdit((blocks, parts) => parts.forEach(p => { const bl = blocks[p.i]; bl.m = MK.add(bl.m, p.s, p.e, hlLast, bl.v.length); })); return; }
+  if (b.id === 'fmtX') { fmtPalClose(); fmtClear(); }
+});
+fmtBar.addEventListener('keydown', e => { if (e.key === 'Escape') { if (!fmtPal.hidden) { fmtPalClose(); e.stopPropagation(); } } });
+// Ctrl+B, Ctrl+I, Ctrl+U, Ctrl+Shift+X (strikethrough): on the selected text. Without a selection nothing happens (and the browser's own bold, which the note could not keep, stays off).
+ed.addEventListener('keydown', e => {
+  if (!e.ctrlKey || e.altKey || e.metaKey) return;
+  const k = e.key.toLowerCase(), kind = !e.shiftKey && k === 'b' ? 'b' : !e.shiftKey && k === 'i' ? 'i' : !e.shiftKey && k === 'u' ? 'u' : e.shiftKey && k === 'x' ? 's' : null;
+  if (!kind) return;
+  e.preventDefault(); fmtToggle(kind);
+});
+
 ed.addEventListener('dragover', e => e.preventDefault());
 ed.addEventListener('drop', e => {
   e.preventDefault();
@@ -861,11 +1076,30 @@ function diffNode(a, b) {
   while (i < n) push('del', A[i++]); while (k < m) push('add', B[k++]);
   return frag;
 }
+// The note's text in order: each run of text (with its formatting spans) between pictures and checklist items is { nodes }, each checklist item { tx }.
+function textRuns() {
+  const out = []; let cur = null;
+  for (const c of ed.childNodes) {
+    if (c.nodeType === 3 || c.nodeName === 'SPAN') { if (!cur) { cur = { nodes: [] }; out.push(cur); } cur.nodes.push(c); }
+    else { cur = null; if (c.classList && c.classList.contains('todo')) { const tx = c.querySelector('.tx'); if (tx) out.push({ tx }); } }
+  }
+  return out;
+}
+const runText = r => r.tx ? r.tx.textContent : r.nodes.map(n => n.textContent).join('');
+// Something one piece of AI work can be written into: the text node itself, the checklist item's text, or (for a run with formatting) a span around the run.
+function runNode(r) {
+  if (r.tx) return r.tx;
+  if (r.nodes.length === 1 && r.nodes[0].nodeType === 3) return r.nodes[0];
+  const w = document.createElement('span'); r.nodes[0].parentNode.insertBefore(w, r.nodes[0]); r.nodes.forEach(n => w.appendChild(n)); r.nodes = [w]; return w;
+}
 function textSegments() {   // every run of text and every checklist item, so fixes keep pictures and structure intact
   const out = [];
-  for (const c of ed.childNodes) {
-    if (c.nodeType === 3 && c.nodeValue.trim()) out.push({ text: c.nodeValue, get: () => c.nodeValue, set: v => { c.nodeValue = v; }, ok: () => c.isConnected });
-    else if (c.classList && c.classList.contains('todo')) { const tx = c.querySelector('.tx'); if (tx.textContent.trim()) out.push({ text: tx.textContent, get: () => tx.textContent, set: v => { tx.textContent = v; }, ok: () => tx.isConnected }); }
+  for (const r of textRuns()) {
+    const text = runText(r); if (!text.trim()) continue;
+    if (r.tx) out.push({ text, get: () => r.tx.textContent, set: v => { r.tx.textContent = v; }, ok: () => r.tx.isConnected });
+    else if (r.nodes.length === 1 && r.nodes[0].nodeType === 3) { const c = r.nodes[0]; out.push({ text, get: () => c.nodeValue, set: v => { c.nodeValue = v; }, ok: () => c.isConnected }); }
+    else out.push({ text, get: () => r.nodes.map(n => n.textContent).join(''), ok: () => r.nodes[0].isConnected,
+      set: v => { const t = document.createTextNode(v), first = r.nodes[0]; first.parentNode.insertBefore(t, first); r.nodes.forEach(n => n.remove()); r.nodes = [t]; } });   // (a changed run loses its formatting)
   }
   return out;
 }
@@ -966,20 +1200,22 @@ function editTarget(mode) {
     text = range.toString(); inTodo = !!tx(range.startContainer);
   } else if (mode !== 'continue') {
     // nothing selected: the WHOLE note, one text run or checklist item at a time (pictures and structure stay as they are)
-    const nodes = [...ed.childNodes].map(c => c.nodeType === 3 ? c : (c.classList && c.classList.contains('todo') ? c.querySelector('.tx') : null)).filter(n => n && n.textContent.trim());
+    const nodes = textRuns().filter(r => runText(r).trim()).map(runNode);
     if (!nodes.length) return { err: 'There is no text to edit yet.' };
     return { whole: true, nodes, text: nodes.map(n => n.textContent).join('\n') };
   } else {
     let node = null;
     if (inEd) {
       const a = sel.anchorNode, t = tx(a);
+      let top = a; while (top && top.parentNode !== ed) top = top.parentNode;
       if (t) node = t; else if (a.nodeType === 3 && a.parentNode === ed && (a.nodeValue.trim() || mode === 'continue')) node = a;   // an empty text node (left behind by an earlier edit) is not a place to work
+      else if (top && top.nodeName === 'SPAN') { const r = textRuns().find(x => x.nodes && x.nodes.includes(top)); if (r && runText(r).trim()) node = runNode(r); }   // inside formatted text: the whole run
     }
     if (!node) {   // the cursor is somewhere without text: use the last block of text
-      const runs = [...ed.childNodes].filter(c => (c.nodeType === 3 && c.nodeValue.trim()) || (c.classList && c.classList.contains('todo') && c.querySelector('.tx').textContent.trim()));
-      const last = runs[runs.length - 1]; node = last ? (last.nodeType === 3 ? last : last.querySelector('.tx')) : null;
+      const runs = textRuns().filter(r => runText(r).trim());
+      const last = runs[runs.length - 1]; node = last ? runNode(last) : null;
     }
-    if (node) { range = document.createRange(); range.selectNodeContents(node); text = node.textContent; inTodo = node.nodeType === 1; }
+    if (node) { range = document.createRange(); range.selectNodeContents(node); text = node.textContent; inTodo = !!(node.classList && node.classList.contains('tx')); }
     else if (mode === 'continue') { range = document.createRange(); range.selectNodeContents(ed); range.collapse(false); text = ''; }
     else return { err: 'There is no text to edit yet.' };
   }
@@ -1019,8 +1255,10 @@ async function editWhole(mode, nodes) {
       if (!node.isConnected || !node.textContent.trim()) continue;
       const before = ed.textContent;
       const range = document.createRange(); range.selectNodeContents(node);
-      await editSegment(mode, { range, text: node.textContent, inTodo: node.nodeType === 1 }, total > 1 ? 'Editing ' + i + ' of ' + total + '…' : 'Editing…');
+      const keep = node.nodeType === 1 && !node.classList.contains('tx') ? node.cloneNode(true) : null, was = node.textContent;   // a run with formatting: put it back as it was if the AI changed nothing
+      await editSegment(mode, { range, text: node.textContent, inTodo: !!(node.classList && node.classList.contains('tx')) }, total > 1 ? 'Editing ' + i + ' of ' + total + '…' : 'Editing…');
       if (job.failed) return;
+      if (keep && node.isConnected && node.textContent === was) node.replaceWith(keep);
       if (ed.textContent !== before) changed++;
     }
     if (window.StickyAccess) StickyAccess.announce('The AI has finished editing the note.');

@@ -343,3 +343,31 @@ html.a11y-motion.quiet header{transition:none}
 .aiload[hidden]{display:none}
 .aiload i{width:8px;height:8px;border-radius:50%;flex:none;background:#2fa84f}
 .aiload.wait i{background:transparent;border:1.5px solid currentColor;box-sizing:border-box}
+
+/* ---------- text formatting ---------- */
+.f-b{font-weight:700}.f-i{font-style:italic}.f-u{text-decoration:underline}.f-s{text-decoration:line-through}.f-u.f-s{text-decoration:underline line-through}
+[class*="f-h"]{color:#111;border-radius:3px;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+.f-h1{background:#ffe680}.f-h2{background:#b9f0b9}.f-h3{background:#a9d8ff}.f-h4{background:#ffc1dd}.f-h5{background:#ffcb9a}.f-h6{background:#d8c2ff}
+:root{--c1:#111111;--c2:#c5221f;--c3:#b45309;--c4:#15803d;--c5:#1a56db;--c6:#7e22ce;--c7:#5b6270}
+body.dark{--c1:#f5f5f2;--c2:#ff8a80;--c3:#ffb74d;--c4:#81c995;--c5:#8ab4f8;--c6:#d7aefb;--c7:#b0b6c0}
+.f-c1{color:var(--c1)}.f-c2{color:var(--c2)}.f-c3{color:var(--c3)}.f-c4{color:var(--c4)}.f-c5{color:var(--c5)}.f-c6{color:var(--c6)}.f-c7{color:var(--c7)}
+[class*="f-h"].f-c1{color:#111111}[class*="f-h"].f-c2{color:#c5221f}[class*="f-h"].f-c3{color:#b45309}[class*="f-h"].f-c4{color:#15803d}[class*="f-h"].f-c5{color:#1a56db}[class*="f-h"].f-c6{color:#7e22ce}[class*="f-h"].f-c7{color:#5b6270}
+#fmt{position:fixed;z-index:40;display:flex;align-items:center;gap:2px;padding:5px 6px;border-radius:11px;background:#1d2033;color:#fff;box-shadow:0 8px 24px rgba(10,14,40,.35);font:600 14px "Segoe UI",system-ui,sans-serif;user-select:none}
+#fmt[hidden]{display:none}
+#fmt>button,#fmt .fhl button{min-width:30px;height:30px;padding:0 7px;border:0;border-radius:7px;background:transparent;color:#fff;font:inherit;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;position:relative}
+#fmt>button:hover,#fmt .fhl button:hover{background:rgba(255,255,255,.16)}
+#fmt button.on{background:rgba(157,178,255,.35)}
+#fmt button:focus-visible{outline:2px solid #9db2ff;outline-offset:1px}
+.fsep{width:1px;height:20px;margin:0 4px;background:rgba(255,255,255,.25)}
+#fmt .fa{font-weight:800;line-height:1}
+#fmtC{flex-direction:column;gap:1px;padding-top:3px}#fmtC .fbar{display:block;width:15px;height:3px;border-radius:2px;background:#ff6b6b}
+.fhl{display:inline-flex;align-items:center;border-radius:7px;background:var(--hl,#ffe680)}
+#fmt .fhl button{color:#111;min-width:26px}#fmt .fhl button:hover{background:rgba(0,0,0,.14)}#fmt .fhl .farrow{min-width:16px;padding:0 3px;font-size:11px}
+#fmtPal{position:absolute;left:0;top:calc(100% + 6px);display:grid;grid-template-columns:repeat(7,28px);gap:8px;padding:11px 12px 9px;border-radius:12px;background:#1d2033;box-shadow:0 8px 24px rgba(10,14,40,.35)}
+#fmtPal[hidden]{display:none}
+#fmtPal.up{top:auto;bottom:calc(100% + 6px)}
+#fmtPal .dot{width:28px;height:28px;border-radius:50%;border:2px solid transparent;padding:0;cursor:pointer}
+#fmtPal .dot:hover,#fmtPal .dot:focus-visible{border-color:#fff;outline:0}
+#fmtPal .dot.on{box-shadow:0 0 0 2px #1d2033,0 0 0 4px #9db2ff}
+#fmtPal .none{grid-column:1/-1;display:flex;align-items:center;gap:9px;padding:2px 2px 0;border:0;background:transparent;color:#fff;font:13px "Segoe UI",system-ui,sans-serif;cursor:pointer;text-align:left}
+#fmtPal .none i{width:22px;height:22px;border-radius:50%;border:2px solid #fff;opacity:.85}

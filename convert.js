@@ -1,4 +1,5 @@
 'use strict';
+const marks = require('./marks');
 // Turning notes into Markdown / plain text files and back. Pure functions (no Electron, no disk).
 
 // A safe file or folder name made from a note title.
@@ -8,7 +9,7 @@ function slug(s, fallback = 'Untitled') {
   return (t.slice(0, 60).trim().replace(/[. ]+$/, '')) || fallback;
 }
 
-const lineOf = (b, md) => (md ? (b.done ? '- [x] ' : '- [ ] ') : (b.done ? '[x] ' : '[ ] ')) + b.v.replace(/\n/g, ' ');
+const lineOf = (b, md) => (md ? (b.done ? '- [x] ' : '- [ ] ') : (b.done ? '[x] ' : '[ ] ')) + (md && b.m ? marks.toMarkdown(b.v, b.m) : b.v).replace(/\n/g, ' ');
 
 // image(id) gives a data address for a picture (or '' when its file is gone). Without it, pictures are left out (plain text can not hold them).
 function body(blocks, md, image) {
@@ -16,7 +17,8 @@ function body(blocks, md, image) {
   (blocks || []).forEach((b, i) => {
     if (b.t === 'text') {
       const next = blocks[i + 1];
-      out.push(next && next.t !== 'text' ? b.v.replace(/\n$/, '') : b.v);
+      const t = md && b.m ? marks.toMarkdown(b.v, b.m) : b.v;   // bold, italic and strikethrough are kept in Markdown (other formatting has no Markdown form)
+      out.push(next && next.t !== 'text' ? t.replace(/\n$/, '') : t);
     } else if (b.t === 'check') out.push(lineOf(b, md));
     else if (b.t === 'img' && md && image) { const u = image(b.id); if (u) out.push('', '![' + (b.w >= 10 && b.w < 100 ? 'w=' + Math.round(b.w) : '') + '](' + u + ')', ''); }
   });
