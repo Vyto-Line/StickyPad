@@ -5,7 +5,7 @@ let KEYMAP = StickyKeys.DEFAULTS;   // the shortcuts (Settings > Shortcuts can c
 const KEY = (e, id) => StickyKeys.matches(e, KEYMAP[id]);
 if (window.api.onKeys) api.onKeys(m => { KEYMAP = m || StickyKeys.DEFAULTS; });
 const srcCache = new Map();
-let themeId = 'classic', scopeAll = false, uiDarkNow = false;
+let themeId = 'classic', scopeAll = false, uiDarkNow = false, UT = null;   // UT: the app theme and note palette the app last told us about
 const TH = window.StickyThemes;
 
 const isDark = hex => TH.wantsLightText(hex);   // light text reads better on this colour (WCAG contrast)
@@ -13,13 +13,33 @@ const isDark = hex => TH.wantsLightText(hex);   // light text reads better on th
 /* ---------- themes ---------- */
 function buildSwatches() {
   document.querySelectorAll('.sw[data-c]').forEach(x => x.remove());
-  TH.palette(themeId, uiDarkNow).forEach(c => {
+  const pal = UT && UT.palette ? UT.palette : TH.palette(themeId, uiDarkNow), names = UT && UT.names ? UT.names : [];
+  if ($('#palName')) $('#palName').textContent = UT && UT.paletteName ? UT.paletteName : 'Colours';
+  pal.forEach((c, i) => {
     const b = document.createElement('button'); b.className = 'sw'; b.dataset.c = c;
-    b.style.background = c; b.title = c; b.setAttribute('aria-label', 'Colour ' + c);
+    const nm = names[i] || c; b.style.background = c; b.title = nm; b.setAttribute('aria-label', 'Colour ' + nm);
     b.onclick = () => set({ color: c }); $('#swatches').insertBefore(b, $('#customSw'));
   });
   if (note) apply();
 }
+/* ---------- note palettes: the menu next to the colours ---------- */
+function palMenuClose() { const m = $('#palMenu'); if (m) m.hidden = true; if ($('#palBtn')) $('#palBtn').setAttribute('aria-expanded', 'false'); }
+function palMenuOpen() {
+  const m = $('#palMenu'); if (!m || !UT) return;
+  if (!m.hidden) { palMenuClose(); return; }
+  m.textContent = '';
+  const add = (id, name, cols, on, mine) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'pal' + (on ? ' on' : ''); b.setAttribute('role', 'menuitemradio'); b.setAttribute('aria-checked', on ? 'true' : 'false');
+    const dots = document.createElement('span'); dots.className = 'dots'; cols.forEach(c => { const i = document.createElement('i'); i.style.background = c; dots.appendChild(i); });
+    const nm = document.createElement('span'); nm.className = 'pn'; nm.textContent = name + (on ? '  ✓' : '');
+    b.append(dots, nm); b.onclick = () => { api.paletteSet(id); palMenuClose(); }; m.appendChild(b);
+  };
+  add('theme', 'From the theme (' + TH.byId(UT.id).name + ')', TH.palette(UT.id, uiDarkNow).slice(0, 6), UT.paletteId === 'theme');
+  (UT.palettes || []).forEach(p => add(p.id, p.name, (uiDarkNow ? p.dark : p.colors), UT.paletteId === p.id));
+  const mk = document.createElement('button'); mk.type = 'button'; mk.className = 'pal make'; mk.textContent = 'Make my own palette…'; mk.onclick = () => { palMenuClose(); api.openSettings('appearance'); };
+  m.appendChild(mk); m.hidden = false; $('#palBtn').setAttribute('aria-expanded', 'true');
+}
+if ($('#palBtn')) $('#palBtn').onclick = palMenuOpen;
 function buildThemes() {   // (the theme picker now lives in Settings > Appearance; kept for windows that still have it)
   const box = $('#themes'); if (!box) return; box.textContent = '';
   TH.THEMES.forEach(t => {
@@ -36,16 +56,18 @@ async function applyTheme(id) {
   themeId = id; buildThemes(); buildSwatches();
   const t = TH.byId(id);
   if (scopeAll) { await api.themeApplyAll(id); }   // the app updates every note and tells each window
-  else { await api.themeSet(id); set({ color: TH.mapColor(note.color, id, 0, uiDarkNow), font: t.font }); }
+  else { await api.themeSet(id); set({ color: TH.mapColor(note.color, id, 0, uiDarkNow, UT && UT.paletteId), font: t.font }); }
 }
 if ($('#scopeThis')) { $('#scopeThis').onclick = () => { scopeAll = false; try { localStorage.setItem('sp.scope', 'this'); } catch (e) {} paintScope(); }; $('#scopeAll').onclick = () => { scopeAll = true; try { localStorage.setItem('sp.scope', 'all'); } catch (e) {} paintScope(); }; }
 api.onStyle(st => { note.color = st.color; note.font = st.font; apply(); });
 // the app-wide theme changed (another theme, or light/dark): new swatches and the theme's accent colour
-if (api.onUiTheme) api.onUiTheme(t => { if (!t) return; themeId = t.id; uiDarkNow = !!t.dark; buildThemes(); buildSwatches(); });
+if (api.onUiTheme) api.onUiTheme(t => { if (!t) return; takeUT(t); buildThemes(); buildSwatches(); palMenuClose(); });
 
+function takeUT(t) { UT = t; themeId = t.id; uiDarkNow = !!t.dark; TH.setCustom(t.mine || []); }
 function apply() {
   document.documentElement.style.setProperty('--bg', note.color);
   const dk = isDark(note.color); document.body.classList.toggle('dark', dk);
+  ed.style.color = (UT && TH.letterFor(note.color, UT.paletteId)) || '';   // an own palette can ask for its own letter colour on a colour
   const acc = TH.byId(themeId).ui[dk ? 'dark' : 'light'];   // the theme's accent, in the version that reads well on this note
   document.body.style.setProperty('--accent', acc.accent); document.body.style.setProperty('--on-accent', acc.onAccent);
   ed.style.fontFamily = '"' + note.font.replace(/["\\]/g, '') + '", "Segoe UI", sans-serif';
@@ -955,7 +977,7 @@ api.onReload(() => { if (!timer && !edit && document.activeElement !== $('#topic
   await reload();
   aiLoad();
   try { themeId = ((await api.info()) || {}).theme || 'classic'; } catch (e) {}
-  try { const ut = api.uiTheme ? await api.uiTheme() : null; if (ut) { themeId = ut.id; uiDarkNow = !!ut.dark; } } catch (e) {}
+  try { const ut = api.uiTheme ? await api.uiTheme() : null; if (ut) takeUT(ut); } catch (e) {}
   buildSwatches(); buildThemes();
   try { scopeAll = localStorage.getItem('sp.scope') === 'all'; } catch (e) {}
   paintScope();

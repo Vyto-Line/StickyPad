@@ -60,20 +60,86 @@
   ];
   const LEGACY = { '#757575': 5 };   // colours older versions used, so existing notes keep their slot
   const byId = id => THEMES.find(t => t.id === id) || THEMES[0];
-  const palette = (id, dark) => { const t = byId(id); return dark ? t.dark : t.colors; };
-  // Which slot is this colour in (in any theme, light or dark)? -1 when it is a custom colour.
+
+  // Note palettes. A palette only changes which colours the colour menu offers (and new notes start with); it never recolours a note.
+  // Same 8 slots as a theme. "theme" (the default) means: use the colours of the app theme, as before.
+  const NAMES8 = ['Yellow', 'Pink', 'Blue', 'Green', 'Orange', 'Purple', 'White', 'Graphite'];
+  const PALETTES = [
+    { id: 'standard', name: 'Standard', names: NAMES8,
+      colors: ['#FFEC8B', '#FFC2D9', '#B5DEFF', '#BDEEA6', '#FFCB8F', '#D5BFFF', '#FFFFFF', '#2B2F3A'],
+      dark:   ['#5A4E1C', '#5C2D42', '#1F4466', '#2D5A22', '#5E3A17', '#43306B', '#2A2C31', '#F1EFE6'] },
+    { id: 'clear', name: 'Clear colours', names: NAMES8,
+      colors: ['#FFE15C', '#FF9DBD', '#7EC8FF', '#8EDB78', '#FFAA5E', '#BC9CFF', '#FFFFFF', '#2B2F3A'],
+      dark:   ['#6B5A00', '#7A2548', '#12507F', '#1F6B12', '#7A3F00', '#51309A', '#2A2C31', '#F1EFE6'] },
+    // For colour-blind readers: the colours also differ in lightness (light yellow, mid sky blue, mid orange...), not only in hue.
+    { id: 'cb', name: 'Colour-blind friendly', names: ['Pale yellow', 'Light pink', 'Lavender', 'Orange', 'Sky blue', 'Bluish green', 'White', 'Graphite'],
+      colors: ['#FFF59B', '#F8CFE0', '#C6C0F0', '#EBA94F', '#5CA9E0', '#2F9E77', '#FFFFFF', '#2B2F3A'],
+      dark:   ['#6B6112', '#5C3347', '#3C3768', '#7A4A0D', '#124F7A', '#13604A', '#2A2C31', '#F1EFE6'] }
+  ];
+  let custom = [];   // the person's own palettes: { id, name, colors: [6 light colours], letters: [6 x (null = automatic | '#rrggbb')] }
+
+  const hexOk = h => /^#[0-9a-f]{6}$/i.test(String(h));
+  function toHsl(hex) {
+    const r = parseInt(hex.slice(1, 3), 16) / 255, g = parseInt(hex.slice(3, 5), 16) / 255, b = parseInt(hex.slice(5, 7), 16) / 255;
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, d = mx - mn;
+    let h = 0, s = 0;
+    if (d) { s = d / (1 - Math.abs(2 * l - 1)); h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h *= 60; if (h < 0) h += 360; }
+    return [h, s, l];
+  }
+  function fromHsl(h, s, l) {
+    const c = (1 - Math.abs(2 * l - 1)) * s, x = c * (1 - Math.abs(((h / 60) % 2) - 1)), m = l - c / 2;
+    const [r, g, b] = h < 60 ? [c, x, 0] : h < 120 ? [x, c, 0] : h < 180 ? [0, c, x] : h < 240 ? [0, x, c] : h < 300 ? [x, 0, c] : [c, 0, x];
+    const f = v => Math.round((v + m) * 255).toString(16).padStart(2, '0');
+    return '#' + f(r) + f(g) + f(b);
+  }
+  // The dark-mode twin of a light colour: same hue, calmer and much darker.
+  function darkOf(hex) { const [h, s, l] = toHsl(hex.toLowerCase()); return fromHsl(h, Math.min(1, s * 0.6), 0.1 + l * 0.14).toUpperCase(); }
+  function customPalette(c) {
+    const cols = c.colors.map(x => x.toUpperCase());
+    return { id: c.id, name: c.name, custom: true, letters: c.letters, names: cols.map(colorName).concat(['White', 'Graphite']),
+      colors: cols.concat(['#FFFFFF', '#2B2F3A']), dark: cols.map(darkOf).concat(['#2A2C31', '#F1EFE6']) };
+  }
+  // A plain name for a colour, for the hover text.
+  function colorName(hex) {
+    if (!hexOk(hex)) return 'Colour';
+    const [h, s, l] = toHsl(hex.toLowerCase());
+    if (l > 0.94) return 'White'; if (l < 0.14) return 'Black';
+    if (s < 0.12) return l > 0.7 ? 'Light grey' : l > 0.35 ? 'Grey' : 'Graphite';
+    const hue = h < 15 || h >= 345 ? 'Red' : h < 40 ? 'Orange' : h < 68 ? 'Yellow' : h < 160 ? 'Green' : h < 195 ? 'Teal' : h < 255 ? 'Blue' : h < 290 ? 'Purple' : 'Pink';
+    return (hue === 'Red' && l > 0.7) ? 'Pink' : (hue === 'Orange' && l < 0.4) ? 'Brown' : hue;
+  }
+  // Replace the list of own palettes (keeps only well-formed ones; at most 8).
+  function setCustom(list) {
+    custom = (Array.isArray(list) ? list : []).filter(c => c && typeof c.id === 'string' && /^my-[a-z0-9]{1,12}$/.test(c.id) && typeof c.name === 'string' && Array.isArray(c.colors) && c.colors.length === 6 && c.colors.every(hexOk))
+      .slice(0, 8).map(c => ({ id: c.id, name: c.name.slice(0, 30), colors: c.colors.map(x => x.toLowerCase()),
+        letters: [0, 1, 2, 3, 4, 5].map(i => Array.isArray(c.letters) && hexOk(c.letters[i]) ? c.letters[i].toLowerCase() : null) }));
+    return custom;
+  }
+  const customList = () => custom;
+  const allPalettes = () => PALETTES.concat(custom.map(customPalette));
+  const paletteById = id => allPalettes().find(p => p.id === id) || null;
+  // The 8 colours to offer: a note palette when one is chosen, else the theme's.
+  const palette = (id, dark, paletteId) => { const p = paletteId && paletteId !== 'theme' ? paletteById(paletteId) : null; if (p) return dark ? p.dark : p.colors; const t = byId(id); return dark ? t.dark : t.colors; };
+  const paletteNames = (id, paletteId) => { const p = paletteId && paletteId !== 'theme' ? paletteById(paletteId) : null; return p ? p.names : palette(id, false).map(colorName).slice(0, 6).concat(['White', 'Graphite']); };
+  // Which slot is this colour in (in any theme or palette, light or dark)? -1 when it is a custom colour.
   function slotOf(color) {
     const c = String(color || '').toLowerCase();
-    for (const t of THEMES) for (const p of [t.colors, t.dark]) { const i = p.findIndex(x => x.toLowerCase() === c); if (i >= 0) return i; }
+    for (const t of THEMES.concat(allPalettes())) for (const p of [t.colors, t.dark]) { const i = p.findIndex(x => x.toLowerCase() === c); if (i >= 0) return i; }
     return c in LEGACY ? LEGACY[c] : -1;
   }
   // The colour a note should get in `themeId` (light or dark): same slot as now, or (for a custom colour) the fallback slot.
-  function mapColor(color, themeId, fallbackSlot, dark) {
-    const p = palette(themeId, dark), i = slotOf(color);
+  function mapColor(color, themeId, fallbackSlot, dark, paletteId) {
+    const p = palette(themeId, dark, paletteId), i = slotOf(color);
     return p[i >= 0 ? i : ((fallbackSlot || 0) % 6)];
   }
-  // Light <-> dark switch: only colours from a theme move; your own custom colours stay as they are.
-  function followMode(color, themeId, dark) { return slotOf(color) >= 0 ? palette(themeId, dark)[slotOf(color)] : color; }
+  // Light <-> dark switch: only colours from a theme or palette move; your own custom colours stay as they are.
+  function followMode(color, themeId, dark, paletteId) { return slotOf(color) >= 0 ? palette(themeId, dark, paletteId)[slotOf(color)] : color; }
+  // The letter colour a custom palette asks for on this note colour (null = automatic).
+  function letterFor(color, paletteId) {
+    const p = paletteId && paletteId !== 'theme' ? paletteById(paletteId) : null; if (!p || !p.custom) return null;
+    const c = String(color || '').toLowerCase(), i = p.colors.findIndex(x => x.toLowerCase() === c), j = p.dark.findIndex(x => x.toLowerCase() === c), k = i >= 0 ? i : j;
+    return k >= 0 && k < 6 ? p.letters[k] : null;
+  }
   // WCAG contrast helpers, so text on any colour stays readable.
   function lum(hex) {
     const h = String(hex).replace('#', '').slice(0, 6); if (!/^[0-9a-f]{6}$/i.test(h)) return 1;
@@ -83,6 +149,8 @@
   const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
   const DARK_INK = '#25221a', LIGHT_INK = '#f3f3f0';
   const wantsLightText = bg => contrast(LIGHT_INK, bg) > contrast(DARK_INK, bg);
+  // Is the text readable on this colour? Uses the letter colour when one is given, else the automatic dark or light one. Needs 4.5 : 1 (WCAG AA).
+  function readable(bg, letter) { const ink = letter || (wantsLightText(bg) ? LIGHT_INK : DARK_INK), r = contrast(ink, bg); return { ratio: Math.round(r * 10) / 10, ok: r >= 4.5 }; }
   // The CSS variables a window uses (the names the pages already had).
   function vars(id, dark) {
     const u = byId(id).ui[dark ? 'dark' : 'light'];
@@ -90,6 +158,6 @@
       '--hover': u.nav, '--danger': dark ? '#ff8a80' : '#c92a2a', '--err': dark ? '#ff8a80' : '#c92a2a',
       '--user': u.accent, '--user-fg': u.onAccent, '--ai': u.card, '--code': u.nav };
   }
-  const api = { THEMES, byId, palette, slotOf, mapColor, followMode, lum, contrast, wantsLightText, DARK_INK, LIGHT_INK, vars };
+  const api = { THEMES, PALETTES, byId, palette, paletteNames, paletteById, allPalettes, setCustom, customList, darkOf, colorName, letterFor, readable, hexOk, slotOf, mapColor, followMode, lum, contrast, wantsLightText, DARK_INK, LIGHT_INK, vars };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.StickyThemes = api;
 })(typeof self !== 'undefined' ? self : this);

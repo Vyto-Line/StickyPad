@@ -42,7 +42,7 @@ function fill() {
   $('#lowMemory').checked = !!S.lowMemory; $('#lowMemRestart').hidden = !!S.lowMemory === !!S.lowMemoryActive;
   if (S.aiKeep) $('#aiKeep').value = S.aiKeep;
   $('#aboutNotes').textContent = `${S.notesCount} note${S.notesCount === 1 ? '' : 's'}, ${S.groups.length} folder${S.groups.length === 1 ? '' : 's'}`;
-  drawThemes(); drawFolders(); drawKeys();
+  drawThemes(); drawPalettes(); drawFolders(); drawKeys();
   $$('[data-mode]').forEach(b => { const on = b.dataset.mode === (S.mode || 'system'); b.classList.toggle('on', on); b.setAttribute('aria-checked', on); });
 }
 /* ---------- keyboard shortcuts ---------- */
@@ -108,6 +108,57 @@ function drawThemes() {
     b.append(pv, nm); b.onclick = () => save({ theme: t.id }); box.appendChild(b);
   });
 }
+/* ---------- note colours (palettes) ---------- */
+let pedit = null;   // the palette being made or changed: { id?, name, colors[6], letters[6] }
+function drawPalettes() {
+  const box = $('#palettes'); box.textContent = '';
+  const add = (id, name, cols, mine) => {
+    const on = S.notePalette === id, b = document.createElement('div'); b.className = 'pal' + (on ? ' on' : ''); b.tabIndex = 0;
+    b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', on); b.title = name;
+    const sw = document.createElement('span'); sw.className = 'sws'; cols.forEach(c => { const i = document.createElement('i'); i.style.background = c; sw.appendChild(i); });
+    const nm = document.createElement('span'); nm.textContent = name; b.append(sw, nm);
+    if (mine) { const e = document.createElement('button'); e.type = 'button'; e.className = 'pe'; e.textContent = 'Edit'; e.onclick = ev => { ev.stopPropagation(); editPalette(mine); }; b.appendChild(e); }
+    const pick = () => api.paletteSet(id).then(load);
+    b.onclick = pick; b.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } };
+    box.appendChild(b);
+  };
+  add('theme', 'From the theme', TH.byId(S.theme).colors.slice(0, 6));
+  (S.palettes || []).forEach(p => add(p.id, p.name, p.colors, p.custom ? p : null));
+  $('#palNew').disabled = (S.palettes || []).filter(p => p.custom).length >= 8;
+}
+function editPalette(p) {
+  pedit = p ? { id: p.id, name: p.name, colors: p.colors.slice(), letters: (p.letters || []).slice() } : { name: '', colors: ['#fff2a8', '#ffd6e0', '#cdefff', '#d4f5c4', '#ffe0b8', '#e4d4ff'], letters: [] };
+  while (pedit.letters.length < 6) pedit.letters.push(null);
+  $('#palEdName').value = pedit.name; $('#palEdDelete').hidden = !pedit.id; $('#palEd').hidden = false; drawPalEd();
+}
+function drawPalEd() {
+  const box = $('#palEdRows'); box.textContent = ''; let bad = 0;
+  pedit.colors.forEach((c, i) => {
+    const r = document.createElement('div'); r.className = 'paledrow';
+    const inp = document.createElement('input'); inp.type = 'color'; inp.value = c; inp.setAttribute('aria-label', 'Colour ' + (i + 1));
+    const pv = document.createElement('span'); pv.className = 'pv'; pv.style.background = c;
+    const own = pedit.letters[i]; pv.style.color = own || (TH.wantsLightText(c) ? TH.LIGHT_INK : TH.DARK_INK); pv.textContent = TH.colorName(c) + ': the quick brown fox';
+    const chk = TH.readable(c, own), st = document.createElement('span'); st.className = chk.ok ? 'ok' : 'bad'; st.textContent = chk.ok ? 'Readable ✓ ' + chk.ratio + ':1' : 'Hard to read ' + chk.ratio + ':1'; if (!chk.ok) bad++;
+    const lt = document.createElement('label'); lt.className = 'lt'; lt.append('Letters ');
+    const sel = document.createElement('select'); sel.className = 'field'; sel.style.minWidth = '0'; sel.setAttribute('aria-label', 'Letter colour for colour ' + (i + 1));
+    sel.innerHTML = '<option value="auto">Auto</option><option value="own">Own</option>'; sel.value = own ? 'own' : 'auto';
+    const li = document.createElement('input'); li.type = 'color'; li.value = own || '#111111'; li.hidden = !own; li.style.width = '34px'; li.style.height = '26px';
+    lt.append(sel, li);
+    inp.onchange = () => { pedit.colors[i] = inp.value; drawPalEd(); };
+    sel.onchange = () => { pedit.letters[i] = sel.value === 'own' ? li.value : null; drawPalEd(); };
+    li.onchange = () => { pedit.letters[i] = li.value; drawPalEd(); };
+    r.append(inp, pv, st, lt); box.appendChild(r);
+  });
+  $('#palEdMsg').textContent = bad ? bad + ' colour' + (bad === 1 ? ' is' : 's are') + ' hard to read. Make it lighter or darker, or pick your own letter colour. You can still save it.' : 'Every colour is readable (at least 4.5 : 1, the usual rule).';
+}
+$('#palNew').onclick = () => editPalette(null);
+$('#palEdCancel').onclick = () => { $('#palEd').hidden = true; pedit = null; };
+$('#palEdSave').onclick = async () => {
+  const r = await api.paletteSave({ id: pedit.id, name: $('#palEdName').value, colors: pedit.colors, letters: pedit.letters, use: true });
+  if (!r || !r.ok) { $('#palEdMsg').textContent = (r && r.error) || 'Could not save.'; return; }
+  $('#palEd').hidden = true; pedit = null; load();
+};
+arm($('#palEdDelete'), 'Delete', 'Sure? Notes keep their colours', async () => { await api.paletteDelete(pedit.id); $('#palEd').hidden = true; pedit = null; load(); });
 function drawFolders() {
   const box = $('#folderList'); box.textContent = '';
   if (!S.groups.length) { const p = document.createElement('p'); p.className = 'empty'; p.textContent = 'No folders yet.'; box.appendChild(p); return; }

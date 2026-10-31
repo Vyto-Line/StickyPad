@@ -75,7 +75,7 @@ let writeBlocked = false, loadProblem = null;   // writeBlocked: the notes file 
 let file, saveTimer, allTimer, firstRun = false, DATA = null, dirty = false, lastMtime = 0;
 const dataDir = () => DATA || app.getPath('userData');
 const DEFAULT_SETTINGS = {
-  hideTaskbar: true, snap: true, launch: 'notes', splash: true, name: '', lang: 'en', theme: 'classic',
+  hideTaskbar: true, snap: true, launch: 'notes', splash: true, name: '', lang: 'en', theme: 'classic', notePalette: 'theme', customPalettes: [],
   snapDistance: 10, snapSides: false, snapHintSeen: false, defaultSize: 16, trashDays: 30, shortcuts: true, keys: {}, chatHistory: true, autoBackup: true, lastBackup: 0, autoUpdate: true, whatsNew: true, seenVersion: '',
   print: { single: { style: 'box', layout: 'actual', size: 'normal', title: true, pictures: true }, many: { style: 'plain', layout: 'flow', size: 'normal', title: true, pictures: true } },   // Print options window: remembered choices
   ai: { provider: 'off', model: '', url: 'http://localhost:11434', keyEnc: '', keepAlive: '5m' },
@@ -94,7 +94,7 @@ const rid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 
 
 const newNote = (over = {}) => ({
   id: rid(), updated: Date.now(), title: '', group: null, rolled: false, text: '', blocks: [],
-  color: THEMES.palette(settings.theme, uiDark())[0], font: THEMES.byId(settings.theme).font, size: settings.defaultSize || 16, pinned: false, bounds: { width: 300, height: 320 }, ...over
+  color: THEMES.palette(settings.theme, uiDark(), notePal())[0], font: THEMES.byId(settings.theme).font, size: settings.defaultSize || 16, pinned: false, bounds: { width: 300, height: 320 }, ...over
 });
 
 /* ---------- note content helpers ---------- */
@@ -171,6 +171,7 @@ function applyData(d) {
   } else { notes = d || {}; trash = []; }
   if (!notes || typeof notes !== 'object') notes = {};
   if (!Array.isArray(trash)) trash = [];
+  THEMES.setCustom(settings.customPalettes); settings.customPalettes = THEMES.customList();
   trash = trash.filter(t => t && Date.now() - t.deletedAt < settings.trashDays * DAY);
   // Clean out empty checklist items that older versions saved (they used to show up as stray tick boxes).
   Object.values(notes).concat(trash).forEach(n => {
@@ -1400,18 +1401,21 @@ ipcMain.handle('ollama:install', async (e, url) => {
 ipcMain.handle('ai:warmup', () => ai.warmup(aiCfg()));
 
 /* ---------- themes: one theme colours the whole app, in a light and a dark version ---------- */
+const notePal = () => (typeof settings.notePalette === 'string' && settings.notePalette !== 'theme' && THEMES.paletteById(settings.notePalette) ? settings.notePalette : 'theme');
 const modeOf = () => (['light', 'dark'].includes(settings.mode) ? settings.mode : 'system');
 function uiDark() { return !!NT.shouldUseDarkColors; }   // follows settings.mode through nativeTheme.themeSource
 function applyMode() { try { NT.themeSource = modeOf(); } catch {} }
 function uiTheme() {
-  const dark = uiDark(), id = THEMES.byId(settings.theme).id;
-  return { id, dark, mode: modeOf(), follow: settings.notesFollowMode !== false, vars: THEMES.vars(id, dark), palette: THEMES.palette(id, dark) };
+  const dark = uiDark(), id = THEMES.byId(settings.theme).id, pid = notePal();
+  const pals = THEMES.allPalettes().map(p => ({ id: p.id, name: p.name, custom: !!p.custom, colors: p.colors.slice(0, 6), dark: p.dark.slice(0, 6), names: p.names.slice(0, 6) }));
+  return { id, dark, mode: modeOf(), follow: settings.notesFollowMode !== false, vars: THEMES.vars(id, dark), palette: THEMES.palette(id, dark, pid), names: THEMES.paletteNames(id, pid), paletteId: pid,
+    paletteName: pid === 'theme' ? THEMES.byId(id).name + ' (from the theme)' : THEMES.paletteById(pid).name, palettes: pals, mine: THEMES.customList() };
 }
 // Tells every window about the theme. When light/dark changed, notes in theme colours follow (custom colours never change).
 function themeChanged() {
   const t = uiTheme();
   if (t.follow && typeof settings.lastDark === 'boolean' && settings.lastDark !== t.dark) {
-    Object.values(notes).forEach(n => { n.color = THEMES.followMode(n.color, t.id, t.dark); });
+    Object.values(notes).forEach(n => { n.color = THEMES.followMode(n.color, t.id, t.dark, t.paletteId); });
     wins.forEach((w, nid) => { const n = notes[nid]; if (n && !w.isDestroyed()) w.webContents.send('note:style', { color: n.color, font: n.font }); });
   }
   if (settings.lastDark !== t.dark) { settings.lastDark = t.dark; save(); }   // the first time it only remembers: existing notes are left alone
@@ -1420,9 +1424,26 @@ function themeChanged() {
 }
 ipcMain.handle('ui:theme', () => uiTheme());
 ipcMain.handle('theme:set', (e, id) => { settings.theme = THEMES.byId(id).id; save(); themeChanged(); return settings.theme; });
+// Note palettes: which one the colour menu offers, and the person's own (at most 8, each with six colours).
+ipcMain.handle('palette:set', (e, id) => { settings.notePalette = typeof id === 'string' && THEMES.paletteById(id) ? id : 'theme'; save(); themeChanged(); return settings.notePalette; });
+ipcMain.handle('palette:save', (e, p) => {
+  if (!p || typeof p !== 'object') return { ok: false };
+  const list = THEMES.customList().filter(x => x.id !== p.id), id = typeof p.id === 'string' && /^my-[a-z0-9]{1,12}$/.test(p.id) ? p.id : 'my-' + Date.now().toString(36);
+  if (list.length >= 8) return { ok: false, error: 'You can keep up to 8 palettes of your own.' };
+  const name = String(p.name || '').trim().slice(0, 30) || 'My palette';
+  settings.customPalettes = THEMES.setCustom(list.concat([{ id, name, colors: p.colors, letters: p.letters }]));
+  if (!THEMES.paletteById(id)) return { ok: false, error: 'The colours need to be six #rrggbb values.' };
+  if (p.use) settings.notePalette = id;
+  save(); themeChanged(); return { ok: true, id };
+});
+ipcMain.handle('palette:delete', (e, id) => {
+  settings.customPalettes = THEMES.setCustom(THEMES.customList().filter(x => x.id !== id));
+  if (settings.notePalette === id) settings.notePalette = 'theme';
+  save(); themeChanged(); return { ok: true };
+});
 ipcMain.handle('theme:applyAll', (e, id) => {
   const th = THEMES.byId(id); settings.theme = th.id; let k = 0;
-  Object.values(notes).forEach(n => { n.color = THEMES.mapColor(n.color, th.id, k++, uiDark()); n.font = th.font; });   // keeps "the pink one" pink-ish in the new theme
+  Object.values(notes).forEach(n => { n.color = THEMES.mapColor(n.color, th.id, k++, uiDark(), notePal()); n.font = th.font; });   // keeps "the pink one" pink-ish in the new theme
   wins.forEach((w, nid) => { const n = notes[nid]; if (n && !w.isDestroyed()) w.webContents.send('note:style', { color: n.color, font: n.font }); });
   save(); themeChanged(); return th.id;
 });
@@ -1735,7 +1756,7 @@ function allSettings() {
     trashDays: settings.trashDays, trashCount: trash.length, shortcuts: !!settings.shortcuts, suggestDates: settings.suggestDates !== false, predictWords: settings.predictWords !== false, keys: curKeys(), keysFailed: settings.shortcuts ? keysFailed : [], chatHistory: !!settings.chatHistory,
     autoBackup: !!settings.autoBackup, lastBackup: settings.lastBackup || 0, backupCount: backup.list(app.getPath('userData')).length,
     autoUpdate: settings.autoUpdate !== false, whatsNew: settings.whatsNew !== false, update: updater ? updater.get() : null,
-    theme: settings.theme, mode: modeOf(), notesFollowMode: settings.notesFollowMode !== false, uiDark: uiDark(), prefs: prefs(), groups, notesCount: Object.keys(notes).length,
+    theme: settings.theme, notePalette: notePal(), palettes: THEMES.allPalettes().map(p => ({ id: p.id, name: p.name, custom: !!p.custom, colors: p.colors.slice(0, 6), letters: p.letters || null })), mode: modeOf(), notesFollowMode: settings.notesFollowMode !== false, uiDark: uiDark(), prefs: prefs(), groups, notesCount: Object.keys(notes).length,
     access: accessOf(), quiet: quietOf(), lowMemory: launchcfg.read(app.getPath('userData')).lowMemory, lowMemoryActive: LAUNCH.lowMemory, aiKeep: settings.ai.keepAlive || '5m'
   };
 }
