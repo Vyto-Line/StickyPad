@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.16.0
+- **Text formatting.** Select words in a note and a small bar appears: **bold**, *italic*, underline, strikethrough, a highlight in six colours (one tap repeats the last one) and a letter colour. Ctrl+B, Ctrl+I and Ctrl+U work too, and *Clear formatting* takes it all away. Formatting is kept when you copy into Word or an e-mail, and when you paste between StickyPad notes. *Paste as plain text* (right-click menu, or Ctrl+Shift+V) pastes just the words. Older StickyPad versions show these notes as plain text.
+- **New note colours.** Three new sets of colours: *Standard*, *Clear colours* (easier to tell apart) and *Colour-blind friendly* (the colours differ in lightness as well as hue). Colour names show when you hover a colour. In a note use *Look > Palettes*; in Settings > Appearance > Note colours pick the set for new notes. You can also *Make my own palette*, with a check that the text stays readable on every colour and an optional own letter colour for each. Your existing notes keep their colours.
+- **Select mode in Home is bigger.** A dark bar at the bottom offers *Print, Export, Colour, Folder, More* (Open, Close, Pin on top, Unpin) and *Trash* for the notes you chose. In the Trash tab, *Select* lets you *Restore* or *Delete forever* several notes at once. Drag one chosen note and all chosen notes move together onto a folder or the Trash. Locked notes can be moved but are left alone by Colour and Trash.
+- **Sort by** (next to *+ Note* in Home): *Last edited*, *A to Z*, *Z to A*, *Colour* or *Open first*. Pinned notes always stay first and your choice is remembered.
+- **Pinned strip.** Your pinned notes appear in one row at the top of Home; one click opens a note.
+- **Duplicate note.** Makes a copy called "<title> (copy)" with the same text, formatting, pictures, colour and folder. It is in a note's *Copy or export* panel and in Home's right-click menu.
+- **Undo after moving notes to the trash.** Home shows a bar with *Undo* for a few seconds.
+- **Keyboard shortcuts panel.** Ctrl+/ in a note or in Home lists the shortcuts that work there.
+- **Keep on top: Ctrl+Shift+P.** The same as the drawing-pin button (you can change the keys in Settings > Shortcuts).
+- **What's new now also lists the older versions,** below the new ones, in the same window.
+- **App language.** Settings > General > *Language* switches the menus, buttons and the greeting to Greek (English stays the default). Your own notes, titles and folder names are never translated. A few messages are still English; more will follow.
+- Greek spell checking is moved to 1.17.
+
 ## 1.15.11
 - **Spell checking.** Misspelled words are underlined as you type, and the right-click menu offers corrections and *Add to dictionary*. StickyPad now switches spell checking on explicitly (English, and the language of Windows), and writes what happens to the performance log. Low memory mode no longer blocks the dictionary download.
 

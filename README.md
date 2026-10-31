@@ -9,6 +9,9 @@ Each note is its own small window on your desktop. Everything is stored on your 
 - **Light and simple**: one small window per note, a tray icon, and it can start with Windows.
 - **Private**: no account, no cloud. Lock a note with a password, or keep the AI on your own PC with [Ollama](https://ollama.com).
 - **Multilingual**: the AI works in 13 languages (English and Greek work best with small models), with dedicated Greek rules, and search ignores accents.
+- **Text formatting and colours**: bold, italic, underline, strikethrough, highlights and letter colours; three note colour sets (including a colour-blind friendly one) and your own palettes.
+- **Greek interface**: *Settings > General > Language* switches menus and buttons to Greek (English is the default).
+- **Select, sort and pin in Home**: choose several notes to print, export, recolour, move or trash; sort by name, colour or last edit; a strip of pinned notes at the top.
 - **Tells you about updates** from this repository's Releases: you press **Download**, then **Restart to update** when it is ready.
 - **Easy on memory**: Low memory mode (on by default) and an AI model that only stays loaded while you use it. *Settings > About > Measure* shows what StickyPad uses.
 
