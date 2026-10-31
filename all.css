@@ -120,3 +120,50 @@ h1{font-size:15px}
 .cb{display:inline-block;width:.85em;height:.85em;margin:0 .35em 0 .05em;border-radius:50%;border:1.5px solid currentColor;opacity:.65;vertical-align:-.1em;box-sizing:border-box;position:relative}
 .cb.done{background:var(--accent);border-color:var(--accent);opacity:1}
 .cb.done::after{content:"";position:absolute;left:28%;top:8%;width:26%;height:50%;border:solid #fff;border-width:0 1.5px 1.5px 0;transform:rotate(45deg)}
+
+/* Select mode: the floating action bar (always dark, so it stands out over any note colour) */
+.fbar{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);display:flex;align-items:center;gap:2px;max-width:calc(100% - 20px);padding:6px 8px;border-radius:16px;background:#20232b;color:#f2f3f6;box-shadow:0 6px 24px rgba(0,0,0,.35),0 1px 3px rgba(0,0,0,.4);z-index:20}
+.fbar[hidden]{display:none}
+.fbar .fn{padding:0 10px 0 6px;font-size:12.5px;font-weight:700;white-space:nowrap;border-right:1px solid rgba(255,255,255,.18);margin-right:4px}
+.fb{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:52px;padding:5px 8px;font:inherit;font-size:11px;font-weight:600;color:inherit;background:none;border:0;border-radius:10px;cursor:pointer}
+.fb:hover:not(:disabled),.fb[aria-expanded=true]{background:rgba(255,255,255,.14)}
+.fb:disabled{opacity:.38;cursor:default}
+.fb.danger{color:#ff8a80}
+.fb svg.i{width:17px;height:17px}
+.fb:focus-visible{outline:2px solid #8ea4ff;outline-offset:1px}
+.fpop{position:absolute;bottom:calc(100% + 8px);right:8px;min-width:170px;max-width:260px;padding:6px;border-radius:12px;background:#2a2e38;box-shadow:0 6px 24px rgba(0,0,0,.4);display:flex;flex-direction:column;gap:2px}
+.fpop[hidden]{display:none}
+.fpop button.mi{font:inherit;font-size:12.5px;color:#f2f3f6;background:none;border:0;border-radius:8px;padding:6px 10px;text-align:left;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fpop button.mi:hover,.fpop button.mi:focus-visible{background:rgba(255,255,255,.14)}
+.fpop .sws{display:flex;flex-wrap:wrap;gap:7px;padding:4px}
+.fpop .sws button{width:26px;height:26px;border-radius:50%;border:1.5px solid rgba(255,255,255,.35);padding:0;cursor:pointer}
+.fpop .sws button:hover,.fpop .sws button:focus-visible{outline:2px solid #fff;outline-offset:1px}
+.fpop .ph{font-size:11px;font-weight:700;opacity:.7;padding:2px 6px}
+body.selbar main{padding-bottom:84px}
+.item.picked{outline:3px solid var(--accent);outline-offset:2px}
+.item{cursor:default}body.selecting .item{cursor:pointer}
+
+/* Sort by */
+.sortwrap{position:relative;flex:none}
+#sortBtn{display:flex;align-items:center;gap:6px}
+#sortBtn svg.i{width:14px;height:14px}
+.sortmenu{position:absolute;right:0;top:calc(100% + 6px);min-width:200px;padding:6px;border-radius:12px;background:var(--card);border:1px solid var(--line);box-shadow:0 6px 24px rgba(0,0,0,.22);z-index:15;display:flex;flex-direction:column;gap:1px}
+.sortmenu[hidden]{display:none}
+.sortmenu button{display:flex;align-items:center;gap:8px;font:inherit;font-size:12.5px;color:var(--fg);background:none;border:0;border-radius:8px;padding:6px 10px;text-align:left;cursor:pointer}
+.sortmenu button:hover,.sortmenu button:focus-visible{background:var(--hover)}
+.sortmenu button .tk{width:14px;flex:none;color:var(--accent);font-weight:800}
+.sortmenu .hint{margin:4px 8px 2px;font-size:11px;color:var(--mute)}
+
+/* Pinned strip */
+.pinstrip{display:flex;align-items:center;gap:7px;margin:0 0 10px;padding:6px 8px;border-radius:12px;background:var(--card);border:1px solid var(--line);overflow-x:auto}
+.pinstrip[hidden]{display:none}
+.pinstrip .pl{flex:none;font-size:11.5px;font-weight:700;color:var(--mute);white-space:nowrap}
+.pinstrip button{flex:none;max-width:170px;font:inherit;font-size:12px;font-weight:600;padding:4px 11px;border-radius:999px;border:1px solid rgba(0,0,0,.16);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pinstrip button:hover{filter:brightness(.96)}
+.pinstrip button.closed{opacity:.65}
+
+/* Undo after moving notes to the trash */
+.ubar{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);display:flex;align-items:center;gap:12px;padding:8px 8px 8px 16px;border-radius:12px;background:#20232b;color:#f2f3f6;font-size:12.5px;font-weight:600;box-shadow:0 6px 24px rgba(0,0,0,.35);z-index:25}
+.ubar[hidden]{display:none}
+.ubar button{font:inherit;font-weight:700;color:#8ea4ff;background:rgba(255,255,255,.1);border:0;border-radius:8px;padding:5px 12px;cursor:pointer}
+.ubar button:hover,.ubar button:focus-visible{background:rgba(255,255,255,.2)}

@@ -1030,6 +1030,11 @@ async function printThis() {
 }
 $('#printBtn').onclick = printThis;
 document.addEventListener('keydown', e => { if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'p') { e.preventDefault(); printThis(); } });
+$('#dupBtn').onclick = async () => {
+  if (bodyLocked()) { $('#exportMsg').textContent = 'Unlock the note first.'; return; }
+  if (timer) saveNow();
+  const r = await api.noteDuplicate(); $('#exportMsg').textContent = r && r.ok ? 'A copy is open next to this note.' : (r && r.error) || '';
+};
 $('#exportBtn').onclick = async () => {
   if (bodyLocked()) { $('#exportMsg').textContent = 'Unlock the note first.'; return; }
   if (timer) saveNow();

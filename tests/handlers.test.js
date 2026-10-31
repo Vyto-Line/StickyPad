@@ -79,6 +79,47 @@ const H = require('./fake-electron');
   const d = await mk('Another'); await h['note:delete'](d.e); assert.strictEqual((await all()).trash.length, 1);
   await h['trash:empty'](); assert.strictEqual((await all()).trash.length, 0, 'trash emptied');
 
+  // ---- Select mode in Home: several notes at once ----
+  const s1 = await mk('Bulk one'), s2 = await mk('Bulk two'), s3 = await mk('Bulk locked');
+  await h['note:lock'](s3.e, 'longpass');
+  const colourOf = async id => (await h['all:list']({})).notes.find(n => n.id === id).color;
+  let r = await h['all:bulk']({}, 'colour', [s1.id, s2.id, s3.id, 'nope'], '#ffc2d9');
+  assert.deepStrictEqual([r.ok, r.done, r.skipped], [true, 2, 1], 'colour: locked note skipped: ' + JSON.stringify(r));
+  assert.strictEqual(await colourOf(s1.id), '#ffc2d9'); assert.notStrictEqual(await colourOf(s3.id), '#ffc2d9');
+  assert.strictEqual((await h['all:bulk']({}, 'colour', [s1.id], 'red')).ok, false, 'a bad colour is refused');
+  r = await h['all:bulk']({}, 'pin', [s1.id, s2.id]); assert.strictEqual(r.done, 2);
+  assert.ok((await all()).notes.filter(n => n.pinned).length >= 2, 'pinned');
+  await h['all:bulk']({}, 'unpin', [s1.id, s2.id]); assert.ok(!(await all()).notes.some(n => n.id === s1.id && n.pinned), 'unpinned');
+  assert.strictEqual((await h['all:bulk']({}, 'nonsense', [s1.id])).ok, false, 'unknown action');
+  assert.strictEqual((await h['all:bulk']({}, 'trash', [])).ok, false, 'nothing chosen');
+  r = await h['all:bulk']({}, 'trash', [s1.id, s2.id, s3.id]);
+  assert.deepStrictEqual([r.done, r.skipped], [2, 1], 'trash: the locked note stays: ' + JSON.stringify(r));
+  let T = (await all()).trash; assert.strictEqual(T.length, 2, 'two in the trash');
+  r = await h['trash:bulk']({}, 'restore', T.map(t => t.id)); assert.strictEqual(r.done, 2);
+  assert.strictEqual((await all()).trash.length, 0, 'both restored');
+  await h['all:bulk']({}, 'trash', [s1.id, s2.id]); T = (await all()).trash;
+  r = await h['trash:bulk']({}, 'purge', [T[0].id]); assert.strictEqual(r.done, 1); assert.strictEqual((await all()).trash.length, 1, 'only the chosen one is deleted for good');
+  await h['trash:empty']();
+  await h['note:removeLock'](s3.e, 'longpass');
+
+  // ---- Duplicate a note ----
+  const du = await mk('Original');
+  await h['note:update'](du.e, { color: '#ffc2d9', blocks: [{ t: 'text', v: 'Line one', m: [[0, 4, 'b']] }, { t: 'check', v: 'Item', done: true }] });
+  const dr = await h['note:duplicate'](du.e); assert.strictEqual(dr.ok, true);
+  const dn = (await all()).notes.find(n => n.id === dr.id);
+  assert.ok(dn && dn.id !== du.id && dn.title === 'Original (copy)' && dn.color === '#ffc2d9' && dn.text.includes('Line one'), 'copy has title, colour and text: ' + JSON.stringify(dn));
+  const dg = await h['note:get'](H.ev(wins[wins.length - 1])); assert.deepStrictEqual(dg.blocks[0].m, [[0, 4, 'b']], 'formatting is copied'); assert.strictEqual(dg.blocks[1].done, true);
+  await h['note:lock'](du.e, 'longpass'); assert.strictEqual((await h['note:duplicate'](du.e)).ok, false, 'a locked note cannot be copied'); await h['note:removeLock'](du.e, 'longpass');
+
+  // ---- Undo after moving notes to the trash ----
+  const u1 = await mk('Undo me'), u2 = await mk('Undo me too');
+  assert.strictEqual((await all()).undo, null, 'nothing to undo yet');
+  await h['all:bulk']({}, 'trash', [u1.id, u2.id]);
+  let ul = await all(); assert.ok(ul.undo && ul.undo.count === 2 && ul.undo.left > 0, 'Home is told about the two notes: ' + JSON.stringify(ul.undo));
+  const ur = await h['all:undoTrash']({}); assert.deepStrictEqual([ur.ok, ur.done], [true, 2]);
+  ul = await all(); assert.ok(ul.notes.some(n => n.id === u1.id) && ul.notes.some(n => n.id === u2.id) && ul.undo === null, 'both are back, nothing left to undo');
+  assert.strictEqual((await h['all:undoTrash']({})).ok, false, 'a second undo does nothing');
+
   // ---- chat history: saved, cleaned and loaded ----
   let ch = await h['chat:load'](); assert.deepStrictEqual(ch.messages, []);
   await h['chat:save']({}, { messages: [{ role: 'user', content: 'hello' }, { role: 'assistant', content: 'hi' }, { role: 'bogus', content: 5 }], noteId: a.id });

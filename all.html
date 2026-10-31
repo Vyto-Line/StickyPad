@@ -24,6 +24,8 @@
   <div id="notesBar">
     <div class="bar">
       <div class="search"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><input id="q" type="text" placeholder="Search notes" aria-label="Search notes" autocomplete="off" spellcheck="false"></div>
+      <div class="sortwrap"><button id="sortBtn" class="btn" aria-haspopup="menu" aria-expanded="false" title="Sort the notes"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16M7 20l-3-3M7 20l3-3M17 20V4M17 4l-3 3M17 4l3 3"/></svg><span id="sortLbl">Last edited</span></button>
+        <div id="sortMenu" class="sortmenu" role="menu" aria-label="Sort notes by" hidden></div></div>
       <button id="new" class="btn primary">＋ Note</button>
     </div>
     <div id="chips" class="chips" role="toolbar" aria-label="Show folder"></div>
@@ -31,14 +33,6 @@
       <button id="showFolder" class="link">＋ New folder</button>
       <button id="tidy" class="link" title="Arrange open notes in rows, folder by folder">Tidy up notes</button>
       <button id="selectBtn" class="link" title="Choose several notes to print, move to a folder or move to the trash">Select</button>
-    </div>
-    <div class="bar" id="printBar" hidden>
-      <span id="selInfo" class="muted" role="status" aria-live="polite"></span>
-      <button id="selAll" class="btn" title="Choose every note shown (Ctrl+A)">Select all</button>
-      <button id="printGo" class="btn primary" disabled>Print…</button>
-      <select id="selFolder" class="field" disabled aria-label="Move the chosen notes to a folder"></select>
-      <button id="selTrash" class="btn danger" disabled>Move to trash</button>
-      <button id="selDone" class="btn">Cancel</button>
     </div>
     <div class="bar" id="folderRow" hidden>
       <input id="fname" class="field" type="text" maxlength="40" placeholder="Folder name" aria-label="New folder name" autocomplete="off" spellcheck="false">
@@ -48,14 +42,37 @@
   </div>
   <div id="trashBar" class="bar" hidden>
     <span class="muted">Deleted notes are kept for 30 days, then removed for good.</span>
+    <button id="trashSelect" class="btn" title="Choose several deleted notes to bring back or delete for good">Select</button>
     <button id="emptyBtn" class="btn danger">Empty trash</button>
+  </div>
+  <div class="bar" id="printBar" hidden>
+    <span id="selInfo" class="muted" role="status" aria-live="polite"></span>
+    <button id="selAll" class="btn" title="Choose every note shown (Ctrl+A)">Select all</button>
+    <button id="selDone" class="btn">Cancel</button>
   </div>
 </header>
 <main>
+  <div id="pinStrip" class="pinstrip" role="region" aria-label="Pinned notes" hidden></div>
   <div id="sections"></div>
   <div id="trashList" hidden></div>
   <p id="empty" class="empty" hidden></p>
 </main>
+<div id="undoBar" class="ubar" role="status" aria-live="polite" hidden><span id="undoTxt"></span><button id="undoBtn" type="button">Undo</button></div>
+<div id="selBar" class="fbar" role="toolbar" aria-label="Actions for the chosen notes" hidden>
+  <span id="selN" class="fn" aria-hidden="true">0 chosen</span>
+  <button id="printGo" class="fb" disabled><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9V4h10v5M6 17H4v-6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v6h-2M7 14h10v6H7z"/></svg><span>Print</span></button>
+  <button id="selExport" class="fb" disabled title="Save the chosen notes as .stickypad files in a folder you pick"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19h14"/></svg><span>Export</span></button>
+  <button id="selColour" class="fb" disabled aria-haspopup="menu" aria-expanded="false"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5c-4.7 0-8.5 3.4-8.5 7.7 0 3.3 2.6 4.8 4.8 4.8h1.2a1.5 1.5 0 0 1 1.2 2.4c-.6.9 0 2.1 1.2 2.1 4.6-.4 7.6-3.8 7.6-8.3 0-4.8-3.8-8.7-7.5-8.7z"/></svg><span>Colour</span></button>
+  <button id="selFolder" class="fb" disabled aria-haspopup="menu" aria-expanded="false"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 7a2 2 0 0 1 2-2h4l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></svg><span>Folder</span></button>
+  <button id="selMore" class="fb" disabled aria-haspopup="menu" aria-expanded="false"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h.01M12 12h.01M19 12h.01"/></svg><span>More</span></button>
+  <button id="selTrash" class="fb danger" disabled><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 4h4M7 7l.8 12.2A1.5 1.5 0 0 0 9.3 20.5h5.4a1.5 1.5 0 0 0 1.5-1.3L17 7"/></svg><span>Trash</span></button>
+  <div id="selPop" class="fpop" role="menu" hidden></div>
+</div>
+<div id="tselBar" class="fbar" role="toolbar" aria-label="Actions for the chosen deleted notes" hidden>
+  <span id="tselN" class="fn" aria-hidden="true">0 chosen</span>
+  <button id="tselRestore" class="fb" disabled><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.5-5.8M4 5v4h4"/></svg><span>Restore</span></button>
+  <button id="tselPurge" class="fb danger" disabled><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 4h4M7 7l.8 12.2A1.5 1.5 0 0 0 9.3 20.5h5.4a1.5 1.5 0 0 0 1.5-1.3L17 7M10 11l4 5M14 11l-4 5"/></svg><span>Delete forever</span></button>
+</div>
 <script src="themes.js"></script>
 <script src="all.js"></script>
 <script src="updbar.js"></script>

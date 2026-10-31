@@ -738,6 +738,21 @@ ipcMain.handle('print:go', async (e, opts) => {
 ipcMain.handle('print:close', e => { try { const w = BrowserWindow.fromWebContents(e.sender); if (w && !w.isDestroyed()) w.close(); } catch {} });
 ipcMain.handle('note:print', e => printNote(notes[idOf(e)]));
 ipcMain.handle('all:print', (e, ids) => openPrintDialog(Array.isArray(ids) ? ids : []));
+// A copy of a note: "<title> (copy)", same text, colour, font and folder. Pictures are copied as files, so deleting one note never takes the other's pictures.
+function duplicateNote(id, near) {
+  const n = notes[id]; if (!n) return { ok: false };
+  if (!isOpen(n)) return { ok: false, error: 'Unlock the note first.' };
+  const blocks = sanitizeBlocks(blocksOf(n).map(b => {
+    if (b.t !== 'img') return JSON.parse(JSON.stringify(b));
+    const nid = rid() + path.extname(String(b.id));
+    try { fs.copyFileSync(path.join(imgDir(), b.id), path.join(imgDir(), nid)); return { ...b, id: nid }; } catch { return null; }
+  }));
+  const title = n.title ? (n.title.length > 52 ? n.title.slice(0, 52) : n.title) + ' (copy)' : '';
+  const c = makeNote(near || null, { title, blocks, text: textOf(blocks), color: n.color, font: n.font, size: n.size, group: groups.some(g => g.id === n.group) ? n.group : null,
+    ...(Number.isFinite(n.opacity) ? { opacity: n.opacity } : {}), ...(n.solidText ? { solidText: true } : {}) });
+  return { ok: true, id: c.id };
+}
+ipcMain.handle('note:duplicate', e => duplicateNote(idOf(e), winOf(e)));
 ipcMain.handle('note:export', async e => {
   const n = notes[idOf(e)]; if (!n) return { ok: false };
   if (!isOpen(n)) return { ok: false, error: 'Unlock the note first.' };
@@ -1050,8 +1065,11 @@ ipcMain.handle('note:close', e => {
   if (n && !hasContent(n)) { delete notes[id]; save(); }   // closing an empty note throws it away
   if (w) w.close();
 });
+let lastTrash = null;   // the notes just moved to the trash, so Home can offer "Undo" for a few seconds
+const UNDO_MS = 6000;
 function deleteNote(id) {
   const n = notes[id]; if (!n) return;
+  if (hasContent(n)) { if (lastTrash && Date.now() - lastTrash.at < 1500) { lastTrash.ids.push(id); lastTrash.at = Date.now(); } else lastTrash = { ids: [id], at: Date.now() }; }
   if (hasContent(n)) trash.unshift({ ...packNote(n), deletedAt: Date.now() }); else dropImages(n);
   delete notes[id]; sessions.delete(id);
   const w = wins.get(id);
@@ -1096,6 +1114,7 @@ ipcMain.handle('all:list', () => {
   const g = greetingParts();
   return {
     groups, greeting: g.text, emoji: g.emoji, prefs: prefs(), trash: trashList(),
+    undo: lastTrash && Date.now() - lastTrash.at < UNDO_MS && lastTrash.ids.some(id => trash.some(t => t.id === id)) ? { count: lastTrash.ids.filter(id => trash.some(t => t.id === id)).length, left: UNDO_MS - (Date.now() - lastTrash.at) } : null,
     notes: Object.values(notes).map(n => {
       const w = wins.get(n.id);
       return { id: n.id, title: n.title || '', text: n.lock ? '' : String(n.text || '').slice(0, 240), images: n.lock ? 0 : imgIds(n).length,
@@ -1111,6 +1130,7 @@ ipcMain.handle('all:context', (e, id) => {
     { label: 'Open note', click: () => { const w = openNote(n); if (w.isMinimized()) w.restore(); w.show(); w.focus(); } },
     { label: 'Copy text', enabled: !n.lock && String(n.text || '').trim() !== '', click: () => { Promise.resolve(clipboard.writeText(String(n.text || ''))).catch(() => {}); } },
     { label: 'Print…', enabled: !n.lock || sessions.has(n.id), click: () => { printNote(n); } },
+    { label: 'Duplicate', enabled: isOpen(n), click: () => { duplicateNote(id); } },
     { label: 'Move to folder', submenu: [
       { label: 'No folder', type: 'radio', checked: !n.group, click: () => move(null) },
       ...(groups.length ? [{ type: 'separator' }] : []),
@@ -1123,6 +1143,37 @@ ipcMain.handle('all:context', (e, id) => {
 ipcMain.handle('all:show', (e, id) => {
   const n = notes[id]; if (!n) return;
   const w = openNote(n); if (w.isMinimized()) w.restore(); w.show(); w.focus();
+});
+// Select mode in Home: one action on several notes. Locked notes are never recoloured or deleted this way; a locked note that is not unlocked cannot be exported.
+ipcMain.handle('all:bulk', async (e, action, ids, arg) => {
+  const list = [...new Set(Array.isArray(ids) ? ids : [])].filter(id => typeof id === 'string' && notes[id]).slice(0, 2000).map(id => notes[id]);
+  if (!list.length) return { ok: false, done: 0, skipped: 0 };
+  let done = 0, skipped = 0;
+  const reload = n => { const w = wins.get(n.id); if (w && !w.isDestroyed()) w.webContents.send('note:reload'); };
+  if (action === 'open') { list.forEach(n => { const w = openNote(n); try { w.showInactive ? w.showInactive() : w.show(); } catch {} done++; }); return { ok: true, done, skipped }; }
+  if (action === 'close') { list.forEach(n => { const w = wins.get(n.id); if (w && !w.isDestroyed()) { w.close(); done++; } else skipped++; }); return { ok: true, done, skipped }; }
+  if (action === 'pin' || action === 'unpin') {
+    const v = action === 'pin';
+    list.forEach(n => { n.pinned = v; const w = wins.get(n.id); if (w && !w.isDestroyed()) { try { w.setAlwaysOnTop(v, 'screen-saver'); } catch {} reload(n); } done++; });
+    save(); return { ok: true, done, skipped };
+  }
+  if (action === 'colour') {
+    if (typeof arg !== 'string' || !/^#[0-9a-f]{6}$/i.test(arg)) return { ok: false, done: 0, skipped: 0 };
+    list.forEach(n => { if (n.lock) { skipped++; return; } n.color = arg; done++; const w = wins.get(n.id); if (w && !w.isDestroyed()) w.webContents.send('note:style', { color: n.color, font: n.font }); });
+    save(); return { ok: true, done, skipped };
+  }
+  if (action === 'trash') { list.forEach(n => { if (n.lock) { skipped++; return; } deleteNote(n.id); done++; }); return { ok: true, done, skipped }; }
+  if (action === 'export') {
+    const readable = list.filter(isOpen); skipped = list.length - readable.length;
+    if (!readable.length) return { ok: false, done: 0, skipped, error: 'Locked notes cannot be exported until they are unlocked.' };
+    const win = BrowserWindow.fromWebContents(e.sender);
+    const r = await dialog.showOpenDialog(win && !win.isDestroyed() ? win : undefined, { title: 'Choose a folder for the exported notes', properties: ['openDirectory', 'createDirectory'], defaultPath: app.getPath('documents') });
+    if (r.canceled || !r.filePaths[0]) return { ok: false, cancelled: true, done: 0, skipped: 0 };
+    const names = convert.uniqueNames(readable.map(n => n.title || textOf(noteBlocks(n)).split('\n').find(x => x.trim()) || ''), '.stickypad');
+    readable.forEach((n, i) => { try { fs.writeFileSync(path.join(r.filePaths[0], names[i]), convert.toMarkdown(n.title, noteBlocks(n), { image: imgDataUri, meta: noteMeta(n) }), 'utf8'); done++; } catch { skipped++; } });
+    shell.openPath(r.filePaths[0]); return { ok: done > 0, done, skipped, dir: r.filePaths[0] };
+  }
+  return { ok: false, done: 0, skipped: 0 };
 });
 ipcMain.handle('all:openGroup', (e, gid) => {
   Object.values(notes).filter(n => (n.group || null) === (gid || null)).forEach(n => { const w = openNote(n); w.show(); });
@@ -1235,6 +1286,22 @@ ipcMain.handle('trash:restore', (e, id) => {
   notes[t.id] = t; openNote(t); save(); pingTrash();
 });
 ipcMain.handle('trash:purge', (e, id) => { const t = trash.find(x => x.id === id); if (t) { dropImages(t); dropHistory(t.id); } trash = trash.filter(x => x.id !== id); save(); pingTrash(); });
+ipcMain.handle('all:undoTrash', () => {   // "Undo" in Home: the notes trashed a moment ago come back
+  if (!lastTrash || Date.now() - lastTrash.at > UNDO_MS + 1500) return { ok: false, done: 0 };
+  const ids = lastTrash.ids; lastTrash = null; let done = 0;
+  trash.filter(t => ids.includes(t.id)).forEach(t => { trash.splice(trash.indexOf(t), 1); delete t.deletedAt; if (!groups.some(g => g.id === t.group)) t.group = null; notes[t.id] = t; if (done < 5) openNote(t); done++; });
+  save(); pingTrash(); return { ok: true, done };
+});
+// Select mode in the Trash tab: bring several notes back, or delete them for good.
+ipcMain.handle('trash:bulk', (e, action, ids) => {
+  const set = new Set((Array.isArray(ids) ? ids : []).filter(x => typeof x === 'string')); let done = 0;
+  if (action === 'restore') {
+    trash.filter(t => set.has(t.id)).forEach(t => { const k = trash.indexOf(t); trash.splice(k, 1); delete t.deletedAt; if (!groups.some(g => g.id === t.group)) t.group = null; notes[t.id] = t; if (done < 5) openNote(t); done++; });
+  } else if (action === 'purge') {
+    trash.filter(t => set.has(t.id)).forEach(t => { dropImages(t); dropHistory(t.id); done++; }); trash = trash.filter(t => !set.has(t.id));
+  } else return { ok: false, done: 0 };
+  save(); pingTrash(); return { ok: true, done };
+});
 ipcMain.handle('trash:empty', () => { trash.forEach(dropImages); trash.forEach(t => dropHistory(t.id)); trash = []; save(); pingTrash(); });
 
 /* ---------- IPC: app settings ---------- */
