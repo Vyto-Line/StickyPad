@@ -361,8 +361,9 @@ body.dark{--c1:#f5f5f2;--c2:#ff8a80;--c3:#ffb74d;--c4:#81c995;--c5:#8ab4f8;--c6:
 .fsep{width:1px;height:20px;margin:0 4px;background:rgba(255,255,255,.25)}
 #fmt .fa{font-weight:800;line-height:1}
 #fmtC{flex-direction:column;gap:1px;padding-top:3px}#fmtC .fbar{display:block;width:15px;height:3px;border-radius:2px;background:#ff6b6b}
-.fhl{display:inline-flex;align-items:center;border-radius:7px;background:var(--hl,#ffe680)}
-#fmt .fhl button{color:#111;min-width:26px}#fmt .fhl button:hover{background:rgba(0,0,0,.14)}#fmt .fhl .farrow{min-width:16px;padding:0 3px;font-size:11px}
+.fhl{display:inline-flex;align-items:center}
+#fmtH{flex-direction:column;gap:1px;padding-top:3px;min-width:26px}#fmtH svg.i{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}#fmtH .fbar{display:block;width:15px;height:3px;border-radius:2px;background:var(--hl,#ffe680)}
+#fmt .fhl .farrow{min-width:16px;padding:0 3px;font-size:11px;opacity:.8}
 #fmtPal{position:absolute;left:0;top:calc(100% + 6px);display:grid;grid-template-columns:repeat(7,28px);gap:8px;padding:11px 12px 9px;border-radius:12px;background:#1d2033;box-shadow:0 8px 24px rgba(10,14,40,.35)}
 #fmtPal[hidden]{display:none}
 #fmtPal.up{top:auto;bottom:calc(100% + 6px)}

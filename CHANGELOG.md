@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.16.1
+- **The highlight button is easier to tell from the letter-colour button.** Highlight is now a marker-pen icon with a small bar in the colour you used last (one tap highlights with that colour); the letter-colour button keeps its "A". Before, both looked like an "A" with a colour.
+
 ## 1.16.0
 - **Text formatting.** Select words in a note and a small bar appears: **bold**, *italic*, underline, strikethrough, a highlight in six colours (one tap repeats the last one) and a letter colour. Ctrl+B, Ctrl+I and Ctrl+U work too, and *Clear formatting* takes it all away. Formatting is kept when you copy into Word or an e-mail, and when you paste between StickyPad notes. *Paste as plain text* (right-click menu, or Ctrl+Shift+V) pastes just the words. Older StickyPad versions show these notes as plain text.
 - **New note colours.** Three new sets of colours: *Standard*, *Clear colours* (easier to tell apart) and *Colour-blind friendly* (the colours differ in lightness as well as hue). Colour names show when you hover a colour. In a note use *Look > Palettes*; in Settings > Appearance > Note colours pick the set for new notes. You can also *Make my own palette*, with a check that the text stays readable on every colour and an optional own letter colour for each. Your existing notes keep their colours.
