@@ -659,8 +659,9 @@ ed.addEventListener('scroll', () => fmtBarUpdate(), { passive: true });
 // Clicking anywhere else closes the small colour menus (the selection may stay, so nothing else would close them).
 document.addEventListener('mousedown', e => {
   if (!fmtPal.hidden && !e.target.closest('#fmt')) fmtPalClose();
-  const pm = $('#palMenu'); if (pm && !pm.hidden && !e.target.closest('#palMenu, #palBtn')) palMenuClose();
 }, true);
+// (the palettes menu sits in the panel's flow, so it closes on click, not on press, or the layout would shift under the pointer)
+document.addEventListener('click', e => { const pm = $('#palMenu'); if (pm && !pm.hidden && !e.target.closest('#palMenu, #palBtn')) palMenuClose(); }, true);
 window.addEventListener('blur', () => { fmtPalClose(); palMenuClose(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { const pm = $('#palMenu'); if (pm && !pm.hidden) { e.preventDefault(); palMenuClose(); $('#palBtn').focus(); } else if (!fmtPal.hidden) { e.preventDefault(); fmtPalClose(); } } });
 fmtBar.addEventListener('mousedown', e => { if (!e.target.closest('input')) e.preventDefault(); });   // the selection must stay while a button is pressed
