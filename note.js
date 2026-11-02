@@ -656,6 +656,13 @@ function fmtBarUpdate() {
 let fmtRaf = 0;
 document.addEventListener('selectionchange', () => { if (fmtRaf) return; fmtRaf = requestAnimationFrame(() => { fmtRaf = 0; fmtBarUpdate(); }); });
 ed.addEventListener('scroll', () => fmtBarUpdate(), { passive: true });
+// Clicking anywhere else closes the small colour menus (the selection may stay, so nothing else would close them).
+document.addEventListener('mousedown', e => {
+  if (!fmtPal.hidden && !e.target.closest('#fmt')) fmtPalClose();
+  const pm = $('#palMenu'); if (pm && !pm.hidden && !e.target.closest('#palMenu, #palBtn')) palMenuClose();
+}, true);
+window.addEventListener('blur', () => { fmtPalClose(); palMenuClose(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { const pm = $('#palMenu'); if (pm && !pm.hidden) { e.preventDefault(); palMenuClose(); $('#palBtn').focus(); } else if (!fmtPal.hidden) { e.preventDefault(); fmtPalClose(); } } });
 fmtBar.addEventListener('mousedown', e => { if (!e.target.closest('input')) e.preventDefault(); });   // the selection must stay while a button is pressed
 fmtBar.addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;

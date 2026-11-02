@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.16.2
+- **Colour menus now close when you click away.** The highlight/letter colour choices and the *Palettes* menu in a note sometimes stayed open; they now close when you click elsewhere, press Esc, or switch to another window.
+
 ## 1.16.1
 - **The highlight button is easier to tell from the letter-colour button.** Highlight is now a marker-pen icon with a small bar in the colour you used last (one tap highlights with that colour); the letter-colour button keeps its "A". Before, both looked like an "A" with a colour.
 
