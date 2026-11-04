@@ -29,7 +29,7 @@ with sync_playwright() as p:
     bc=calls(pg,'allBulk'); ok(bc and bc[-1][1]=='colour' and bc[-1][2]==['a','b','e'] and bc[-1][3].lower()=='#ffc2d9','recolours the chosen notes %s'%bc[-1:])
     ok(pg.is_visible('#selBar') and pg.inner_text('#selN')=='3 chosen','the choice stays after recolouring')
     pg.click('#selMore'); pg.wait_for_timeout(100)
-    ok(pg.eval_on_selector_all('#selPop .mi','els=>els.map(e=>e.textContent)')==['Open','Close','Pin on top','Unpin'],'More menu')
+    ok(pg.eval_on_selector_all('#selPop .mi','els=>els.map(e=>e.textContent)')==['Open','Close','Pin on top'],'More menu (nothing is pinned, so no Unpin)')
     pg.click('#selPop .mi >> text=Pin'); pg.wait_for_timeout(300); ok(calls(pg,'allBulk')[-1][1]=='pin','Pin sends pin')
     pg.click('#selMore'); pg.keyboard.press('Escape'); pg.wait_for_timeout(100)
     ok(not pg.is_visible('#selPop') and pg.is_visible('#selBar'),'Esc closes the menu first, not select mode')

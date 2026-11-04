@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.16.3
+- **Pin from the right-click menu.** Right-click a note in Home and choose *Pin on top* (or *Unpin* when it is already pinned). No need to use Select first.
+- **Select > More shows only what makes sense.** *Pin on top* appears only when a chosen note is not pinned, and *Unpin* only when one is.
+- **Home cards no longer have the badges on top of the text.** *pinned*, *locked*, *rolled up*, *closed* and the picture count now sit below the text, and the card grows to fit them.
+- **The note's settings panel now closes when you click on a blank part of the note** (it stayed open when the text was short).
+- **What's new** is now in Home's left column, above *Support the project*.
+
 ## 1.16.2
 - **Colour menus now close when you click away.** The highlight/letter colour choices and the *Palettes* menu in a note sometimes stayed open; they now close when you click elsewhere, press Esc, or switch to another window.
 

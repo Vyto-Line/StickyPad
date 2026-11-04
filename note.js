@@ -368,6 +368,10 @@ ed.addEventListener('scroll', () => picTools(), { passive: true });
 window.addEventListener('resize', () => picTools());
 ed.addEventListener('dblclick', e => { if (e.target.tagName === 'IMG' && !bodyLocked() && e.target.dataset.w) { picWidth(e.target, 100); picSaved(); } });
 
+// ...and when you click anywhere else on the note (a blank part under short text does not focus the editor, so the focus rule alone missed it)
+document.addEventListener('click', e => { const p = $('#panel'); if (p.hidden || document.body.classList.contains('dock')) return;
+  if (e.target.closest('#panel, header, #fmt, #palMenu, #editbar, #aibox, #findbar, #lockscreen, #snapbar, #datebar')) return;
+  p.hidden = true; $('#cfg').setAttribute('aria-expanded', 'false'); }, true);
 // the settings popover closes as soon as you go back to typing
 ed.addEventListener('focus', () => { const p = $('#panel'); if (!p.hidden && !document.body.classList.contains('dock')) {   // when the panel sits beside the text it stays open
     p.hidden = true; $('#cfg').setAttribute('aria-expanded', 'false'); } });

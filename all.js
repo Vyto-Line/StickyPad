@@ -344,8 +344,9 @@ async function moveSel(gid, name) {
 $('#selMore').onclick = () => openPop('more', $('#selMore'), p => {
   mi(p, 'Open', () => bulk('open', null, r => plural(r.done) + ' opened'));
   mi(p, 'Close', () => bulk('close', null, r => plural(r.done) + ' closed'));
-  mi(p, 'Pin on top', () => bulk('pin', null, r => plural(r.done) + ' pinned'));
-  mi(p, 'Unpin', () => bulk('unpin', null, r => plural(r.done) + ' unpinned'));
+  const chosen = data.notes.filter(n => sel.includes(n.id));
+  if (chosen.some(n => !n.pinned)) mi(p, 'Pin on top', () => bulk('pin', null, r => plural(r.done) + ' pinned'));
+  if (chosen.some(n => n.pinned)) mi(p, 'Unpin', () => bulk('unpin', null, r => plural(r.done) + ' unpinned'));
 });
 $('#selExport').onclick = () => bulk('export', null, r => plural(r.done) + ' exported');
 document.addEventListener('mousedown', e => { if (popFor && !e.target.closest('#selPop, #selBar .fb')) closePop(); });

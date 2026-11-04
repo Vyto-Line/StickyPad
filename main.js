@@ -1130,6 +1130,11 @@ ipcMain.handle('all:list', () => {
     }).sort((a, b) => b.updated - a.updated)
   };
 });
+function pinNow(n, v) {
+  n.pinned = v; const w = wins.get(n.id);
+  if (w && !w.isDestroyed()) { try { w.setAlwaysOnTop(v, 'screen-saver'); } catch {} w.webContents.send('note:reload'); }
+  save();
+}
 ipcMain.handle('all:context', (e, id) => {
   const n = notes[id]; if (!n) return;
   const move = gid => { n.group = gid; save(); };
@@ -1138,6 +1143,7 @@ ipcMain.handle('all:context', (e, id) => {
     { label: 'Copy text', enabled: !n.lock && String(n.text || '').trim() !== '', click: () => { Promise.resolve(clipboard.writeText(String(n.text || ''))).catch(() => {}); } },
     { label: 'Print…', enabled: !n.lock || sessions.has(n.id), click: () => { printNote(n); } },
     { label: 'Duplicate', enabled: isOpen(n), click: () => { duplicateNote(id); } },
+    n.pinned ? { label: 'Unpin', click: () => pinNow(n, false) } : { label: 'Pin on top', click: () => pinNow(n, true) },
     { label: 'Move to folder', submenu: [
       { label: 'No folder', type: 'radio', checked: !n.group, click: () => move(null) },
       ...(groups.length ? [{ type: 'separator' }] : []),
@@ -1675,6 +1681,7 @@ function watchStalls() {   // the main process answers every window: when it is 
 }
 ipcMain.handle('update:check', () => updater ? updater.check() : null);
 ipcMain.handle('update:download', () => updater ? updater.download() : null);
+ipcMain.handle('whatsnew:open', () => { openWhatsNew(null); return { ok: true }; });
 ipcMain.handle('whatsnew:get', () => whatsNewData(whatsFrom));
 ipcMain.handle('whatsnew:close', (e, o) => {
   if (o && typeof o.off === 'boolean') { settings.whatsNew = !o.off; save(); }

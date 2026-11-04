@@ -24,7 +24,9 @@
   }
   const sup = document.createElement('button'); sup.type = 'button'; sup.className = 'hsupport'; sup.title = 'Optional: StickyPad is free. A coffee keeps it growing (opens ko-fi.com in your browser)';
   sup.innerHTML = '<span aria-hidden="true">☕</span><span>Support the project</span>'; sup.onclick = () => { if (window.api && api.openLink) api.openLink('https://ko-fi.com/vyto'); };
-  nav.appendChild(sup);
+  const wn = document.createElement('button'); wn.type = 'button'; wn.className = 'hwhats'; wn.title = "See what changed in each version of StickyPad";
+  wn.innerHTML = '<span aria-hidden="true">✨</span><span>What\'s new</span>'; wn.onclick = () => { if (window.api && api.whatsNewOpen) api.whatsNewOpen(); };
+  nav.appendChild(wn); nav.appendChild(sup);
   const foot = document.createElement('div'); foot.className = 'hfoot'; foot.textContent = 'Opens this window from anywhere.';
   const keyHint = k => { foot.textContent = (k || 'The shortcut') + ' opens this window from anywhere.'; };
   keyHint(window.StickyKeys && StickyKeys.DEFAULTS.g_all);   // the real key is read next (it can be changed in Settings > Shortcuts)
